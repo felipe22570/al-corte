@@ -6,7 +6,7 @@
 - **Fin:** —
 - **Commit:** —
 - **Depende de:** 02 (puede hacerse en paralelo con 04–06)
-- **Decisiones aplicables (decididas, ver README):** D1 (cuota de manejo automática → valor `system` en `source`), D9 (categorías iniciales), D3 (columnas `_cop` en `installments`)
+- **Decisiones aplicables (decididas, ver README):** D1 (cuota de manejo automática → valor `system` en `source`), D9 (categorías iniciales), D3 (columnas `_cop` en `installments`), D11 (categorías sin color)
 
 ## Objetivo
 
@@ -25,9 +25,9 @@ Migración `supabase migration new create_core_schema`:
 - Enums: `amortization_method` (`fixed_principal`, `french`), `transaction_type` (`purchase`, `cash_advance`, `advance_fee`, `payment`, `handling_fee`, `interest`, `insurance`, `refund`, `adjustment`), `transaction_source` (`manual`, `subscription`, `import`, `email`, `system`*), `currency_code` (`COP`, `USD`), `subscription_frequency` (`monthly`, `yearly`), `subscription_status` (`active`, `paused`, `cancelled`).
   - *`system` solo si se confirma D1.
 - Columnas comunes: `id uuid primary key default gen_random_uuid()`, `user_id uuid not null default auth.uid() references auth.users on delete cascade`, `created_at timestamptz not null default now()`, `updated_at timestamptz` con trigger `set_updated_at` en tablas editables.
-- `cards`: campos del PRD; `last4 char(4) check (last4 ~ '^[0-9]{4}$')`; `cutoff_day`/`payment_day smallint check between 1 and 31`; tasas `numeric(9,6) check >= 0` (E.A. como fracción, 0,2899); `credit_limit`, `advance_fee`, `handling_fee numeric(14,2) check >= 0`; `amortization_method default 'fixed_principal'`; `color text`; `archived_at timestamptz`.
+- `cards`: campos del PRD; `last4 char(4) check (last4 ~ '^[0-9]{4}$')`; `cutoff_day`/`payment_day smallint check between 1 and 31`; tasas `numeric(9,6) check >= 0` (E.A. como fracción, 0,2899); `credit_limit`, `advance_fee`, `handling_fee numeric(14,2) check >= 0`; `amortization_method default 'fixed_principal'`; `color text not null default 'card-1' check (color in ('card-1','card-2','card-3','card-4','card-5','card-6'))` (clave del token de `globals.css`, nunca un hex, según `AGENTS.md`); `archived_at timestamptz`.
 - `statements`: `card_id` FK `on delete restrict`; `period_start`, `cutoff_date`, `due_date date not null`; `real_total numeric(14,2)`; `paid_at timestamptz`; `unique (card_id, cutoff_date)`; `check (period_start <= cutoff_date and cutoff_date < due_date)`.
-- `categories`: `name`, `icon`, `color`, `monthly_budget numeric(14,2)` (v2); `unique (user_id, name)`; `archived_at` para no romper movimientos históricos.
+- `categories`: `name`, `icon text not null` (nombre de un icono de Lucide en kebab-case, de la lista curada de `lib/category-icons.ts`), `color text` (se conserva por el PRD pero queda en `null` y sin uso en el MVP, D11), `monthly_budget numeric(14,2)` (v2); `unique (user_id, name)`; `archived_at` para no romper movimientos históricos.
 - `transactions`: campos del PRD; `amount numeric(14,2) check > 0`; `fx_rate numeric(12,4)`; `amount_cop numeric(14,2) not null` (para COP = `amount`); `check (currency = 'COP' or fx_rate is not null)`; `installments_count smallint not null default 1 check between 1 and 48`; `interest_free boolean default false`; `rate_ea_applied numeric(9,6)`; `parent_id` FK a `transactions on delete cascade`; `subscription_id` FK `on delete set null`; `source default 'manual'`; `verified boolean default false`; `note text`.
 - `installments`: `transaction_id` FK `on delete cascade`; `statement_id` FK; `number smallint`; `principal`, `interest`, `total`, `balance_after numeric(14,2)` en la moneda de la compra; `principal_cop`, `interest_cop`, `total_cop numeric(14,2) not null` con el equivalente en COP (D3; columnas adicionales a las del PRD, iguales a las originales si la compra es en COP); `unique (transaction_id, number)`; `check (total = principal + interest)` y `check (total_cop = principal_cop + interest_cop)`.
 - `subscriptions`: campos del PRD; `billing_day check between 1 and 31`; `last_charged_amount numeric(14,2)`.
@@ -45,7 +45,7 @@ Categorías iniciales (D9), migración `seed_default_categories`:
 - Función `public.create_default_categories(p_user_id uuid)` idempotente (`on conflict do nothing`).
 - Trigger `after insert on auth.users` que la llama (`security definer`, `set search_path = ''`).
 - `select create_default_categories(id) from auth.users;` para usuarios existentes.
-- Lista: mercado, restaurantes, transporte, servicios, salud, entretenimiento, suscripciones, viajes, educación, hogar, otros.
+- Lista con su icono de Lucide: Mercado (`shopping-cart`), Restaurantes (`utensils`), Transporte (`car`), Servicios (`receipt`), Salud (`heart-pulse`), Entretenimiento (`clapperboard`), Suscripciones (`repeat`), Viajes (`plane`), Educación (`graduation-cap`), Hogar (`house`), Otros (`ellipsis`). Los nombres se guardan con mayúscula inicial y tildes. Los iconos deben existir en `lib/category-icons.ts` (paso 11); si cambia la versión de `lucide-react`, verificar que existan.
 
 `supabase/seed.sql` (solo local): un par de filas en `fx_rates`. No crear usuarios aquí.
 
@@ -55,12 +55,13 @@ Categorías iniciales (D9), migración `seed_default_categories`:
 - [ ] Migración `seed_default_categories`.
 - [ ] `supabase/seed.sql`.
 - [ ] Pruebas pgTAP `supabase/tests/010-schema.test.sql`: existen las 8 tablas, `has_column` de columnas clave, `col_type_is` `numeric(14,2)` y `date` donde corresponde, `check` de días rechaza 0 y 32, único `(card_id, cutoff_date)`, único parcial de suscripciones.
-- [ ] Prueba pgTAP de categorías: insertar un usuario en `auth.users` dentro de la prueba → tiene 11 categorías.
+- [ ] Prueba pgTAP de categorías: insertar un usuario en `auth.users` dentro de la prueba → tiene 11 categorías, todas con `icon`.
+- [ ] Prueba pgTAP: `cards.color = '#ff0000'` o `'card-7'` → viola el `check`.
 
 ## Riesgos
 
 - Editar una migración ya aplicada: prohibido. Si algo falla después de aplicarla en remoto, crear una migración nueva.
-- `auth.uid()` como default no funciona en el cron (no hay JWT): el cron debe pasar `user_id` explícito (paso 14).
+- `auth.uid()` como default no funciona en el cron (no hay JWT): el cron debe pasar `user_id` explícito (paso 15).
 
 ## Verificación
 

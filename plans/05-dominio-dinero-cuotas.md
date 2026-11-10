@@ -21,8 +21,9 @@ export type Currency = 'COP' | 'USD';
 toDecimal(v: string | Decimal): Decimal          // rechaza number para evitar errores
 roundMoney(v: Decimal, currency: Currency): Decimal // COP → entero HALF_UP; USD → 2 decimales
 toCop(amount: Decimal, currency: Currency, fxRate?: Decimal): Decimal
-formatMoney(v: string | Decimal, currency: Currency): string // Intl.NumberFormat('es-CO', …)
 ```
+
+El formato de presentación (`$1.284.500`, `US$ 15,99`) **no** va aquí: vive en `lib/format.ts` (paso 09), como indica `AGENTS.md`.
 
 `lib/domain/rates.ts`
 
@@ -61,7 +62,7 @@ buildCashAdvance(input: { amount; count; card: { advanceRateEa; advanceFee; amor
 - `i = (1 + EA)^(1/12) − 1`; `Decimal.set({ precision: 40 })` o configurar un clon de `Decimal` local para no afectar a otros módulos.
 - **Capital fijo:** capital_k = round(P/N); interés_k = round(S_(k−1) · i); la última cuota toma capital = saldo restante.
 - **Cuota fija:** C = round(P · i / (1 − (1 + i)^(−N))); interés_k = round(S_(k−1) · i); capital_k = C − interés_k; la última cuota toma capital = saldo restante y total = capital + interés.
-- `count === 1` o `interestFree` → i = 0 (y `rate_ea_applied` sigue guardando la tasa de la tarjeta para referencia, decidir en el paso 11).
+- `count === 1` o `interestFree` → i = 0 (y `rate_ea_applied` sigue guardando la tasa de la tarjeta para referencia, decidir en el paso 12).
 - Cuota k → `shiftStatement(cutoffDay, statementCutoffFor(cutoffDay, purchaseDate), k − 1)`.
 - `balanceAfter` de la última cuota = 0 exacto.
 - `round` depende de la moneda (`roundMoney`): COP a pesos enteros, USD a centavos.
@@ -123,7 +124,6 @@ Además:
 - [ ] Asignación de cuotas: compra 2026-01-20 con corte 15 y 3 cuotas → cortes 2026-02-15, 2026-03-15, 2026-04-15. Compra 2026-01-31 con corte 31 → 2026-01-31, 2026-02-28, 2026-03-31.
 - [ ] Avance de 500.000 a 2 cuotas con tasa de avances distinta a la de compras: usa la tasa de avances; la comisión tiene la misma fecha y el mismo corte que la cuota 1 del avance.
 - [ ] `roundMoney` HALF_UP: 0,5 → 1; 1,5 → 2; USD 1,005 → 1,01.
-- [ ] `formatMoney('1234567', 'COP')` coincide con `Intl.NumberFormat('es-CO', { style: 'currency', currency: 'COP' })` (comparar contra el resultado de Intl, no contra un literal, por diferencias de espacios no separables entre versiones de ICU).
 - [ ] `toDecimal(1.1 as any)` lanza error (no se acepta `number`).
 - [ ] `installmentProgress`: compra a 12 cuotas con 3 cortes ya pasados → 4/12 y saldo pendiente correcto.
 - [ ] Entradas inválidas (P ≤ 0, N = 0, EA negativa) lanzan error.

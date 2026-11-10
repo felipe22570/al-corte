@@ -1,11 +1,11 @@
-# Paso 11 — Registro de movimientos y cuotas (RPC transaccional)
+# Paso 12 — Registro de movimientos y cuotas (RPC transaccional)
 
 - **Hito PRD:** H4 (parte 1 de 2)
 - **Estado:** ⬜ Pendiente
 - **Inicio:** —
 - **Fin:** —
 - **Commit:** —
-- **Depende de:** 05, 08, 10
+- **Depende de:** 05, 08, 11
 - **Decisiones aplicables (decididas, ver README):** D1, D3, D4
 
 ## Objetivo
@@ -40,13 +40,16 @@ La RPC valida coherencia (Σ `principal` = `amount`, Σ `principal_cop` = `amoun
 - [ ] `lib/validation/transaction.ts`: tipo, tarjeta, fecha (`YYYY-MM-DD`, por defecto `todayInBogota()`), valor (string decimal > 0), moneda, TRM (requerida si USD), comercio, categoría, cuotas 1–48 (solo para `purchase` y `cash_advance`), sin intereses, nota.
 - [ ] `lib/domain/transaction-plan.ts` (puro, con pruebas): dado el input validado y la tarjeta, arma el payload completo de la RPC (cortes, cuotas, comisión, `amount_cop`, tasa congelada). Así la Server Action queda delgada y el armado queda probado.
 - [ ] `lib/actions/transactions.ts`: `createTransaction`.
-- [ ] Preferencia "última tarjeta usada": cookie o `localStorage` (no requiere tabla). Elegir y anotar.
+- [ ] Preferencia "última tarjeta usada" en `localStorage` con la clave `storageKey('last-card-id')` → `al-corte:last-card-id` (prefijo de `AGENTS.md`). Si la tarjeta guardada está archivada o no existe, usar la primera activa.
 - [ ] TRM precargada según D4 (consulta en servidor).
 - [ ] `app/(app)/movimientos/nuevo/page.tsx` + `components/transaction-form.tsx`:
   - Orden pensado para < 15 s: valor (teclado numérico, `inputMode="decimal"`, autofocus) → tarjeta (última usada) → categoría → comercio → cuotas (stepper 1–48) → "Más opciones" plegado: tipo (compra por defecto), fecha (hoy), moneda, TRM, sin intereses, nota.
-  - Vista previa en vivo con `buildInstallmentPlan` en el cliente: valor de la primera cuota, total de intereses y extracto donde cae la primera cuota (fecha de corte y fecha límite).
-  - Para avances: muestra la comisión y la tasa de avances.
-  - Al guardar: toast "Movimiento guardado" y regreso a la pantalla anterior (o al tablero).
+  - El valor es el monto protagonista de la pantalla: campo grande con `text-amount-lg`, alineado como monto, con el símbolo de la moneda.
+  - Selector de tarjeta con `CardColorChip` + nombre + `•••• 1234`; categorías con su icono Lucide (`size-5`, `strokeWidth={1.75}`).
+  - Vista previa en vivo con `buildInstallmentPlan` en el cliente, en una tarjeta `bg-card border rounded-xl`: valor de la primera cuota (`Money`), total de intereses y extracto donde cae la primera cuota, con frases cortas tipo "Primera cuota $354.118 · corte del 15 feb, pagas el 5 mar". Compras sin intereses o a 1 cuota: "Sin intereses".
+  - Para avances: muestra la comisión y la tasa de avances (`formatRate`).
+  - Un solo botón primary ("Guardar"), fijo abajo en el celular sin tapar campos.
+  - Al guardar: toast "Movimiento guardado" (sin exclamación) y regreso a la pantalla anterior (o al tablero).
 - [ ] Mensajes de error de la RPC traducidos a español en la acción.
 
 ## Pruebas
@@ -71,8 +74,9 @@ Comprobaciones manuales:
 - [ ] Compra en USD: pide TRM, precarga la última conocida, guarda `fx_rate` y `amount_cop`.
 - [ ] Compra en USD a 3 cuotas: la vista previa muestra la primera cuota en USD y su equivalente estimado en COP; en la base las cuotas tienen valores en USD (2 decimales) y columnas `_cop` en pesos enteros.
 - [ ] Registrar un gasto simple desde el celular (o DevTools a 360 px) toma menos de 15 s cronometrado.
-- [ ] Se recuerda la última tarjeta usada.
-- [ ] Modo oscuro correcto.
+- [ ] Se recuerda la última tarjeta usada (`localStorage` → `al-corte:last-card-id`).
+- [ ] Modo oscuro correcto; montos con `tabular-nums` (no "bailan" al escribir el valor).
+- [ ] `pnpm lint` (incluye `check-design`) sin hallazgos.
 
 ## Criterios de terminado
 

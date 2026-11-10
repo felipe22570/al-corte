@@ -1,11 +1,11 @@
-# Paso 15 — Tablero
+# Paso 16 — Tablero
 
 - **Hito PRD:** H7 (parte 1 de 2)
 - **Estado:** ⬜ Pendiente
 - **Inicio:** —
 - **Fin:** —
 - **Commit:** —
-- **Depende de:** 13, 14
+- **Depende de:** 14, 15
 - **Decisiones aplicables (decididas, ver README):** D2, D5
 
 ## Objetivo
@@ -16,18 +16,20 @@ Pantalla `/` (F6): estado de todas las tarjetas activas en una sola vista y los 
 
 Por tarjeta (activas, no archivadas):
 
-- Nombre, banco, `•••• 1234`, color.
-- Próximo pago: total del extracto más próximo con `due_date ≥ hoy` y sin `paid_at`, y su fecha límite (con "en N días"; resaltado si faltan ≤ 3 días o está vencido).
-- Cupo disponible y % de utilización (barra; colores por umbral: < 30%, 30–70%, > 70%).
-- Enlace a `/tarjetas/[id]`.
+- Franja o chip `bg-card-N` junto al nombre, banco y `•••• 1234`.
+- Próximo pago: total del extracto más próximo con `due_date ≥ hoy` y sin `paid_at` (`Money`), y su fecha límite con frase tipo "Pagas $1.284.500 el 2 dic". Estado con `dueTone` del paso 09: warning si faltan 5 días o menos ("Tu Visa vence en 3 días"), danger si está vencido, ok si ya está pagado.
+- Cupo disponible y % de utilización con `UtilizationBar` (`rounded-full`): < 30% ok, 30–70% warning, > 70% o sobrecupo danger, siempre con el porcentaje en texto.
+- Toda la tarjeta enlaza a `/tarjetas/[id]` (área táctil completa, foco visible).
 
 Totales:
 
 - **Deuda total pendiente:** Σ `used` de `card_balances` (o la definición que se fije en D2).
 - **Total a pagar este mes:** Σ de extractos sin pagar con `due_date` dentro del mes calendario actual (Bogotá).
-- **Gasto del mes actual frente al anterior:** `monthlySpending` + `compareMonths` (D5), con flecha y %.
+- **Gasto del mes actual frente al anterior:** `monthlySpending` + `compareMonths` (D5), con flecha y % en `text-muted-foreground` (gastar más o menos no es un estado de alerta; sin verde ni rojo).
 
-Botón flotante "Nuevo gasto" (ya existe del paso 09).
+Jerarquía visual: el **total a pagar este mes** es el monto protagonista (`text-amount-lg`); deuda total y gasto del mes van con `text-amount`. En el celular, la marca "Al Corte" puede ir como encabezado del tablero (decisión de diseño a anotar).
+
+Botón flotante "Nuevo gasto" (ya existe del paso 10): único botón primary de la pantalla.
 
 ## Tareas
 
@@ -35,10 +37,11 @@ Botón flotante "Nuevo gasto" (ya existe del paso 09).
 - [ ] Consulta del tablero en el servidor: **pocas** consultas (tarjetas + `card_balances` + `statement_totals` filtrado + movimientos de los 2 meses para el gasto). Evitar N+1 por tarjeta. Considerar una vista o RPC `dashboard_summary` si hace falta; si se agrega, con prueba pgTAP.
 - [ ] `app/(app)/page.tsx` (Server Component) + `components/card-summary.tsx` + `components/dashboard-totals.tsx`.
 - [ ] `loading.tsx` con skeletons.
-- [ ] Estado vacío: sin tarjetas → CTA "Agrega tu primera tarjeta" que lleva a `/ajustes`.
+- [ ] Estado vacío: sin tarjetas → "Aún no tienes tarjetas. Agrega la primera." con acción que lleva a `/ajustes`.
 
 ## Pruebas
 
+- [ ] Vitest: tono del próximo pago a 6, 5, 0 y −1 días (usa `dueTone` del paso 09);
 - [ ] Vitest: próximo pago con extractos pagados, sin pagar y vencidos; total del mes cuando dos tarjetas vencen en el mismo mes y una en el siguiente; días hasta la fecha límite cruzando fin de mes.
 
 ## Verificación

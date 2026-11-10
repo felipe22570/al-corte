@@ -37,7 +37,8 @@ Tener el repositorio inicializado con Next.js (App Router) + TypeScript estricto
   - cobertura limitada a `lib/domain/**` con umbral 100% en líneas, ramas, funciones y sentencias (se activa en el paso 04; aquí puede quedar configurado pero sin archivos)
 - [ ] Inicializar shadcn/ui (`pnpm dlx shadcn@latest init`), estilo por defecto, variables CSS, soporte de modo oscuro por clase.
 - [ ] Crear la estructura de carpetas de `AGENTS.md` con un `.gitkeep` donde haga falta: `components/`, `components/ui/`, `lib/domain/__tests__/`, `lib/supabase/`, `lib/actions/`, `lib/validation/`, `supabase/migrations/`, `supabase/functions/`.
-- [ ] Configurar `<html lang="es-CO">` y metadatos básicos (título "Al Corte" o el nombre que defina el dueño).
+- [ ] `name: "al-corte"` en `package.json`. Configurar `<html lang="es-CO">` y `metadata.title = { default: 'Al Corte', template: '%s · Al Corte' }` (nombre según la tabla de `AGENTS.md`). Las fuentes, el tema y los tokens se completan en el paso 09.
+- [ ] Conservar `app/globals.css` con los tokens de Al Corte; `shadcn init` no debe sobrescribirlo (si lo hace, restaurarlo desde git).
 - [ ] Prueba de humo `lib/domain/__tests__/smoke.test.ts` (se borra en el paso 04).
 - [ ] `.env.example` vacío de valores (se completa en el paso 02).
 - [ ] Opcional: Prettier con `prettier-plugin-tailwindcss`. Si se agrega, justificarlo en la nota del paso.

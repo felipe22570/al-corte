@@ -1,11 +1,11 @@
-# Paso 14 — Suscripciones y cobro diario con pg_cron
+# Paso 15 — Suscripciones y cobro diario con pg_cron
 
 - **Hito PRD:** H6 — **H6 termina aquí**
 - **Estado:** ⬜ Pendiente
 - **Inicio:** —
 - **Fin:** —
 - **Commit:** —
-- **Depende de:** 06, 08, 13
+- **Depende de:** 06, 08, 14
 - **Decisiones aplicables (decididas, ver README):** D4 (TRM para suscripciones en USD), regla de primer cobro con prueba gratis (paso 06)
 
 ## Objetivo
@@ -53,10 +53,11 @@ Revocar `execute` de la función a `anon` y `authenticated` (solo la ejecuta el 
 - [ ] `lib/validation/subscription.ts` y `lib/actions/subscriptions.ts`: crear, editar, pausar, reanudar, cancelar.
 - [ ] Al crear una suscripción cuya fecha de cobro de hoy ya pasó la hora del cron: decidir si se genera el cobro inmediatamente (llamando una RPC `generate_charges_for_subscription(id)` con permisos del usuario) o se espera al día siguiente. **Propuesta:** generar al guardar para no perder cobros de hoy; anotar decisión.
 - [ ] `app/(app)/suscripciones/page.tsx`:
-  - Totales: costo mensual total y anual equivalente (`subscriptionTotals`, USD convertido con la última TRM y marcado como "estimado").
-  - Lista: nombre, tarjeta, valor, frecuencia, próximo cobro (`nextChargeDate`), estado.
-  - Sección "Pruebas por vencer" (`isTrialEndingSoon`).
-  - Formulario en `Sheet` para crear/editar.
+  - Totales: costo mensual total como monto protagonista (`text-amount-lg`) y anual equivalente debajo (`subscriptionTotals`, USD convertido con la última TRM y marcado como "estimado").
+  - Lista: nombre, tarjeta (`CardColorChip` + nombre), valor (`Money`, a la derecha; USD como `US$ 15,99`), frecuencia, próximo cobro (`DateLabel`, p. ej. "vie 15 nov"), estado con `StatusBadge` (activa: sin badge o neutral; pausada y cancelada: neutral con texto).
+  - Sección "Pruebas por vencer" (`isTrialEndingSoon`) con badge warning y texto ("La prueba termina en 2 días").
+  - Estado vacío: "Aún no tienes suscripciones. Agrega la primera."
+  - Formulario en `Sheet` para crear/editar, con un solo botón primary.
 - [ ] Enlace desde el movimiento generado a su suscripción y viceversa (últimos cobros).
 
 ## Verificación
@@ -83,7 +84,7 @@ Comprobaciones manuales:
 - [ ] Los totales mensual y anual coinciden con un cálculo a mano.
 - [ ] Una prueba gratis que vence en 3 días aparece en "Pruebas por vencer".
 - [ ] En el proyecto remoto (tras `supabase db push`): `cron.job` tiene el trabajo programado.
-- [ ] 360 px y modo oscuro correctos.
+- [ ] 360 px y modo oscuro correctos; `pnpm lint` (incluye `check-design`) sin hallazgos.
 
 ## Criterios de terminado
 

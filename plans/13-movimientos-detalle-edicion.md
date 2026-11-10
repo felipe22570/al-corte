@@ -1,11 +1,11 @@
-# Paso 12 — Detalle, edición y borrado de movimientos
+# Paso 13 — Detalle, edición y borrado de movimientos
 
 - **Hito PRD:** H4 (parte 2 de 2) — **H4 termina aquí**
 - **Estado:** ⬜ Pendiente
 - **Inicio:** —
 - **Fin:** —
 - **Commit:** —
-- **Depende de:** 11
+- **Depende de:** 12
 - **Decisiones aplicables (decididas, ver README):** D3, D6
 
 ## Objetivo
@@ -26,9 +26,10 @@ Pantalla `/movimientos/[id]` con los datos del movimiento y su tabla de amortiza
 - [ ] Regenerar tipos.
 - [ ] `lib/actions/transactions.ts`: `updateTransaction`, `deleteTransaction`.
 - [ ] `app/(app)/movimientos/[id]/page.tsx`: tipo, fecha, comercio, categoría, tarjeta, valor (y USD + TRM si aplica), extracto asignado (enlace), nota, origen.
-- [ ] Tabla de amortización `components/amortization-table.tsx`: número, extracto, capital, interés, total, saldo; en compras en USD los valores van en USD y se agrega el total estimado en COP por cuota (D3); resalta la cuota actual y muestra el progreso (ej. 4/12) y el saldo pendiente con `installmentProgress`. En 360 px: lista de tarjetas en vez de tabla ancha.
+- [ ] Tabla de amortización `components/amortization-table.tsx`: número, extracto, capital, interés, total, saldo; en compras en USD los valores van en USD y se agrega el total estimado en COP por cuota (D3); resalta la cuota actual (fondo `bg-accent` y texto "Cuota actual", no un color de estado) y muestra el progreso con texto ("Te faltan 8 de 12 cuotas") y el saldo pendiente con `installmentProgress`. Montos con `text-amount` alineados a la derecha. En 360 px: lista de filas compactas en vez de tabla ancha.
+- [ ] El monto protagonista de la pantalla es el valor del movimiento (`Money size="lg"`); tarjeta con `CardColorChip` + nombre + `•••• 1234`; categoría con su icono.
 - [ ] Editar: reutiliza `transaction-form` con valores iniciales; aviso si hay cuotas en extractos pagados (D6) y aviso de que la tasa congelada se recalcula con la tasa actual de la tarjeta (o se conserva: **decidir** y anotar).
-- [ ] Borrar: diálogo de confirmación que indica cuántas cuotas y movimientos hijos se borran.
+- [ ] Borrar: diálogo de confirmación (botón `destructive`) que indica cuántas cuotas y movimientos hijos se borran, con texto calmado ("Se borran la compra y sus 6 cuotas.").
 - [ ] `notFound()` si el id no existe o no es del usuario.
 
 ## Verificación
@@ -47,7 +48,7 @@ Comprobaciones manuales:
 - [ ] Editar la fecha de un día antes del corte a un día después → el extracto asignado cambia.
 - [ ] Borrar un avance borra también su comisión.
 - [ ] Abrir `/movimientos/<uuid-inexistente>` muestra la página 404 en español.
-- [ ] 360 px y modo oscuro correctos.
+- [ ] 360 px y modo oscuro correctos; `pnpm lint` (incluye `check-design`) sin hallazgos.
 
 ## Criterios de terminado
 

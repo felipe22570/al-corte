@@ -15,7 +15,7 @@ Supabase corriendo en local con el CLI, clientes de Supabase para servidor y nav
 
 **Incluye:** `supabase init`, configuración de Auth, clientes `@supabase/ssr`, middleware/proxy de sesión, pantalla de login, cerrar sesión, grupo de rutas `(app)` protegido.
 
-**No incluye:** tablas de negocio (paso 07), despliegue (paso 03), layout final (paso 09).
+**No incluye:** tablas de negocio (paso 07), despliegue (paso 03), layout final (paso 10).
 
 ## Tareas
 

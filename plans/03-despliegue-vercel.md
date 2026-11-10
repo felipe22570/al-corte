@@ -21,18 +21,19 @@ Este paso tiene varias acciones **manuales del dueño** (crear cuentas, proyecto
 
 ## Tareas
 
-- [ ] (Dueño) Crear el proyecto en Supabase. Región recomendada: la más cercana a Colombia disponible (p. ej. `us-east-1`).
+- [ ] (Dueño) Crear el proyecto en Supabase con el nombre `al-corte`. Región recomendada: la más cercana a Colombia disponible (p. ej. `us-east-1`).
 - [ ] (Dueño) En el dashboard de Supabase → Authentication → Providers/Settings: **desactivar "Allow new users to sign up"**.
 - [ ] (Dueño) Crear el usuario dueño en Authentication → Users → Add user (auto confirm).
 - [ ] `supabase login` y `supabase link --project-ref <ref>`.
 - [ ] `supabase db push` (aún sin migraciones de negocio; confirma que el enlace funciona).
-- [ ] (Dueño) Crear el repo remoto en GitHub y hacer push de `main`.
-- [ ] (Dueño) Importar el repo en Vercel (plan Hobby). Variables de entorno en Production y Preview:
+- [ ] (Dueño) Crear el repo remoto `al-corte` en GitHub y hacer push de `main`.
+- [ ] (Dueño) Importar el repo en Vercel (plan Hobby) como proyecto `al-corte` (URL esperada `al-corte.vercel.app` o la que asigne Vercel si está ocupada; anotarla en "Notas de progreso"). Variables de entorno en Production y Preview:
   - `NEXT_PUBLIC_SUPABASE_URL`
   - `NEXT_PUBLIC_SUPABASE_ANON_KEY` (o `..._PUBLISHABLE_KEY`)
   - Ninguna `service_role` en el MVP.
 - [ ] (Dueño) En Supabase → Authentication → URL Configuration: `Site URL` = URL de producción de Vercel; agregar `https://<app>.vercel.app/auth/callback` y el patrón de previews si se usa magic link.
 - [ ] Documentar en `README.md` el flujo de despliegue: push a `main` → Vercel; `supabase db push` para migraciones remotas.
+- [ ] (Dueño) En Supabase → Authentication → Emails: asunto y remitente de los correos de magic link con el nombre "Al Corte".
 - [ ] Opcional: conectar el servidor MCP de Supabase al agente (solo contra el proyecto local o de desarrollo).
 
 ## Archivos

@@ -1,12 +1,12 @@
-# Paso 16 — Historial con filtros y gráficos
+# Paso 17 — Historial con filtros y gráficos
 
 - **Hito PRD:** H7 (parte 2 de 2) — **H7 termina aquí**
 - **Estado:** ⬜ Pendiente
 - **Inicio:** —
 - **Fin:** —
 - **Commit:** —
-- **Depende de:** 15
-- **Decisiones aplicables (decididas, ver README):** D5
+- **Depende de:** 16
+- **Decisiones aplicables (decididas, ver README):** D5, D11
 
 ## Objetivo
 
@@ -17,11 +17,12 @@ Pantalla `/movimientos` (F7): lista agrupada por día con filtros por mes, tarje
 - Filtros en la URL (`searchParams`): `mes=YYYY-MM` (por defecto el actual en Bogotá), `tarjeta`, `categoria`, `tipo`, `q`. La página es Server Component; el formulario de filtros es client y solo actualiza la URL (compartible y con botón atrás funcional).
 - Filtro por mes = fecha del movimiento dentro del mes calendario (no por extracto). Anotar.
 - `q`: `ilike` sobre `merchant` y `note`, escapando `%` y `_`.
-- Lista agrupada por día, del más reciente al más antiguo; subtotal por día. Cada fila: comercio, categoría (ícono y color), tarjeta, valor (abonos en verde con signo), cuotas (ej. "6 cuotas") y enlace al detalle.
+- Lista agrupada por día, del más reciente al más antiguo; subtotal por día. Cada fila: comercio (`text-body`), categoría (icono Lucide `size-5` en `text-muted-foreground`), tarjeta (`CardColorChip` + nombre corto), valor a la derecha con `text-amount` (abonos con signo `+` y la etiqueta "Abono", **sin verde**: el verde solo significa "al día"), cuotas (ej. "6 cuotas") y enlace al detalle. Encabezado de día con `formatDateWithWeekday` ("vie 15 nov") y subtotal a la derecha.
 - Paginación o "Cargar más" si el mes tiene muchos movimientos (> 100).
 - Gráficos (Recharts vía shadcn `chart`, componentes client que reciben datos ya agregados en el servidor como strings):
-  - Barras: gasto por mes de los últimos 12 meses (D5), respetando filtros de tarjeta y categoría.
-  - Torta o barras horizontales: gasto por categoría del mes elegido.
+  - Barras: gasto por mes de los últimos 12 meses (D5), respetando filtros de tarjeta y categoría. Barras apiladas por tarjeta con `var(--card-N)` de cada tarjeta y leyenda con nombre + últimos 4 dígitos (regla de `AGENTS.md`); con filtro de una sola tarjeta, una serie.
+  - Barras horizontales: gasto por categoría del mes elegido, ordenadas de mayor a menor, **en un solo color neutro** (`var(--foreground)` o `var(--muted-foreground)`), con icono y nombre de la categoría y el monto en texto (D11). Sin torta: es menos legible a 360 px.
+  - Ejes, rejilla y tooltips con `var(--border)`, `var(--muted-foreground)` y `bg-popover`; montos del eje y del tooltip con `lib/format.ts`. Ningún hex en las props de Recharts.
 - Agregaciones con `Decimal` en el servidor (funciones puras en `lib/domain/`) o con SQL (`sum` sobre `numeric`). Recharts recibe `number` **solo para dibujar**; las etiquetas y tooltips usan `formatMoney` sobre el string original.
 
 ## Tareas
@@ -31,7 +32,8 @@ Pantalla `/movimientos` (F7): lista agrupada por día con filtros por mes, tarje
 - [ ] Funciones puras con pruebas: agrupar por día, gasto de los últimos 12 meses (rellena meses sin datos con 0), gasto por categoría.
 - [ ] `app/(app)/movimientos/page.tsx`, `components/history-filters.tsx`, `components/transaction-list.tsx`, `components/monthly-spending-chart.tsx`, `components/category-spending-chart.tsx`.
 - [ ] Estado vacío: "No hay movimientos con estos filtros" + botón para limpiar filtros.
-- [ ] Colores de gráficos con variables CSS que funcionen en modo oscuro.
+- [ ] Colores de gráficos solo con `var(--card-N)`, `var(--chart-N)` y neutros del tema, para que cambien solos en modo oscuro.
+- [ ] Adaptar el componente `chart` de shadcn/ui a las reglas del paso 09 (radios, texto, sombra solo en el tooltip si es flotante).
 
 ## Pruebas
 
@@ -52,9 +54,11 @@ Comprobaciones manuales (con datos de varios meses):
 - [ ] Copiar la URL con filtros y abrirla en otra pestaña muestra lo mismo.
 - [ ] El gráfico de 12 meses muestra 12 barras, incluidas las de valor 0.
 - [ ] El total del gráfico por categoría del mes = gasto del mes del tablero (mismos filtros).
-- [ ] Tooltips con formato COP.
+- [ ] Tooltips y ejes con formato `$1.284.500`.
+- [ ] Cada serie de tarjeta usa el mismo color que el chip de esa tarjeta en el resto de la app.
 - [ ] 360 px: filtros en un `Sheet` o plegables, gráficos legibles, sin scroll horizontal.
 - [ ] Modo oscuro: ejes, textos y colores legibles.
+- [ ] `pnpm lint` (incluye `check-design`) sin hallazgos.
 
 ## Criterios de terminado
 

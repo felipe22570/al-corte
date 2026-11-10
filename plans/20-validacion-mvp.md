@@ -1,11 +1,11 @@
-# Paso 18 — Validación final del MVP
+# Paso 20 — Validación final del MVP
 
 - **Hito PRD:** cierre del MVP
 - **Estado:** ⬜ Pendiente
 - **Inicio:** —
 - **Fin:** —
 - **Commit:** —
-- **Depende de:** 01–17
+- **Depende de:** 01–19
 
 ## Objetivo
 
@@ -16,7 +16,7 @@ Confirmar que el MVP cumple todos los criterios de aceptación de F1–F8 del PR
 - [ ] Aplicar todas las migraciones al remoto: `supabase db push` y `supabase migration list` sin pendientes.
 - [ ] Desplegar `main` en Vercel.
 - [ ] Recorrer el checklist de abajo en **producción** con datos reales del dueño (al menos 2 tarjetas reales).
-- [ ] Actualizar `docs/PRD.md`: marcar las preguntas abiertas resueltas y anotar las decisiones D1–D10 tomadas (con aprobación del dueño).
+- [ ] Actualizar `docs/PRD.md`: marcar las preguntas abiertas resueltas y anotar las decisiones D1–D14 tomadas (con aprobación del dueño).
 - [ ] Marcar todos los pasos como ✅ en `plans/README.md`.
 
 ## Checklist de aceptación del PRD
@@ -69,7 +69,9 @@ Confirmar que el MVP cumple todos los criterios de aceptación de F1–F8 del PR
 - [ ] Solo últimos 4 dígitos de tarjeta en la base.
 - [ ] Todas las tablas con RLS (Advisors de Supabase sin alertas de seguridad).
 - [ ] Tablero < 1,5 s en 4G (Lighthouse móvil).
-- [ ] 360 px y modo oscuro en todas las pantallas (checklist del paso 17).
+- [ ] 360 px y modo oscuro en todas las pantallas (checklist y aprobación del dueño del paso 19).
+- [ ] La UI solo usa colores, radios y estilos de texto de `app/globals.css` (`pnpm lint` con `check-design` en verde).
+- [ ] "Al Corte" escrito correctamente en la UI, títulos de pestaña, correos de Supabase y `README.md`; `al-corte` en `package.json`, Vercel y Supabase.
 - [ ] Exportación JSON/CSV funcionando en producción.
 - [ ] Sin `.env*` con valores reales en el historial de git (`git log --all -- '*.env*'`).
 
