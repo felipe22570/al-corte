@@ -1,10 +1,10 @@
 # Paso 03 — Proyecto Supabase remoto y despliegue en Vercel
 
 - **Hito PRD:** H0 (parte 3 de 3) — **H0 termina aquí**
-- **Estado:** ⬜ Pendiente
-- **Inicio:** —
-- **Fin:** —
-- **Commit:** —
+- **Estado:** ✅ Terminado y verificado
+- **Inicio:** 2026-11-09
+- **Fin:** 2026-11-09
+- **Commit:** a7ff0f9
 - **Depende de:** 02
 
 ## Objetivo
@@ -21,18 +21,18 @@ Este paso tiene varias acciones **manuales del dueño** (crear cuentas, proyecto
 
 ## Tareas
 
-- [ ] (Dueño) Crear el proyecto en Supabase con el nombre `al-corte`. Región recomendada: la más cercana a Colombia disponible (p. ej. `us-east-1`).
-- [ ] (Dueño) En el dashboard de Supabase → Authentication → Providers/Settings: **desactivar "Allow new users to sign up"**.
-- [ ] (Dueño) Crear el usuario dueño en Authentication → Users → Add user (auto confirm).
-- [ ] `supabase login` y `supabase link --project-ref <ref>`.
-- [ ] `supabase db push` (aún sin migraciones de negocio; confirma que el enlace funciona).
-- [ ] (Dueño) Crear el repo remoto `al-corte` en GitHub y hacer push de `main`.
-- [ ] (Dueño) Importar el repo en Vercel (plan Hobby) como proyecto `al-corte` (URL esperada `al-corte.vercel.app` o la que asigne Vercel si está ocupada; anotarla en "Notas de progreso"). Variables de entorno en Production y Preview:
+- [x] (Dueño) Crear el proyecto en Supabase con el nombre `al-corte`. Región recomendada: la más cercana a Colombia disponible (p. ej. `us-east-1`).
+- [x] (Dueño) En el dashboard de Supabase → Authentication → Providers/Settings: **desactivar "Allow new users to sign up"**.
+- [x] (Dueño) Crear el usuario dueño en Authentication → Users → Add user (auto confirm).
+- [x] `supabase login` y `supabase link --project-ref <ref>`.
+- [x] `supabase db push` (aún sin migraciones de negocio; confirma que el enlace funciona).
+- [x] (Dueño) Crear el repo remoto `al-corte` en GitHub y hacer push de `main`.
+- [x] (Dueño) Importar el repo en Vercel (plan Hobby) como proyecto `al-corte` (URL esperada `al-corte.vercel.app` o la que asigne Vercel si está ocupada; anotarla en "Notas de progreso"). Variables de entorno en Production y Preview:
   - `NEXT_PUBLIC_SUPABASE_URL`
   - `NEXT_PUBLIC_SUPABASE_ANON_KEY` (o `..._PUBLISHABLE_KEY`)
   - Ninguna `service_role` en el MVP.
-- [ ] (Dueño) En Supabase → Authentication → URL Configuration: `Site URL` = URL de producción de Vercel; agregar `https://<app>.vercel.app/auth/callback` y el patrón de previews si se usa magic link.
-- [ ] Documentar en `README.md` el flujo de despliegue: push a `main` → Vercel; `supabase db push` para migraciones remotas.
+- [x] (Dueño) En Supabase → Authentication → URL Configuration: `Site URL` = URL de producción de Vercel; agregar `https://<app>.vercel.app/auth/callback` y el patrón de previews si se usa magic link.
+- [x] Documentar en `README.md` el flujo de despliegue: push a `main` → Vercel; `supabase db push` para migraciones remotas.
 - [ ] (Dueño) En Supabase → Authentication → Emails: asunto y remitente de los correos de magic link con el nombre "Al Corte".
 - [ ] Opcional: conectar el servidor MCP de Supabase al agente (solo contra el proyecto local o de desarrollo).
 
@@ -63,11 +63,11 @@ curl -s -X POST "https://<ref>.supabase.co/auth/v1/signup" \
 
 Comprobaciones manuales en la URL de producción:
 
-- [ ] Sin sesión, `/` redirige a `/login`.
-- [ ] El login con el usuario dueño funciona y muestra su email.
-- [ ] Cerrar sesión funciona.
-- [ ] El build de Vercel no muestra warnings de variables faltantes.
-- [ ] En Vercel → Settings → Environment Variables no hay ninguna variable `NEXT_PUBLIC_*SERVICE*`.
+- [x] Sin sesión, `/` redirige a `/movimientos`, que redirige a `/login`.
+- [x] El login con el usuario dueño funciona y muestra su email.
+- [x] Cerrar sesión funciona.
+- [x] El build de Vercel no muestra warnings de variables faltantes.
+- [x] En Vercel → Settings → Environment Variables no hay ninguna variable `NEXT_PUBLIC_*SERVICE*`.
 
 ## Criterios de terminado
 
@@ -77,4 +77,4 @@ Comprobaciones manuales en la URL de producción:
 
 ## Notas de progreso
 
-<!-- Fecha — nota. Anotar aquí la URL de producción y el project ref (no las claves). -->
+2026-11-09 — Proyecto Supabase remoto enlazado: `jwkqszgtdrhwdxgwrydm`. Producción en Vercel: https://al-corte-three.vercel.app/. Verificado externamente: `/` redirige a `/movimientos`, `/login` carga y `/movimientos` redirige a `/login` sin sesión. GitHub `main` contiene `a7ff0f9`.
