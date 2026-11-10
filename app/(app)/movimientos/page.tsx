@@ -1,22 +1,9 @@
 import type { Metadata } from "next";
-import { Button } from "@/components/ui/button";
-import { signOut } from "@/lib/actions/auth";
-import { createClient } from "@/lib/supabase/server";
+import { List } from "lucide-react";
+import { EmptyState } from "@/components/empty-state";
+import { PageHeader } from "@/components/page-header";
 
 export const metadata: Metadata = { title: "Movimientos" };
-
-export default async function MovimientosPage() {
-  const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
-
-  return (
-    <main className="mx-auto flex min-h-screen w-full max-w-2xl flex-col justify-center p-6">
-      <h1 className="font-display text-title">Al Corte</h1>
-      <p className="mt-2 text-muted-foreground">Sesión iniciada. El historial de movimientos estará disponible en el hito H7.</p>
-      <p className="mt-4 text-small text-muted-foreground">{user?.email}</p>
-      <form action={signOut} className="mt-4">
-        <Button type="submit" variant="outline">Cerrar sesión</Button>
-      </form>
-    </main>
-  );
+export default function MovimientosPage() {
+  return <><PageHeader title="Movimientos" subtitle="Consulta tus gastos y pagos." /><EmptyState icon={List} text="Aún no tienes movimientos registrados." /></>;
 }

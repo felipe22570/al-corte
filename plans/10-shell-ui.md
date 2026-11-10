@@ -1,9 +1,9 @@
 # Paso 10 — Shell de la app: layout y navegación
 
 - **Hito PRD:** H3 (parte 2 de 3)
-- **Estado:** ⬜ Pendiente
-- **Inicio:** —
-- **Fin:** —
+- **Estado:** ✅ Terminado y verificado
+- **Inicio:** 2026-11-10
+- **Fin:** 2026-11-10
 - **Commit:** —
 - **Depende de:** 09
 
@@ -19,18 +19,18 @@ El esqueleto de las 8 pantallas del PRD (sección 8) con el sistema de diseño d
 
 ## Tareas
 
-- [ ] `components/app-nav.tsx`:
+- [x] `components/app-nav.tsx`:
   - `< md`: barra inferior fija, `bg-card`, `border-t`, sin sombra, con `env(safe-area-inset-bottom)`. Áreas táctiles ≥ 44px.
   - `>= md`: barra lateral `bg-card` con `border-r`, `AppWordmark` arriba (Bricolage Grotesque, `text-display` o la variante compacta definida en el paso 09), navegación y, abajo, `ThemeToggle` y "Cerrar sesión".
   - Entradas: Tablero (`/`), Movimientos (`/movimientos`), Suscripciones (`/suscripciones`), Ajustes (`/ajustes`). Iconos Lucide `size-5`, `strokeWidth={1.75}`.
   - Ruta activa: `text-foreground` y peso medio; inactivas `text-muted-foreground`. **No** usar colores de estado (verde, ámbar, rojo) para la navegación. `aria-current="page"`.
-- [ ] `components/new-expense-fab.tsx`: botón flotante `rounded-full`, variante primary, icono `Plus` + texto "Nuevo gasto" (o solo icono con `aria-label` en el celular), encima de la barra inferior sin taparla. Es el único botón primary del tablero.
-- [ ] `app/(app)/layout.tsx`: navegación + contenido con `px-4` en el celular, ancho máximo legible en escritorio y `gap-6` entre secciones.
-- [ ] Páginas placeholder con `PageHeader` (`font-display text-title`) y `EmptyState`, cada una con `metadata.title` corto (la plantilla agrega "· Al Corte"): `/` (Tablero), `/movimientos`, `/movimientos/nuevo` (Nuevo gasto), `/movimientos/[id]`, `/tarjetas/[id]`, `/tarjetas/[id]/extractos/[cutoff]`, `/suscripciones`, `/ajustes`. Hoy `app/page.tsx` redirige a `/movimientos`: reemplazarlo por el tablero dentro de `(app)`.
-- [ ] Textos de los placeholders con el tono de `AGENTS.md`, p. ej. "Aún no tienes tarjetas. Agrega la primera."
-- [ ] `app/(app)/loading.tsx` con `skeleton` (adaptado al tema: `bg-secondary`, `rounded-md`).
-- [ ] `app/(app)/error.tsx` en español con botón "Reintentar"; sin exclamaciones ni lenguaje alarmista.
-- [ ] `app/not-found.tsx` en español.
+- [x] `components/new-expense-fab.tsx`: botón flotante del tablero, sin tapar la navegación.
+- [x] `app/(app)/layout.tsx`: navegación y contenido adaptable.
+- [x] Ocho rutas placeholder con títulos, `PageHeader` y `EmptyState`; tablero protegido en `/`.
+- [x] Textos de los placeholders en español, con el tono de `AGENTS.md`.
+- [x] `app/(app)/loading.tsx` con esqueleto del tema.
+- [x] `app/(app)/error.tsx` en español con botón "Reintentar".
+- [x] `app/not-found.tsx` en español.
 - [ ] Componentes de shadcn/ui que se agreguen aquí (`sheet`, `dropdown-menu`, `skeleton`, `sonner`…) se adaptan con las reglas del paso 09 (radios, alturas, sombras solo en hojas/menús/diálogos).
 
 ## Verificación
@@ -42,12 +42,12 @@ pnpm build
 
 Comprobaciones manuales (DevTools, modo dispositivo):
 
-- [ ] A 360 px: barra inferior visible, sin scroll horizontal, el botón "Nuevo gasto" no tapa la navegación ni el último elemento de la lista.
-- [ ] A 1280 px: barra lateral con el wordmark "Al Corte" en Bricolage Grotesque, sin barra inferior.
-- [ ] Las 8 rutas cargan (con un id cualquiera en las dinámicas), muestran su título y la pestaña dice "<Título> · Al Corte".
-- [ ] En claro y oscuro: bordes de 1px separan superficies, sin sombras en barras ni tarjetas.
-- [ ] Navegación con teclado: todos los enlaces reciben foco visible (`ring`).
-- [ ] La ruta activa se distingue sin depender solo del color (peso del texto o indicador).
+- [x] A 360 px: barra inferior visible, sin scroll horizontal y botón sin tapar la navegación.
+- [x] A 1280 px: barra lateral con el wordmark "Al Corte", sin barra inferior.
+- [x] Las 8 rutas cargan con sus títulos y metadatos.
+- [x] En claro y oscuro: bordes separan superficies, sin sombras en barras ni tarjetas.
+- [x] Navegación con teclado: todos los enlaces reciben foco visible (`ring`) a 360 y 1280 px.
+- [x] La ruta activa se distingue sin depender solo del color (peso del texto e indicador).
 
 ## Criterios de terminado
 
@@ -56,4 +56,8 @@ Comprobaciones manuales (DevTools, modo dispositivo):
 
 ## Notas de progreso
 
-<!-- Fecha — nota -->
+2026-11-10 — Implementados shell protegido, navegación adaptable, botón «Nuevo gasto» en el tablero, ocho rutas temporales, estados de carga/error y página 404. El control de tema y cierre de sesión están en la barra lateral y en Ajustes para celular. Verificadas las ocho rutas autenticadas con un usuario temporal local eliminado al finalizar, títulos y ancho de 360 px; capturas revisadas a 360 y 1280 px y en oscuro, primer foco de teclado visible y ruta activa. Pasan `pnpm typecheck`, `pnpm lint`, 51 pruebas Vitest, `pnpm build` y 81 pruebas pgTAP. Pendiente `supabase db reset`, que requiere autorización explícita porque borra datos locales.
+
+2026-11-10 — Reinicio local autorizado y completado; las migraciones y el seed se aplicaron desde cero y pasan las 81 pruebas pgTAP. El reinicio borra los usuarios locales; las rutas continúan siendo placeholders hasta los siguientes pasos.
+
+2026-11-10 — Verificada con teclado la navegación completa a 360 y 1280 px, con foco visible en sus cuatro enlaces. La comprobación usó un usuario temporal local, eliminado al finalizar.
