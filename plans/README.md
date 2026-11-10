@@ -34,7 +34,7 @@ Prompt sugerido para el agente al iniciar un paso:
 | 04 | [Dominio: fechas y asignación al extracto (R1)](04-dominio-fechas-extractos.md) | H1 | ✅ | 4dc3c0e |
 | 05 | [Dominio: dinero, tasas, cuotas y avances (R2, R3)](05-dominio-dinero-cuotas.md) | H1 | ✅ | 3f1ab5d |
 | 06 | [Dominio: suscripciones y totales (R4, R5, R6)](06-dominio-suscripciones-totales.md) | H1 | ✅ | |
-| 07 | [Base de datos: tablas, restricciones e índices](07-db-esquema.md) | H2 | ⬜ | |
+| 07 | [Base de datos: tablas, restricciones e índices](07-db-esquema.md) | H2 | ✅ | |
 | 08 | [Base de datos: RLS, funciones SQL, vistas y tipos](08-db-rls-vistas-tipos.md) | H2 | ⬜ | |
 | 09 | [Sistema de diseño de Al Corte](09-sistema-diseno.md) | H3 | ⬜ | |
 | 10 | [Shell de la app: layout y navegación](10-shell-ui.md) | H3 | ⬜ | |
@@ -49,7 +49,7 @@ Prompt sugerido para el agente al iniciar un paso:
 | 19 | [Revisión y pulido del diseño visual](19-revision-diseno.md) | H8 | ⬜ | |
 | 20 | [Validación final del MVP](20-validacion-mvp.md) | — | ⬜ | |
 
-Paso actual: **07** (H2: tablas, restricciones e índices).
+Paso actual: **08** (H2: políticas RLS, funciones SQL, vistas y tipos).
 
 El paso 09 solo depende del 02: se puede adelantar justo después del 03 para que el login y todo lo que siga nazcan con el diseño correcto.
 
