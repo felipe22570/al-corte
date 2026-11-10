@@ -5,6 +5,9 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { AppWordmark } from "@/components/app-wordmark";
+import { ThemeToggle } from "@/components/theme-toggle";
+import { APP_TAGLINE } from "@/lib/brand";
 import { signIn, signInWithMagicLink } from "@/lib/actions/auth";
 import { createClient } from "@/lib/supabase/server";
 
@@ -23,10 +26,11 @@ export default async function LoginPage({ searchParams }: LoginPageProps) {
   const { error, message } = await searchParams;
 
   return (
-    <main className="flex min-h-screen items-center justify-center bg-muted/40 p-4">
+    <main className="flex min-h-screen flex-col items-center justify-center gap-6 bg-background p-4">
+      <div className="w-full max-w-sm space-y-2"><AppWordmark /><p className="text-body text-muted-foreground">{APP_TAGLINE}</p></div>
       <Card className="w-full max-w-sm">
         <CardHeader>
-          <CardTitle>Al Corte</CardTitle>
+          <CardTitle>Inicia sesión</CardTitle>
           <CardDescription>Ingresa para consultar tus tarjetas de crédito.</CardDescription>
         </CardHeader>
         <CardContent>
@@ -42,10 +46,11 @@ export default async function LoginPage({ searchParams }: LoginPageProps) {
               <Input id="password" name="password" type="password" autoComplete="current-password" />
             </div>
             <Button className="w-full" type="submit" formAction={signIn}>Ingresar</Button>
-            <Button className="w-full" type="submit" variant="outline" formAction={signInWithMagicLink}>Enviar enlace mágico</Button>
+            <Button className="w-full" type="submit" variant="outline" formAction={signInWithMagicLink}>Enviarme un enlace</Button>
           </form>
         </CardContent>
       </Card>
+      <ThemeToggle />
     </main>
   );
 }

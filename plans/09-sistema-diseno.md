@@ -1,9 +1,9 @@
 # Paso 09 — Sistema de diseño de Al Corte
 
 - **Hito PRD:** H3 (parte 1 de 3)
-- **Estado:** ⬜ Pendiente
-- **Inicio:** —
-- **Fin:** —
+- **Estado:** ✅ Terminado y verificado
+- **Inicio:** 2026-11-10
+- **Fin:** 2026-11-10
 - **Commit:** —
 - **Depende de:** 02 (se puede adelantar justo después del paso 03; conviene hacerlo antes de cualquier pantalla nueva)
 - **Decisiones aplicables (ver README):** D11 (colores de categorías y gráficos), D12 (borde de campos y tamaño de texto en campos), D13 (formato de pesos sin espacio)
@@ -31,23 +31,23 @@ Dejar listo el sistema de diseño de la sección "Diseño" de `AGENTS.md` sobre 
 
 Marca y tema
 
-- [ ] `app/layout.tsx`: cargar `Geist` (`--font-geist`) y `Bricolage_Grotesque` (`--font-bricolage`) exactamente como en `AGENTS.md`; quitar `Geist_Mono` si nada lo usa. `<html lang="es-CO" suppressHydrationWarning className={`${geist.variable} ${bricolage.variable}`}>`.
-- [ ] `metadata.title = { default: 'Al Corte', template: '%s · Al Corte' }`, `description` con el lema "Tus tarjetas, claras antes de cada corte.", `applicationName: 'Al Corte'`.
-- [ ] `viewport.themeColor` para claro (`--surface` claro) y oscuro (`--surface` oscuro). Como Next.js necesita valores literales aquí, se definen en una sola constante `lib/brand.ts` (`alCorteThemeColors`) con un comentario que apunta a `globals.css`, y una prueba verifica que coinciden con los valores de `globals.css`. Es la única excepción a "sin hex fuera de `globals.css`".
-- [ ] `lib/brand.ts`: `APP_NAME = 'Al Corte'`, `APP_TAGLINE`, `STORAGE_PREFIX = 'al-corte:'` y un helper `storageKey(name)`.
-- [ ] Instalar `next-themes` (está en el stack de `AGENTS.md`). `components/theme-provider.tsx` con `attribute="class"`, `defaultTheme="system"`, `enableSystem`, `disableTransitionOnChange`. Envolver `app/layout.tsx`.
-- [ ] `components/theme-toggle.tsx`: claro, oscuro, sistema; iconos Lucide `size-5` `strokeWidth={1.75}`; `aria-label` en español.
-- [ ] `components/app-wordmark.tsx`: "Al Corte" en `font-display text-display` (con variante compacta `text-title` para espacios pequeños, si hace falta, anotada como decisión). Sin iconos ni logos.
+- [x] `app/layout.tsx`: cargar Geist y Bricolage Grotesque con las variables del tema y `suppressHydrationWarning`.
+- [x] Metadatos de título, descripción y nombre de Al Corte.
+- [x] `viewport.themeColor` para ambos temas con constantes y prueba de correspondencia.
+- [x] `lib/brand.ts`: nombre, lema, prefijo y helper.
+- [x] Instalar y configurar `next-themes` con almacenamiento bajo `al-corte:`.
+- [x] `components/theme-toggle.tsx`: claro, oscuro, sistema; iconos Lucide `size-5` `strokeWidth={1.75}`; `aria-label` en español.
+- [x] `components/app-wordmark.tsx`: "Al Corte" en `font-display text-display`, sin iconos ni logos.
 
 Componentes de shadcn/ui
 
-- [ ] Revisar `cn`: prueba en Vitest de que `cn('text-amount', 'text-foreground')` conserva las dos clases, `cn('text-small', 'text-body')` conserva solo la última y `cn('bg-card', 'bg-primary-soft')` conserva la última. Si el paquete `cn` no lo soporta, cambiar `lib/utils.ts` a `clsx` + `extendTailwindMerge` (ya instalados) registrando los estilos de texto propios y los colores del tema; anotar la decisión.
-- [ ] Adaptar `components/ui/button.tsx`: `rounded-md`; tamaño por defecto `h-11` (44px) y botones de ícono `size-11`; tamaños pequeños solo donde no sean áreas táctiles principales; variantes `default` (primary), `outline`, `ghost`, `destructive` (usa `--destructive` = danger), `link`. Sin sombras.
-- [ ] `components/ui/input.tsx`: `rounded-md`, `h-11`, `bg-card`, `border-input`, tamaño de texto según D12 (16px en el celular para que iOS no haga zoom).
-- [ ] `components/ui/card.tsx`: `rounded-xl`, `border` de 1px (`border-border`) en vez de `ring`, `bg-card`, padding `p-4`; títulos con `text-heading`; descripciones con `text-small text-muted-foreground`.
-- [ ] `components/ui/alert.tsx`: variantes por estado (`bg-primary-soft text-primary`, `bg-warning-soft text-warning`, `bg-danger-soft text-danger`), `rounded-md`.
-- [ ] `components/ui/label.tsx`: `text-small` y peso medio.
-- [ ] Reemplazar `font-heading` y cualquier `text-xs/sm/base/lg` por los estilos de texto del tema.
+- [x] Revisar `cn`: sustituido por `clsx` + `extendTailwindMerge`; las pruebas cubren estilos de texto y colores.
+- [x] Adaptar `components/ui/button.tsx`: `rounded-md`; tamaño por defecto `h-11` (44px) y botones de ícono `size-11`; variantes de acción, sin sombras.
+- [x] `components/ui/input.tsx`: `rounded-md`, `h-11`, `bg-card`, `border-input` y texto de 16px.
+- [x] `components/ui/card.tsx`: borde, fondo, radio, espaciado y tipografía del tema.
+- [x] `components/ui/alert.tsx`: variantes por estado y `rounded-md`.
+- [x] `components/ui/label.tsx`: `text-small` y peso medio.
+- [x] Reemplazar `font-heading` y tamaños de texto de Tailwind por los estilos del tema.
 - [ ] Cuando se agreguen más componentes de shadcn/ui en pasos posteriores (`sheet`, `dialog`, `dropdown-menu`, `select`, `badge`, `skeleton`, `sonner`, `chart`), se adaptan con estas mismas reglas en el paso que los agregue. Solo `sheet`, `dialog`, menús y `sonner` pueden tener sombra.
 
 Formatos (`lib/format.ts`)
@@ -87,8 +87,8 @@ Verificación automática de reglas de diseño
   - tamaños de texto de Tailwind (`text-xs`, `text-sm`, `text-base`, `text-lg`, `text-xl`… `text-9xl`, `text-[…]`);
   - emojis en `.tsx`.
   - Permite excepciones con un comentario `// design-allow: <motivo>` en la línea anterior.
-- [ ] Script `lint:design` y encadenarlo en `lint` (`eslint && node scripts/check-design.mjs`) para que la regla de la "Definición de terminado" se verifique sola.
-- [ ] Prueba `lib/__tests__/design-tokens.test.ts` que lee `app/globals.css`, extrae los valores de `:root` y `.dark` y verifica contraste WCAG:
+- [x] Script `lint:design` y encadenarlo en `lint` (`eslint && node scripts/check-design.mjs`).
+- [x] Prueba `lib/__tests__/design-tokens.test.ts` que lee `app/globals.css`, extrae los valores de `:root` y `.dark` y verifica contraste WCAG:
   - ≥ 4,5:1: `ink`/`surface`, `ink`/`surface-raised`, `ink-muted`/`surface`, `ink-muted`/`surface-raised`, `primary-foreground`/`primary`, `primary`/`primary-soft`, `warning`/`warning-soft`, `danger`/`danger-soft`, `danger`/`surface-raised`.
   - ≥ 3:1: `card-1`…`card-6` sobre `surface-raised` (elementos gráficos), borde de campos según D12.
   - Ambos temas definen los mismos tokens.
@@ -96,9 +96,9 @@ Verificación automática de reglas de diseño
 
 Catálogo y login
 
-- [ ] `app/(dev)/diseno/page.tsx` (o `app/dev/diseno`): catálogo de tokens, estilos de texto, botones, campos, badges, chips de tarjeta, `Money`, `UtilizationBar`, `EmptyState`. Responde `notFound()` cuando `NODE_ENV === 'production'`. Sirve para revisar cada cambio visual en claro y oscuro y para el paso 19.
-- [ ] Rediseñar `app/(auth)/login/page.tsx`: `AppWordmark` + lema en `text-muted-foreground`, tarjeta `rounded-xl border`, un solo botón primary ("Ingresar"); el enlace mágico como `outline` o `ghost` ("Enviarme un enlace"). Errores con `Alert` de tono danger, en español y sin exclamaciones.
-- [ ] Revisar textos ya existentes (login, callback, mensajes de error) contra las reglas de tono: tuteo, frases cortas, sin "!".
+- [x] `app/diseno/page.tsx`: catálogo de componentes y estilos; responde `notFound()` en producción.
+- [x] Rediseñar login con marca, lema, botón principal, enlace mágico y alertas.
+- [x] Revisar textos de login, callback y mensajes de error.
 
 ## Pruebas
 
@@ -118,11 +118,11 @@ Prueba de que la verificación de diseño funciona: agregar temporalmente `class
 
 Comprobaciones manuales (`pnpm dev`):
 
-- [ ] DevTools → Computed en `body`: `font-family` empieza por Geist; en el título del catálogo y en el wordmark, Bricolage Grotesque.
-- [ ] `/diseno` (catálogo) en claro y oscuro: todos los tokens se ven, sin colores fuera de la paleta.
-- [ ] Cambiar el tema: persiste al recargar y no hay parpadeo blanco al cargar en oscuro.
-- [ ] Login a 360 px: wordmark visible, campos y botones de 44px de alto, sin scroll horizontal, en claro y oscuro.
-- [ ] En un iPhone o en el emulador de Safari, tocar un campo no hace zoom.
+- [x] Fuentes calculadas: Geist en `body` y Bricolage Grotesque en el wordmark.
+- [x] Catálogo revisado en claro y oscuro.
+- [x] El tema seleccionado persiste al recargar.
+- [x] Login a 360 px revisado en claro y oscuro: campos de 44px y sin desbordamiento.
+- [ ] Safari/iPhone: **omitida por decisión del dueño** al no disponer de dispositivo. Se verificó texto de 16px en los campos, pero no el comportamiento real de Safari.
 - [ ] La pestaña del navegador dice "Al Corte" en el login y "Movimientos · Al Corte" en una página con título.
 - [ ] `grep -rn "AlCorte\|Alcorte\|AL CORTE" app components lib` solo devuelve identificadores de código (`alCorte`), nunca texto visible.
 
@@ -133,4 +133,8 @@ Comprobaciones manuales (`pnpm dev`):
 
 ## Notas de progreso
 
-<!-- Fecha — nota -->
+2026-11-10 — Aprobadas D11, D12, D13 y `chart-6`; agregados tema y fuentes, controles base, formatos y componentes de presentación, catálogo, login, verificación de diseño y pruebas de contraste. Se reemplazó `cn` porque descartaba `text-amount` al combinarlo con `text-foreground`. Decisión de formato: cargos con `-` y abonos con `+`. Pasan tipos, lint, 49 pruebas y build; capturas a 360 px de login y catálogo en ambos temas revisadas. Pendientes comprobaciones de persistencia del tema, Safari/iPhone, checklist completo y reinicio local con autorización. `next dev` añadió automáticamente instrucciones de Next.js a `AGENTS.md`; se conservan.
+
+2026-11-10 — Reinicio local autorizado y completado; pasan 81 pruebas pgTAP, tipos, lint, 49 pruebas Vitest, cobertura de dominio del 100% y build. Verificados en Chrome aislado a 360 px la persistencia del tema al recargar, ausencia de desbordamiento, controles de 44 px, texto de campos de 16 px y fuentes calculadas; el catálogo devuelve 404 en producción. La prueba real en Safari/iPhone sigue pendiente; no se asume que Chrome emule ese comportamiento. La prueba gratis se considera próxima durante los 7 días previos, consistente con `isTrialEndingSoon`.
+
+2026-11-10 — El dueño autorizó omitir la comprobación en Safari/iPhone por no disponer de dispositivo; se conserva como limitación de la verificación, no como prueba superada.

@@ -70,13 +70,14 @@
   --accent: var(--primary-soft);
   --accent-foreground: var(--ink);
   --destructive: var(--danger);
-  --input: var(--border);
+  --input: #8a8e86;
   --ring: var(--primary);
   --chart-1: var(--card-1);
   --chart-2: var(--card-2);
   --chart-3: var(--card-3);
   --chart-4: var(--card-4);
   --chart-5: var(--card-5);
+  --chart-6: var(--card-6);
   --sidebar: var(--surface-raised);
   --sidebar-foreground: var(--ink);
   --sidebar-primary: var(--primary);
@@ -95,6 +96,7 @@
   --ink: #eceeea;
   --ink-muted: #a3ada8;
   --border: #2a322e;
+  --input: #78827c;
 
   --primary: #3dbe8b;
   --primary-soft: #12352a;
@@ -151,6 +153,7 @@
   --color-chart-3: var(--chart-3);
   --color-chart-4: var(--chart-4);
   --color-chart-5: var(--chart-5);
+  --color-chart-6: var(--chart-6);
   --color-sidebar: var(--sidebar);
   --color-sidebar-foreground: var(--sidebar-foreground);
   --color-sidebar-primary: var(--sidebar-primary);
@@ -207,6 +210,12 @@
 @utility text-body {
   font-size: 15px;
   line-height: 22px;
+  font-weight: 400;
+}
+
+@utility text-input {
+  font-size: 16px;
+  line-height: 24px;
   font-weight: 400;
 }
 

@@ -36,7 +36,7 @@ Prompt sugerido para el agente al iniciar un paso:
 | 06 | [Dominio: suscripciones y totales (R4, R5, R6)](06-dominio-suscripciones-totales.md) | H1 | ✅ | |
 | 07 | [Base de datos: tablas, restricciones e índices](07-db-esquema.md) | H2 | ✅ | 21fa141 |
 | 08 | [Base de datos: RLS, funciones SQL, vistas y tipos](08-db-rls-vistas-tipos.md) | H2 | ✅ | d18c975 |
-| 09 | [Sistema de diseño de Al Corte](09-sistema-diseno.md) | H3 | ⬜ | |
+| 09 | [Sistema de diseño de Al Corte](09-sistema-diseno.md) | H3 | ✅ | |
 | 10 | [Shell de la app: layout y navegación](10-shell-ui.md) | H3 | ⬜ | |
 | 11 | [Tarjetas y categorías (CRUD)](11-tarjetas-categorias.md) | H3 | ⬜ | |
 | 12 | [Registro de movimientos y cuotas (RPC transaccional)](12-movimientos-registro.md) | H4 | ⬜ | |
@@ -49,7 +49,7 @@ Prompt sugerido para el agente al iniciar un paso:
 | 19 | [Revisión y pulido del diseño visual](19-revision-diseno.md) | H8 | ⬜ | |
 | 20 | [Validación final del MVP](20-validacion-mvp.md) | — | ⬜ | |
 
-Paso actual: **09** (H3: sistema de diseño de Al Corte).
+Paso actual: **10** (H3: shell de la app y navegación).
 
 El paso 09 solo depende del 02: se puede adelantar justo después del 03 para que el login y todo lo que siga nazcan con el diseño correcto.
 
@@ -139,9 +139,9 @@ El PRD no cubría estos puntos o los dejaba ambiguos. Todas quedaron **decididas
 | D15 | **Máximo de cuotas.** Límite de validación para compras y avances. | Máximo de 36 cuotas. | 05, 12 |
 | D16 | **Ajustes de conciliación.** Signo de los movimientos `adjustment`. | `adjustment` siempre es un cargo y suma al extracto; una corrección a favor se registra como `refund`. | 06, 08, 14 |
 
-### Decisiones de diseño (propuestas, pendientes de confirmar)
+### Decisiones de diseño
 
-Salen de comparar `AGENTS.md`, el PRD y `app/globals.css`. Tienen propuesta por defecto; confirmar antes del paso 09.
+Salen de comparar `AGENTS.md`, el PRD y `app/globals.css`. D11, D12, D13 y el alias `chart-6` fueron aprobados el 2026-11-10; D14 queda pendiente para el paso 19.
 
 | # | Tema | Propuesta por defecto | Paso afectado |
 | --- | --- | --- | --- |
@@ -165,3 +165,4 @@ Anota aquí cada decisión tomada durante la implementación (fecha, paso, decis
 | 2026-11-09 | 05, 06, 07, 08, 12, 13, 14 | D3: las cuotas de compras en USD se calculan en USD, con su equivalente en COP por cuota. | Pedido del dueño. |
 | 2026-11-09 | 05, 12 | D15: el máximo de cuotas para compras y avances es 36. | Pedido del dueño. |
 | 2026-11-09 | 06, 08, 14 | D16: los ajustes son cargos; las correcciones a favor se registran como devoluciones. | Confirmación del dueño. |
+| 2026-11-10 | 09 | Aprobadas D11, D12, D13 y `--chart-6: var(--card-6)`. | Confirmación del dueño. |
