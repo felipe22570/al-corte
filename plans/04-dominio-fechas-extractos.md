@@ -1,9 +1,9 @@
 # Paso 04 — Dominio: fechas y asignación al extracto (R1)
 
 - **Hito PRD:** H1 (parte 1 de 3)
-- **Estado:** ⬜ Pendiente
-- **Inicio:** —
-- **Fin:** —
+- **Estado:** ✅ Terminado y verificado
+- **Inicio:** 2026-11-09
+- **Fin:** 2026-11-09
 - **Commit:** —
 - **Depende de:** 01
 - **Decisiones aplicables (decididas, ver README):** D7 (fecha de pago "posterior" estricta)
@@ -53,12 +53,12 @@ Toda la aritmética usa enteros año/mes/día; no se construyen `Date` locales.
 
 ## Tareas
 
-- [ ] Instalar `decimal.js`, `date-fns`, `date-fns-tz` (si `date-fns-tz` no es compatible con la versión de `date-fns`, anotarlo y usar la alternativa oficial `@date-fns/tz`, avisando del cambio respecto a `AGENTS.md`).
-- [ ] Borrar `smoke.test.ts`.
-- [ ] Escribir `lib/domain/__tests__/dates.test.ts` y `statements.test.ts` con los casos de abajo (deben fallar al principio).
-- [ ] Implementar `dates.ts` y `statements.ts` hasta que pasen.
-- [ ] Activar el umbral de cobertura del 100% para `lib/domain/**` en `vitest.config.ts`.
-- [ ] Validar entradas: `cutoffDay`/`paymentDay` fuera de 1–31 o fecha inválida → lanzan error con mensaje claro (y se prueba).
+- [x] Instalar `decimal.js`, `date-fns`, `date-fns-tz` (si `date-fns-tz` no es compatible con la versión de `date-fns`, anotarlo y usar la alternativa oficial `@date-fns/tz`, avisando del cambio respecto a `AGENTS.md`).
+- [x] Borrar `smoke.test.ts`.
+- [x] Escribir `lib/domain/__tests__/dates.test.ts` y `statements.test.ts` con los casos de abajo (deben fallar al principio).
+- [x] Implementar `dates.ts` y `statements.ts` hasta que pasen.
+- [x] Activar el umbral de cobertura del 100% para `lib/domain/**` en `vitest.config.mts`.
+- [x] Validar entradas: `cutoffDay`/`paymentDay` fuera de 1–31 o fecha inválida → lanzan error con mensaje claro (y se prueba).
 
 ## Casos de prueba obligatorios
 
@@ -119,9 +119,9 @@ TZ=Pacific/Pago_Pago pnpm test
 
 Revisión manual:
 
-- [ ] Todos los casos de la tabla están presentes como pruebas con nombre descriptivo.
-- [ ] `grep -n "new Date(" lib/domain` solo aparece dentro de `todayInBogota` o en pruebas.
-- [ ] Ninguna función de `lib/domain` importa de `next`, `react` ni `@supabase`.
+- [x] Todos los casos de la tabla están presentes como pruebas con nombre descriptivo.
+- [x] `grep -n "new Date(" lib/domain` solo aparece dentro de `todayInBogota` o en pruebas.
+- [x] Ninguna función de `lib/domain` importa de `next`, `react` ni `@supabase`.
 
 ## Criterios de terminado
 
@@ -130,4 +130,4 @@ Revisión manual:
 
 ## Notas de progreso
 
-<!-- Fecha — nota -->
+2026-11-09 — Implementadas R1 y las fechas de negocio con aritmética por enteros. `date-fns-tz@3.2.0` es compatible con `date-fns@4.4.0`. Pasan `pnpm test`, `pnpm test:coverage` (100% en `dates.ts` y `statements.ts`), `pnpm typecheck`, `pnpm lint`, `TZ=Pacific/Kiritimati pnpm test`, `TZ=Pacific/Pago_Pago pnpm test` y `pnpm exec supabase db reset`.
