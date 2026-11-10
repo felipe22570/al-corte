@@ -1,36 +1,22 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Al Corte
 
-## Getting Started
+Aplicación personal para controlar tarjetas de crédito en Colombia.
 
-First, run the development server:
+## Desarrollo local
+
+1. Copia `.env.example` a `.env.local` y completa la URL y la clave publicable de Supabase.
+2. Configura en Supabase Auth la URL del sitio (`http://localhost:3000`) y la URL de redirección `http://localhost:3000/auth/callback`.
+3. Crea únicamente la cuenta dueña desde el panel de Supabase o con la CLI. El registro público está deshabilitado en `supabase/config.toml` para el entorno local.
+4. Instala dependencias con `pnpm install` y ejecuta `pnpm dev`.
+
+## Verificación
 
 ```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+pnpm lint
+pnpm typecheck
+pnpm test
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+## Supabase y Vercel
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
-
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
-
-## Learn More
-
-To learn more about Next.js, take a look at the following resources:
-
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
-
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+Para enlazar un proyecto remoto, instala la CLI de Supabase, inicia sesión y ejecuta `supabase link --project-ref <project-ref>`. Configura las dos variables de `.env.example` en Vercel antes de desplegar. No se debe configurar ni exponer una clave `service_role` en el navegador.
