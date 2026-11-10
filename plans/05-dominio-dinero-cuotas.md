@@ -4,7 +4,7 @@
 - **Estado:** ✅ Terminado y verificado
 - **Inicio:** 2026-11-09
 - **Fin:** 2026-11-09
-- **Commit:** —
+- **Commit:** 3f1ab5d
 - **Depende de:** 04
 - **Decisiones aplicables (decididas, ver README):** D3 (cuotas de compras en USD), D8 (avance a 1 cuota), D15 (máximo de 36 cuotas)
 
