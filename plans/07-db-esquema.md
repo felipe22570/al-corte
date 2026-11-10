@@ -4,7 +4,7 @@
 - **Estado:** ✅ Terminado y verificado
 - **Inicio:** 2026-11-10
 - **Fin:** 2026-11-10
-- **Commit:** —
+- **Commit:** 21fa141
 - **Depende de:** 02 (puede hacerse en paralelo con 04–06)
 - **Decisiones aplicables (decididas, ver README):** D1 (cuota de manejo automática → valor `system` en `source`), D9 (categorías iniciales), D3 (columnas `_cop` en `installments`), D11 (categorías sin color)
 
