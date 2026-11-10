@@ -37,7 +37,7 @@ Prompt sugerido para el agente al iniciar un paso:
 | 07 | [Base de datos: tablas, restricciones e índices](07-db-esquema.md) | H2 | ✅ | 21fa141 |
 | 08 | [Base de datos: RLS, funciones SQL, vistas y tipos](08-db-rls-vistas-tipos.md) | H2 | ✅ | d18c975 |
 | 09 | [Sistema de diseño de Al Corte](09-sistema-diseno.md) | H3 | ✅ | f1d82af |
-| 10 | [Shell de la app: layout y navegación](10-shell-ui.md) | H3 | ✅ | |
+| 10 | [Shell de la app: layout y navegación](10-shell-ui.md) | H3 | ✅ | 7592082 |
 | 11 | [Tarjetas y categorías (CRUD)](11-tarjetas-categorias.md) | H3 | ⬜ | |
 | 12 | [Registro de movimientos y cuotas (RPC transaccional)](12-movimientos-registro.md) | H4 | ⬜ | |
 | 13 | [Detalle, edición y borrado de movimientos](13-movimientos-detalle-edicion.md) | H4 | ⬜ | |
