@@ -4,7 +4,7 @@
 - **Estado:** ✅ Terminado y verificado
 - **Inicio:** 2026-11-09
 - **Fin:** 2026-11-09
-- **Commit:** —
+- **Commit:** 4dc3c0e
 - **Depende de:** 01
 - **Decisiones aplicables (decididas, ver README):** D7 (fecha de pago "posterior" estricta)
 
