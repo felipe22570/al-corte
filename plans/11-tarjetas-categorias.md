@@ -4,7 +4,7 @@
 - **Estado:** ✅ Terminado y verificado
 - **Inicio:** 2026-11-10
 - **Fin:** 2026-11-10
-- **Commit:** —
+- **Commit:** d2fd29e
 - **Depende de:** 08, 10
 - **Decisiones aplicables (ver README):** D10 (cambio de día de corte), D11 (colores e iconos de categorías)
 
