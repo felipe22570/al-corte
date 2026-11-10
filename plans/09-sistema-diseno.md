@@ -4,7 +4,7 @@
 - **Estado:** ✅ Terminado y verificado
 - **Inicio:** 2026-11-10
 - **Fin:** 2026-11-10
-- **Commit:** —
+- **Commit:** f1d82af
 - **Depende de:** 02 (se puede adelantar justo después del paso 03; conviene hacerlo antes de cualquier pantalla nueva)
 - **Decisiones aplicables (ver README):** D11 (colores de categorías y gráficos), D12 (borde de campos y tamaño de texto en campos), D13 (formato de pesos sin espacio)
 
