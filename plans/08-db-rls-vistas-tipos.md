@@ -1,9 +1,9 @@
 # Paso 08 — Base de datos: RLS, funciones SQL, vistas y tipos
 
 - **Hito PRD:** H2 (parte 2 de 2) — **H2 termina aquí**
-- **Estado:** ⬜ Pendiente
-- **Inicio:** —
-- **Fin:** —
+- **Estado:** ✅ Terminado y verificado
+- **Inicio:** 2026-11-10
+- **Fin:** 2026-11-10
 - **Commit:** —
 - **Depende de:** 04, 06, 07
 - **Decisiones aplicables (decididas, ver README):** D1, D2, D3
@@ -43,13 +43,13 @@ Tipos:
 
 ## Tareas
 
-- [ ] Migraciones `enable_rls_policies`, `statement_functions`, `create_views`.
-- [ ] `supabase/tests/020-rls.test.sql`: crea usuario A y usuario B en `auth.users`; como A (`set local role authenticated; set local request.jwt.claims = '{"sub":"<A>","role":"authenticated"}'`) inserta tarjeta, extracto, movimiento, cuota y suscripción; como B verifica que **todos** los `select` devuelven 0 filas, que `update`/`delete` afectan 0 filas y que insertar con `user_id = A` falla; como `anon` no se puede leer nada. Incluir las vistas.
-- [ ] `supabase/tests/030-statement-functions.test.sql`: replica **los mismos casos** de `lib/domain/__tests__/statements.test.ts` (corte 15 mismo día/día siguiente, corte 31 en febrero normal y bisiesto, meses de 30 días, fecha de pago en el mes siguiente, cambio de año, D7).
-- [ ] `supabase/tests/040-views.test.sql`: con datos de ejemplo, `statement_totals` coincide con el cálculo del caso de totales del paso 06; `card_balances` coincide con el caso de cupo. Incluir una compra en USD a 3 cuotas (tabla de referencia del paso 05) y verificar que el extracto suma 141.640 COP en el primer corte, no 35,41.
-- [ ] `ensure_statement` llamado dos veces con el mismo corte devuelve el mismo id y no duplica cuota de manejo.
-- [ ] Generar `lib/database.types.ts`.
-- [ ] `supabase db push` al proyecto remoto (ya con RLS).
+- [x] Migraciones `enable_rls_policies`, `statement_functions`, `create_views`.
+- [x] `supabase/tests/020-rls.test.sql`: aislamiento de dos usuarios en lectura y escritura, inserciones con dueño ajeno, acceso anónimo y vistas.
+- [x] `supabase/tests/030-statement-functions.test.sql`: casos espejo de R1 y D7.
+- [x] `supabase/tests/040-views.test.sql`: totales por concepto, cupo D2 y compra en USD con cuota de 141.640 COP.
+- [x] `ensure_statement` llamado dos veces con el mismo corte devuelve el mismo id y no duplica cuota de manejo.
+- [x] Generar `lib/database.types.ts`.
+- [x] `supabase db push` al proyecto remoto (ya con RLS).
 
 ## Riesgos
 
@@ -69,8 +69,8 @@ supabase migration list                           # remoto al día
 
 Comprobación de seguridad en Studio → Advisors (o `supabase inspect db`):
 
-- [ ] Ninguna tabla de `public` sin RLS.
-- [ ] Ninguna vista "security definer" en `public`.
+- [x] Ninguna tabla de `public` sin RLS (comprobado en local).
+- [x] Ninguna vista "security definer" en `public` (comprobado en local).
 
 ## Criterios de terminado
 
@@ -80,4 +80,10 @@ Comprobación de seguridad en Studio → Advisors (o `supabase inspect db`):
 
 ## Notas de progreso
 
-<!-- Fecha — nota -->
+2026-11-10 — Implementadas y aplicadas localmente las políticas RLS, restricciones de propietario para claves foráneas, funciones SQL de extractos y vistas con `security_invoker`. Se usó `user_id` también en cuotas. Un conflicto entre variable y columna en `ensure_statement` se corrigió mediante una migración nueva, sin editar migraciones aplicadas. Pasan 57 pruebas pgTAP, `db lint`, `pnpm typecheck`, `pnpm lint` y 42 pruebas de Vitest; tipos regenerados. Pendiente ampliar las pruebas del checklist, verificar el reinicio desde cero con autorización y solicitar autorización separada antes de aplicar migraciones al remoto.
+
+2026-11-10 — Ampliadas pruebas de vistas y de actualización/borrado entre usuarios: pasan 69 pruebas pgTAP y `db lint`. Pendientes la verificación con reinicio local autorizado y el despliegue remoto autorizado.
+
+2026-11-10 — Reinicio local autorizado y completado: todas las migraciones y el seed aplican desde cero; pasan 69 pruebas pgTAP, `db lint`, `pnpm typecheck`, `pnpm lint` y 42 pruebas Vitest. Los tipos regenerados coinciden, normalizando espacios finales. Falta autorización explícita para aplicar las migraciones al proyecto remoto y verificar su estado.
+
+2026-11-10 — Dueño autorizó y se aplicaron seis migraciones al proyecto remoto `al-corte`. `db lint --remote` pasa y una simulación posterior confirma que el remoto está al día; `migration list` agotó el tiempo de espera. Tras ampliar la cobertura de RLS, fechas y cupo, pasan 81 pruebas pgTAP en local. H2 terminado.

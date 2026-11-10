@@ -2,7 +2,7 @@
 export type Json = string | number | boolean | null | { [key: string]: Json | undefined } | Json[]
 
 export type Database = {
-  
+
   "graphql_public": {
           Tables: {
             [_ in never]: never
@@ -35,7 +35,7 @@ export type Database = {
                     "advance_fee"?: number,"advance_rate_ea"?: number,"amortization_method"?: Database["public"]['Enums']["amortization_method"],"archived_at"?: string | null,"bank"?: string,"color"?: string,"created_at"?: string,"credit_limit"?: number,"cutoff_day"?: number,"handling_fee"?: number,"id"?: string,"last4"?: string,"name"?: string,"network"?: string,"payment_day"?: number,"purchase_rate_ea"?: number,"updated_at"?: string,"user_id"?: string
                   }
                   Relationships: [
-                    
+
                   ]
                 },"categories": {
                   Row: {
@@ -49,7 +49,7 @@ export type Database = {
                     "archived_at"?: string | null,"color"?: string | null,"created_at"?: string,"icon"?: string,"id"?: string,"monthly_budget"?: number | null,"name"?: string,"updated_at"?: string,"user_id"?: string
                   }
                   Relationships: [
-                    
+
                   ]
                 },"fx_rates": {
                   Row: {
@@ -63,7 +63,7 @@ export type Database = {
                     "date"?: string,"usd_cop"?: number
                   }
                   Relationships: [
-                    
+
                   ]
                 },"installments": {
                   Row: {
@@ -78,6 +78,30 @@ export type Database = {
                   }
                   Relationships: [
                     {
+      foreignKeyName: "installments_owner_statement_fk"
+      columns: ["user_id","statement_id"]
+isOneToOne: false
+      referencedRelation: "statement_totals"
+      referencedColumns: ["user_id","statement_id"]
+    },{
+      foreignKeyName: "installments_owner_statement_fk"
+      columns: ["user_id","statement_id"]
+isOneToOne: false
+      referencedRelation: "statements"
+      referencedColumns: ["user_id","id"]
+    },{
+      foreignKeyName: "installments_owner_transaction_fk"
+      columns: ["user_id","transaction_id"]
+isOneToOne: false
+      referencedRelation: "transactions"
+      referencedColumns: ["user_id","id"]
+    },{
+      foreignKeyName: "installments_statement_id_fkey"
+      columns: ["statement_id"]
+isOneToOne: false
+      referencedRelation: "statement_totals"
+      referencedColumns: ["statement_id"]
+    },{
       foreignKeyName: "installments_statement_id_fkey"
       columns: ["statement_id"]
 isOneToOne: false
@@ -103,7 +127,7 @@ isOneToOne: false
                     "created_at"?: string,"id"?: string,"kind"?: string,"ref_id"?: string,"scheduled_for"?: string,"sent_at"?: string | null,"user_id"?: string
                   }
                   Relationships: [
-                    
+
                   ]
                 },"statements": {
                   Row: {
@@ -121,8 +145,26 @@ isOneToOne: false
       foreignKeyName: "statements_card_id_fkey"
       columns: ["card_id"]
 isOneToOne: false
+      referencedRelation: "card_balances"
+      referencedColumns: ["card_id"]
+    },{
+      foreignKeyName: "statements_card_id_fkey"
+      columns: ["card_id"]
+isOneToOne: false
       referencedRelation: "cards"
       referencedColumns: ["id"]
+    },{
+      foreignKeyName: "statements_owner_card_fk"
+      columns: ["user_id","card_id"]
+isOneToOne: false
+      referencedRelation: "card_balances"
+      referencedColumns: ["user_id","card_id"]
+    },{
+      foreignKeyName: "statements_owner_card_fk"
+      columns: ["user_id","card_id"]
+isOneToOne: false
+      referencedRelation: "cards"
+      referencedColumns: ["user_id","id"]
     }
                   ]
                 },"subscriptions": {
@@ -141,6 +183,12 @@ isOneToOne: false
       foreignKeyName: "subscriptions_card_id_fkey"
       columns: ["card_id"]
 isOneToOne: false
+      referencedRelation: "card_balances"
+      referencedColumns: ["card_id"]
+    },{
+      foreignKeyName: "subscriptions_card_id_fkey"
+      columns: ["card_id"]
+isOneToOne: false
       referencedRelation: "cards"
       referencedColumns: ["id"]
     },{
@@ -149,6 +197,24 @@ isOneToOne: false
 isOneToOne: false
       referencedRelation: "categories"
       referencedColumns: ["id"]
+    },{
+      foreignKeyName: "subscriptions_owner_card_fk"
+      columns: ["user_id","card_id"]
+isOneToOne: false
+      referencedRelation: "card_balances"
+      referencedColumns: ["user_id","card_id"]
+    },{
+      foreignKeyName: "subscriptions_owner_card_fk"
+      columns: ["user_id","card_id"]
+isOneToOne: false
+      referencedRelation: "cards"
+      referencedColumns: ["user_id","id"]
+    },{
+      foreignKeyName: "subscriptions_owner_category_fk"
+      columns: ["user_id","category_id"]
+isOneToOne: false
+      referencedRelation: "categories"
+      referencedColumns: ["user_id","id"]
     }
                   ]
                 },"transactions": {
@@ -167,6 +233,12 @@ isOneToOne: false
       foreignKeyName: "transactions_card_id_fkey"
       columns: ["card_id"]
 isOneToOne: false
+      referencedRelation: "card_balances"
+      referencedColumns: ["card_id"]
+    },{
+      foreignKeyName: "transactions_card_id_fkey"
+      columns: ["card_id"]
+isOneToOne: false
       referencedRelation: "cards"
       referencedColumns: ["id"]
     },{
@@ -176,11 +248,59 @@ isOneToOne: false
       referencedRelation: "categories"
       referencedColumns: ["id"]
     },{
+      foreignKeyName: "transactions_owner_card_fk"
+      columns: ["user_id","card_id"]
+isOneToOne: false
+      referencedRelation: "card_balances"
+      referencedColumns: ["user_id","card_id"]
+    },{
+      foreignKeyName: "transactions_owner_card_fk"
+      columns: ["user_id","card_id"]
+isOneToOne: false
+      referencedRelation: "cards"
+      referencedColumns: ["user_id","id"]
+    },{
+      foreignKeyName: "transactions_owner_category_fk"
+      columns: ["user_id","category_id"]
+isOneToOne: false
+      referencedRelation: "categories"
+      referencedColumns: ["user_id","id"]
+    },{
+      foreignKeyName: "transactions_owner_parent_fk"
+      columns: ["user_id","parent_id"]
+isOneToOne: false
+      referencedRelation: "transactions"
+      referencedColumns: ["user_id","id"]
+    },{
+      foreignKeyName: "transactions_owner_statement_fk"
+      columns: ["user_id","card_id","statement_id"]
+isOneToOne: false
+      referencedRelation: "statement_totals"
+      referencedColumns: ["user_id","card_id","statement_id"]
+    },{
+      foreignKeyName: "transactions_owner_statement_fk"
+      columns: ["user_id","card_id","statement_id"]
+isOneToOne: false
+      referencedRelation: "statements"
+      referencedColumns: ["user_id","card_id","id"]
+    },{
+      foreignKeyName: "transactions_owner_subscription_fk"
+      columns: ["user_id","subscription_id"]
+isOneToOne: false
+      referencedRelation: "subscriptions"
+      referencedColumns: ["user_id","id"]
+    },{
       foreignKeyName: "transactions_parent_id_fkey"
       columns: ["parent_id"]
 isOneToOne: false
       referencedRelation: "transactions"
       referencedColumns: ["id"]
+    },{
+      foreignKeyName: "transactions_statement_id_fkey"
+      columns: ["statement_id"]
+isOneToOne: false
+      referencedRelation: "statement_totals"
+      referencedColumns: ["statement_id"]
     },{
       foreignKeyName: "transactions_statement_id_fkey"
       columns: ["statement_id"]
@@ -198,11 +318,66 @@ isOneToOne: false
                 }
           }
           Views: {
-            [_ in never]: never
+            "card_balances": {
+                  Row: {
+                    "available": number | null,"card_id": string,"credit_limit": number,"used": number | null,"user_id": string,"utilization": number | null
+                  }
+                  ComputedFields: never
+                  Relationships: [
+
+                  ]
+                },"statement_totals": {
+                  Row: {
+                    "adjustments": number | null,"card_id": string,"cash_advances": number | null,"handling_fees": number | null,"installments": number | null,"insurance": number | null,"interest": number | null,"payments": number | null,"refunds": number | null,"single_purchases": number | null,"statement_id": string,"subscriptions": number | null,"total_calculated": number | null,"user_id": string
+                  }
+                  ComputedFields: never
+                  Relationships: [
+                    {
+      foreignKeyName: "statements_card_id_fkey"
+      columns: ["card_id"]
+isOneToOne: false
+      referencedRelation: "card_balances"
+      referencedColumns: ["card_id"]
+    },{
+      foreignKeyName: "statements_card_id_fkey"
+      columns: ["card_id"]
+isOneToOne: false
+      referencedRelation: "cards"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "statements_owner_card_fk"
+      columns: ["user_id","card_id"]
+isOneToOne: false
+      referencedRelation: "card_balances"
+      referencedColumns: ["user_id","card_id"]
+    },{
+      foreignKeyName: "statements_owner_card_fk"
+      columns: ["user_id","card_id"]
+isOneToOne: false
+      referencedRelation: "cards"
+      referencedColumns: ["user_id","id"]
+    }
+                  ]
+                }
           }
           Functions: {
             "create_default_categories":
 { Args: { "p_user_id": string }; Returns: undefined
+                           },
+"cutoff_date_for_month":
+{ Args: { "cutoff_day": number,"m": number,"y": number }; Returns: string
+                           },
+"ensure_statement":
+{ Args: { "p_card_id": string,"p_cutoff_date": string }; Returns: string
+                           },
+"statement_cutoff_for":
+{ Args: { "cutoff_day": number,"d": string }; Returns: string
+                           },
+"statement_due_date":
+{ Args: { "cutoff_date": string,"payment_day": number }; Returns: string
+                           },
+"statement_period_start":
+{ Args: { "cutoff_date": string,"cutoff_day": number }; Returns: string
                            }
           }
           Enums: {
@@ -322,7 +497,7 @@ export type CompositeTypes<
 export const Constants = {
   "graphql_public": {
           Enums: {
-            
+
           }
         },"public": {
           Enums: {
