@@ -28,8 +28,8 @@ Prompt sugerido para el agente al iniciar un paso:
 
 | # | Paso | Hito PRD | Estado | Commit |
 | --- | --- | --- | --- | --- |
-| 01 | [Base del proyecto (Next.js, Tailwind, shadcn, Vitest)](01-base-proyecto.md) | H0 | ⬜ | |
-| 02 | [Supabase local y autenticación](02-supabase-auth.md) | H0 | ⬜ | |
+| 01 | [Base del proyecto (Next.js, Tailwind, shadcn, Vitest)](01-base-proyecto.md) | H0 | ✅ | 5cb88a1 |
+| 02 | [Supabase local y autenticación](02-supabase-auth.md) | H0 | ✅ | |
 | 03 | [Proyecto Supabase remoto y despliegue en Vercel](03-despliegue-vercel.md) | H0 | ⬜ | |
 | 04 | [Dominio: fechas y asignación al extracto (R1)](04-dominio-fechas-extractos.md) | H1 | ⬜ | |
 | 05 | [Dominio: dinero, tasas, cuotas y avances (R2, R3)](05-dominio-dinero-cuotas.md) | H1 | ⬜ | |
@@ -49,7 +49,7 @@ Prompt sugerido para el agente al iniciar un paso:
 | 19 | [Revisión y pulido del diseño visual](19-revision-diseno.md) | H8 | ⬜ | |
 | 20 | [Validación final del MVP](20-validacion-mvp.md) | — | ⬜ | |
 
-Paso actual: **01** (el commit `5cb88a1` ya avanzó parte de los pasos 01 y 02; falta verificarlos con sus checklists antes de marcarlos).
+Paso actual: **03** (H0: despliegue en Supabase remoto y Vercel).
 
 El paso 09 solo depende del 02: se puede adelantar justo después del 03 para que el login y todo lo que siga nazcan con el diseño correcto.
 

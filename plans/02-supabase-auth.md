@@ -1,9 +1,9 @@
 # Paso 02 — Supabase local y autenticación
 
 - **Hito PRD:** H0 (parte 2 de 3)
-- **Estado:** ⬜ Pendiente
-- **Inicio:** —
-- **Fin:** —
+- **Estado:** ✅ Terminado y verificado
+- **Inicio:** 2026-11-09
+- **Fin:** 2026-11-09
 - **Commit:** —
 - **Depende de:** 01
 
@@ -19,22 +19,22 @@ Supabase corriendo en local con el CLI, clientes de Supabase para servidor y nav
 
 ## Tareas
 
-- [ ] `supabase init` → crea `supabase/config.toml`. Hacer commit de `config.toml`.
-- [ ] En `supabase/config.toml`:
+- [x] `supabase init` → crea `supabase/config.toml`. Hacer commit de `config.toml`.
+- [x] En `supabase/config.toml`:
   - `[auth] enable_signup = false`
   - `site_url = "http://localhost:3000"` y `additional_redirect_urls` con `http://localhost:3000/auth/callback`
   - Si se usa magic link: plantilla de email por defecto; en local los correos llegan a Inbucket/Mailpit.
-- [ ] Instalar `@supabase/supabase-js` y `@supabase/ssr`.
-- [ ] `lib/supabase/server.ts`: `createClient()` para Server Components, Server Actions y Route Handlers (cookies de `next/headers`).
-- [ ] `lib/supabase/client.ts`: `createClient()` para el navegador (solo URL y anon/publishable key).
-- [ ] `lib/supabase/middleware.ts` + `middleware.ts` (o `proxy.ts`, según la versión de Next.js): refresca la sesión y redirige a `/login` si no hay usuario en rutas de `(app)`; redirige a `/` si hay sesión y se visita `/login`.
-- [ ] `app/(auth)/login/page.tsx`: formulario de email + contraseña; mensajes de error en español. Usa una Server Action en `lib/actions/auth.ts` (`signIn`, `signOut`).
-- [ ] Opcional (PRD lo permite): botón "Enviarme un enlace" (magic link) + `app/auth/callback/route.ts` para intercambiar el código por sesión.
-- [ ] `app/(app)/layout.tsx` que verifica sesión con `supabase.auth.getUser()` (no `getSession()`) y `app/(app)/page.tsx` temporal que muestra el email del usuario y un botón "Cerrar sesión". Mover la página inicial del paso 01 a este grupo.
-- [ ] `.env.example` con `NEXT_PUBLIC_SUPABASE_URL` y `NEXT_PUBLIC_SUPABASE_ANON_KEY` (o `..._PUBLISHABLE_KEY`) sin valores. **No** incluir `SUPABASE_SERVICE_ROLE_KEY` con prefijo `NEXT_PUBLIC_`.
-- [ ] `.env.local` con los valores de `supabase status` (no se hace commit).
-- [ ] Documentar en `README.md` (raíz) cómo crear el usuario dueño en local: Supabase Studio (`http://localhost:54323`) → Authentication → Add user, con "Auto confirm".
-- [ ] `supabase/tests/` creado (vacío o con una prueba pgTAP trivial) para tener `supabase test db` listo desde ahora.
+- [x] Instalar `@supabase/supabase-js` y `@supabase/ssr`.
+- [x] `lib/supabase/server.ts`: `createClient()` para Server Components, Server Actions y Route Handlers (cookies de `next/headers`).
+- [x] `lib/supabase/client.ts`: `createClient()` para el navegador (solo URL y anon/publishable key).
+- [x] `lib/supabase/middleware.ts` + `middleware.ts` (o `proxy.ts`, según la versión de Next.js): refresca la sesión y redirige a `/login` si no hay usuario en rutas de `(app)`; redirige a `/` si hay sesión y se visita `/login`.
+- [x] `app/(auth)/login/page.tsx`: formulario de email + contraseña; mensajes de error en español. Usa una Server Action en `lib/actions/auth.ts` (`signIn`, `signOut`).
+- [x] Opcional (PRD lo permite): botón "Enviarme un enlace" (magic link) + `app/auth/callback/route.ts` para intercambiar el código por sesión.
+- [x] `app/(app)/layout.tsx` que verifica sesión con `supabase.auth.getUser()` (no `getSession()`) y app protegida temporal que muestra el email del usuario y un botón "Cerrar sesión". Mover la página inicial del paso 01 a este grupo.
+- [x] `.env.example` con `NEXT_PUBLIC_SUPABASE_URL` y `NEXT_PUBLIC_SUPABASE_ANON_KEY` (o `..._PUBLISHABLE_KEY`) sin valores. **No** incluir `SUPABASE_SERVICE_ROLE_KEY` con prefijo `NEXT_PUBLIC_`.
+- [x] `.env.local` con los valores de `supabase status` (no se hace commit).
+- [x] Documentar en `README.md` (raíz) cómo crear el usuario dueño en local: Supabase Studio (`http://localhost:54323`) → Authentication → Add user, con "Auto confirm".
+- [x] `supabase/tests/` creado (vacío o con una prueba pgTAP trivial) para tener `supabase test db` listo desde ahora.
 
 ## Archivos
 
@@ -88,4 +88,4 @@ Comprobaciones manuales:
 
 ## Notas de progreso
 
-<!-- Fecha — nota -->
+2026-11-09 — Implementación verificada. Pasan `pnpm exec supabase start`, `pnpm exec supabase db reset`, `pnpm exec supabase test db`, `pnpm typecheck`, `pnpm lint`, `pnpm test` y `pnpm build`. El dueño confirmó inicio y cierre de sesión con el usuario local.

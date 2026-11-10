@@ -1,16 +1,25 @@
+import { redirect } from "next/navigation";
+
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-
-import { signIn, signInWithMagicLink } from "./actions";
+import { signIn, signInWithMagicLink } from "@/lib/actions/auth";
+import { createClient } from "@/lib/supabase/server";
 
 type LoginPageProps = {
   searchParams: Promise<{ error?: string; message?: string }>;
 };
 
 export default async function LoginPage({ searchParams }: LoginPageProps) {
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+
+  if (user) {
+    redirect("/movimientos");
+  }
+
   const { error, message } = await searchParams;
 
   return (

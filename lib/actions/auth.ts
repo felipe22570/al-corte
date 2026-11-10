@@ -51,3 +51,9 @@ export async function signInWithMagicLink(formData: FormData) {
 
   redirect("/login?message=Revisa tu correo para continuar.");
 }
+
+export async function signOut() {
+  const supabase = await createClient();
+  await supabase.auth.signOut();
+  redirect("/login");
+}

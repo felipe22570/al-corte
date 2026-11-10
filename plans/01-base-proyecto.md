@@ -1,10 +1,10 @@
 # Paso 01 — Base del proyecto
 
 - **Hito PRD:** H0 (parte 1 de 3)
-- **Estado:** ⬜ Pendiente
-- **Inicio:** —
-- **Fin:** —
-- **Commit:** —
+- **Estado:** ✅ Terminado y verificado
+- **Inicio:** 2026-11-09
+- **Fin:** 2026-11-09
+- **Commit:** 5cb88a1
 - **Depende de:** nada
 
 ## Objetivo
@@ -19,28 +19,28 @@ Tener el repositorio inicializado con Next.js (App Router) + TypeScript estricto
 
 ## Tareas
 
-- [ ] `git init` y `.gitignore` (incluye `.env*` excepto `.env.example`, `node_modules`, `.next`, `coverage`, `supabase/.temp`, `supabase/.branches`).
-- [ ] Crear la app con `pnpm create next-app@latest` en la raíz: TypeScript, ESLint, Tailwind, App Router, **sin** carpeta `src/`, alias `@/*`. Conservar `AGENTS.md`, `docs/` y `plans/`.
-- [ ] Verificar `"strict": true` en `tsconfig.json`; agregar también `"noUncheckedIndexedAccess": true`.
-- [ ] Fijar la versión de Node en `package.json` (`engines`) y `packageManager` con la versión de pnpm.
-- [ ] Scripts en `package.json`:
+- [x] `git init` y `.gitignore` (incluye `.env*` excepto `.env.example`, `node_modules`, `.next`, `coverage`, `supabase/.temp`, `supabase/.branches`).
+- [x] Crear la app con `pnpm create next-app@latest` en la raíz: TypeScript, ESLint, Tailwind, App Router, **sin** carpeta `src/`, alias `@/*`. Conservar `AGENTS.md`, `docs/` y `plans/`.
+- [x] Verificar `"strict": true` en `tsconfig.json`; agregar también `"noUncheckedIndexedAccess": true`.
+- [x] Fijar la versión de Node en `package.json` (`engines`) y `packageManager` con la versión de pnpm.
+- [x] Scripts en `package.json`:
   - `dev`, `build`, `start`
   - `lint` → `next lint` o `eslint .` según la versión de Next.js
   - `typecheck` → `tsc --noEmit`
   - `test` → `vitest run`
   - `test:watch` → `vitest`
   - `test:coverage` → `vitest run --coverage`
-- [ ] Instalar `vitest` y `@vitest/coverage-v8` (dev). Crear `vitest.config.ts` con:
+- [x] Instalar `vitest` y `@vitest/coverage-v8` (dev). Crear `vitest.config.mts` con:
   - `environment: 'node'`
   - alias `@` → raíz del proyecto (configurado a mano, sin plugin extra)
   - `TZ=UTC` forzado para el proceso de pruebas (así se detecta cualquier dependencia accidental de la zona local)
   - cobertura limitada a `lib/domain/**` con umbral 100% en líneas, ramas, funciones y sentencias (se activa en el paso 04; aquí puede quedar configurado pero sin archivos)
-- [ ] Inicializar shadcn/ui (`pnpm dlx shadcn@latest init`), estilo por defecto, variables CSS, soporte de modo oscuro por clase.
-- [ ] Crear la estructura de carpetas de `AGENTS.md` con un `.gitkeep` donde haga falta: `components/`, `components/ui/`, `lib/domain/__tests__/`, `lib/supabase/`, `lib/actions/`, `lib/validation/`, `supabase/migrations/`, `supabase/functions/`.
-- [ ] `name: "al-corte"` en `package.json`. Configurar `<html lang="es-CO">` y `metadata.title = { default: 'Al Corte', template: '%s · Al Corte' }` (nombre según la tabla de `AGENTS.md`). Las fuentes, el tema y los tokens se completan en el paso 09.
-- [ ] Conservar `app/globals.css` con los tokens de Al Corte; `shadcn init` no debe sobrescribirlo (si lo hace, restaurarlo desde git).
-- [ ] Prueba de humo `lib/domain/__tests__/smoke.test.ts` (se borra en el paso 04).
-- [ ] `.env.example` vacío de valores (se completa en el paso 02).
+- [x] Inicializar shadcn/ui (`pnpm dlx shadcn@latest init`), estilo por defecto, variables CSS, soporte de modo oscuro por clase.
+- [x] Crear la estructura de carpetas de `AGENTS.md` con un `.gitkeep` donde haga falta: `components/`, `components/ui/`, `lib/domain/__tests__/`, `lib/supabase/`, `lib/actions/`, `lib/validation/`, `supabase/migrations/`, `supabase/functions/`.
+- [x] `name: "al-corte"` en `package.json`. Configurar `<html lang="es-CO">` y `metadata.title = { default: 'Al Corte', template: '%s · Al Corte' }` (nombre según la tabla de `AGENTS.md`). Las fuentes, el tema y los tokens se completan en el paso 09.
+- [x] Conservar `app/globals.css` con los tokens de Al Corte; `shadcn init` no debe sobrescribirlo (si lo hace, restaurarlo desde git).
+- [x] Prueba de humo `lib/domain/__tests__/smoke.test.ts` (se borra en el paso 04).
+- [x] `.env.example` vacío de valores (se completa en el paso 02).
 - [ ] Opcional: Prettier con `prettier-plugin-tailwindcss`. Si se agrega, justificarlo en la nota del paso.
 
 ## Archivos
@@ -82,4 +82,4 @@ Comprobaciones manuales:
 
 ## Notas de progreso
 
-<!-- Fecha — nota -->
+2026-11-09 — Verificado: `pnpm install --frozen-lockfile`, `pnpm typecheck`, `pnpm lint`, `pnpm test` y `pnpm build` pasan. Se añadió `noUncheckedIndexedAccess`, los scripts y configuración de Vitest, cobertura V8 y la prueba de humo. El scaffolding base está en `5cb88a1`.
