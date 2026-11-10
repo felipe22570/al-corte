@@ -1,12 +1,12 @@
 # Paso 06 — Dominio: suscripciones y totales (R4, R5, R6)
 
 - **Hito PRD:** H1 (parte 3 de 3) — **H1 termina aquí**
-- **Estado:** ⬜ Pendiente
-- **Inicio:** —
-- **Fin:** —
+- **Estado:** ✅ Terminado y verificado
+- **Inicio:** 2026-11-09
+- **Fin:** 2026-11-09
 - **Commit:** —
 - **Depende de:** 05
-- **Decisiones aplicables (decididas, ver README):** D2 (cupo disponible), D5 (gasto del mes)
+- **Decisiones aplicables (decididas, ver README):** D2 (cupo disponible), D5 (gasto del mes), D16 (ajustes como cargos)
 
 ## Objetivo
 
@@ -48,25 +48,25 @@ compareMonths(current: Decimal, previous: Decimal): { diff: Decimal; pct: Decima
 
 Suscripciones:
 
-- [ ] Mensual con día de cobro 31, inicio 2026-01-10: cobros 2026-01-31, 2026-02-28, 2026-03-31, 2026-04-30.
-- [ ] Mensual con día 31 en año bisiesto: 2028-02-29.
-- [ ] Anual con inicio 2027-02-28 y día 29 → 2027-02-28, 2028-02-29 (bisiesto) y 2029-02-28.
-- [ ] Anual con inicio 2028-02-29 (día 29) → 2029-02-28, 2030-02-28, 2032-02-29.
-- [ ] Inicio el mismo día del cobro → ese día cuenta.
-- [ ] Pausada o cancelada → `chargeDatesBetween` devuelve `[]`.
-- [ ] Rango de 7 días (recuperación del cron): devuelve solo las fechas dentro del rango, sin duplicados.
-- [ ] Prueba gratis: no hay cobros antes de `trialEndsAt`.
-- [ ] `subscriptionTotals`: 2 mensuales (10.000 y 20.000) + 1 anual (120.000) + 1 pausada → mensual 40.000, anual 480.000.
+- [x] Mensual con día de cobro 31, inicio 2026-01-10: cobros 2026-01-31, 2026-02-28, 2026-03-31, 2026-04-30.
+- [x] Mensual con día 31 en año bisiesto: 2028-02-29.
+- [x] Anual con inicio 2027-02-28 y día 29 → 2027-02-28, 2028-02-29 (bisiesto) y 2029-02-28.
+- [x] Anual con inicio 2028-02-29 (día 29) → 2029-02-28, 2030-02-28, 2032-02-29.
+- [x] Inicio el mismo día del cobro → ese día cuenta.
+- [x] Pausada o cancelada → `chargeDatesBetween` devuelve `[]`.
+- [x] Rango de 7 días (recuperación del cron): devuelve solo las fechas dentro del rango, sin duplicados.
+- [x] Prueba gratis: no hay cobros antes de `trialEndsAt`.
+- [x] `subscriptionTotals`: 2 mensuales (10.000 y 20.000) + 1 anual (120.000) + 1 pausada → mensual 40.000, anual 480.000.
 
 Totales:
 
-- [ ] Extracto con una compra de 1 cuota, dos cuotas de compras distintas, una suscripción, un avance con su comisión, una cuota de manejo, un seguro, una devolución y un pago: el total por concepto y el total general coinciden con un cálculo hecho a mano en la prueba; el pago no reduce el total y aparece en `payments`.
-- [ ] Compra a N cuotas: el movimiento padre no se suma al extracto, solo sus cuotas.
-- [ ] Extracto con una cuota de una compra en USD: suma su `total_cop`, no su `total` en USD.
-- [ ] Cupo: cupo 5.000.000, cargos 1.500.000, intereses facturados 20.000, pagos 500.000, devoluciones 20.000 → usado 1.000.000, disponible 4.000.000, utilización 20%.
-- [ ] Cupo 0 → utilización 0.
-- [ ] Gasto del mes: incluye compras (valor completo) y avances; excluye pagos, intereses y comisiones; resta devoluciones (D5).
-- [ ] `compareMonths` con mes anterior 0 → `pct = null`.
+- [x] Extracto con una compra de 1 cuota, dos cuotas de compras distintas, una suscripción, un avance con su comisión, una cuota de manejo, un seguro, una devolución y un pago: el total por concepto y el total general coinciden con un cálculo hecho a mano en la prueba; el pago no reduce el total y aparece en `payments`.
+- [x] Compra a N cuotas: el movimiento padre no se suma al extracto, solo sus cuotas.
+- [x] Extracto con una cuota de una compra en USD: suma su `total_cop`, no su `total` en USD.
+- [x] Cupo: cupo 5.000.000, cargos 1.500.000, intereses facturados 20.000, pagos 500.000, devoluciones 20.000 → usado 1.000.000, disponible 4.000.000, utilización 20%.
+- [x] Cupo 0 → utilización 0.
+- [x] Gasto del mes: incluye compras (valor completo) y avances; excluye pagos, intereses y comisiones; resta devoluciones (D5).
+- [x] `compareMonths` con mes anterior 0 → `pct = null`.
 
 ## Archivos
 
@@ -84,13 +84,13 @@ pnpm typecheck && pnpm lint
 
 Revisión manual contra `AGENTS.md` → "Casos de prueba obligatorios en lib/domain/":
 
-- [ ] Compra el mismo día del corte y un día después (paso 04).
-- [ ] Corte el 31 en febrero normal, bisiesto y meses de 30 días (paso 04).
-- [ ] Fecha de pago en el mes siguiente al corte (paso 04).
-- [ ] 12 cuotas con ambos métodos, Σ capital = P (paso 05).
-- [ ] 1 cuota y sin intereses: interés 0 (paso 05).
-- [ ] Suscripción mensual con día 31 (este paso).
-- [ ] Suscripción anual que renueva en año bisiesto (este paso).
+- [x] Compra el mismo día del corte y un día después (paso 04).
+- [x] Corte el 31 en febrero normal, bisiesto y meses de 30 días (paso 04).
+- [x] Fecha de pago en el mes siguiente al corte (paso 04).
+- [x] 12 cuotas con ambos métodos, Σ capital = P (paso 05).
+- [x] 1 cuota y sin intereses: interés 0 (paso 05).
+- [x] Suscripción mensual con día 31 (este paso).
+- [x] Suscripción anual que renueva en año bisiesto (este paso).
 
 ## Criterios de terminado
 
@@ -100,4 +100,4 @@ Revisión manual contra `AGENTS.md` → "Casos de prueba obligatorios en lib/dom
 
 ## Notas de progreso
 
-<!-- Fecha — nota -->
+2026-11-09 — Implementadas suscripciones y totales; D16 confirmada. Pasan 42 pruebas, cobertura del 100%, `pnpm typecheck`, `pnpm lint`, `pnpm exec supabase db reset` y `pnpm exec supabase test db`. Reinicio local autorizado por el dueño; no hubo cambios de esquema.

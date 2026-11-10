@@ -33,7 +33,7 @@ Prompt sugerido para el agente al iniciar un paso:
 | 03 | [Proyecto Supabase remoto y despliegue en Vercel](03-despliegue-vercel.md) | H0 | ✅ | a7ff0f9 |
 | 04 | [Dominio: fechas y asignación al extracto (R1)](04-dominio-fechas-extractos.md) | H1 | ✅ | 4dc3c0e |
 | 05 | [Dominio: dinero, tasas, cuotas y avances (R2, R3)](05-dominio-dinero-cuotas.md) | H1 | ✅ | 3f1ab5d |
-| 06 | [Dominio: suscripciones y totales (R4, R5, R6)](06-dominio-suscripciones-totales.md) | H1 | ⬜ | |
+| 06 | [Dominio: suscripciones y totales (R4, R5, R6)](06-dominio-suscripciones-totales.md) | H1 | ✅ | |
 | 07 | [Base de datos: tablas, restricciones e índices](07-db-esquema.md) | H2 | ⬜ | |
 | 08 | [Base de datos: RLS, funciones SQL, vistas y tipos](08-db-rls-vistas-tipos.md) | H2 | ⬜ | |
 | 09 | [Sistema de diseño de Al Corte](09-sistema-diseno.md) | H3 | ⬜ | |
@@ -49,7 +49,7 @@ Prompt sugerido para el agente al iniciar un paso:
 | 19 | [Revisión y pulido del diseño visual](19-revision-diseno.md) | H8 | ⬜ | |
 | 20 | [Validación final del MVP](20-validacion-mvp.md) | — | ⬜ | |
 
-Paso actual: **06** (H1: suscripciones y totales).
+Paso actual: **07** (H2: tablas, restricciones e índices).
 
 El paso 09 solo depende del 02: se puede adelantar justo después del 03 para que el login y todo lo que siga nazcan con el diseño correcto.
 
@@ -137,6 +137,7 @@ El PRD no cubría estos puntos o los dejaba ambiguos. Todas quedaron **decididas
 | D9 | **Categorías iniciales:** cómo se crean para el usuario. | Trigger `after insert on auth.users` que inserta las 11 categorías del PRD, más un `insert` idempotente en la migración para usuarios ya existentes. | 07 |
 | D10 | **Cambio de día de corte** (pregunta abierta del PRD). | Fuera del MVP: el día de corte se puede editar, pero solo afecta movimientos nuevos; los extractos existentes no se recalculan. La UI lo advierte. | 11 |
 | D15 | **Máximo de cuotas.** Límite de validación para compras y avances. | Máximo de 36 cuotas. | 05, 12 |
+| D16 | **Ajustes de conciliación.** Signo de los movimientos `adjustment`. | `adjustment` siempre es un cargo y suma al extracto; una corrección a favor se registra como `refund`. | 06, 08, 14 |
 
 ### Decisiones de diseño (propuestas, pendientes de confirmar)
 
@@ -163,3 +164,4 @@ Anota aquí cada decisión tomada durante la implementación (fecha, paso, decis
 | 2026-11-09 | Todos | Nombre "Al Corte", tokens de `globals.css` y sección "Diseño" de `AGENTS.md` incorporados al plan. Nuevo paso 09 (sistema de diseño) y paso 19 (revisión visual); los pasos 09–18 anteriores pasan a 10–18 y 20. | Pedido del dueño. |
 | 2026-11-09 | 05, 06, 07, 08, 12, 13, 14 | D3: las cuotas de compras en USD se calculan en USD, con su equivalente en COP por cuota. | Pedido del dueño. |
 | 2026-11-09 | 05, 12 | D15: el máximo de cuotas para compras y avances es 36. | Pedido del dueño. |
+| 2026-11-09 | 06, 08, 14 | D16: los ajustes son cargos; las correcciones a favor se registran como devoluciones. | Confirmación del dueño. |
