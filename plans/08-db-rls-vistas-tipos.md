@@ -4,7 +4,7 @@
 - **Estado:** ✅ Terminado y verificado
 - **Inicio:** 2026-11-10
 - **Fin:** 2026-11-10
-- **Commit:** —
+- **Commit:** d18c975
 - **Depende de:** 04, 06, 07
 - **Decisiones aplicables (decididas, ver README):** D1, D2, D3
 

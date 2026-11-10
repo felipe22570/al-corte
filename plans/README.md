@@ -35,7 +35,7 @@ Prompt sugerido para el agente al iniciar un paso:
 | 05 | [Dominio: dinero, tasas, cuotas y avances (R2, R3)](05-dominio-dinero-cuotas.md) | H1 | ✅ | 3f1ab5d |
 | 06 | [Dominio: suscripciones y totales (R4, R5, R6)](06-dominio-suscripciones-totales.md) | H1 | ✅ | |
 | 07 | [Base de datos: tablas, restricciones e índices](07-db-esquema.md) | H2 | ✅ | 21fa141 |
-| 08 | [Base de datos: RLS, funciones SQL, vistas y tipos](08-db-rls-vistas-tipos.md) | H2 | ✅ | |
+| 08 | [Base de datos: RLS, funciones SQL, vistas y tipos](08-db-rls-vistas-tipos.md) | H2 | ✅ | d18c975 |
 | 09 | [Sistema de diseño de Al Corte](09-sistema-diseno.md) | H3 | ⬜ | |
 | 10 | [Shell de la app: layout y navegación](10-shell-ui.md) | H3 | ⬜ | |
 | 11 | [Tarjetas y categorías (CRUD)](11-tarjetas-categorias.md) | H3 | ⬜ | |
