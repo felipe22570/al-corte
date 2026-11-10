@@ -1,12 +1,12 @@
 # Paso 05 — Dominio: dinero, tasas, cuotas y avances (R2, R3)
 
 - **Hito PRD:** H1 (parte 2 de 3)
-- **Estado:** ⬜ Pendiente
-- **Inicio:** —
-- **Fin:** —
+- **Estado:** ✅ Terminado y verificado
+- **Inicio:** 2026-11-09
+- **Fin:** 2026-11-09
 - **Commit:** —
 - **Depende de:** 04
-- **Decisiones aplicables (decididas, ver README):** D3 (cuotas de compras en USD), D8 (avance a 1 cuota)
+- **Decisiones aplicables (decididas, ver README):** D3 (cuotas de compras en USD), D8 (avance a 1 cuota), D15 (máximo de 36 cuotas)
 
 ## Objetivo
 
@@ -72,7 +72,7 @@ buildCashAdvance(input: { amount; count; card: { advanceRateEa; advanceFee; amor
   - `interestCop_k = round_COP(interest_k × fxRate)`; `totalCop_k = principalCop_k + interestCop_k`.
   - Se usa la TRM de la compra para todas las cuotas; son valores estimados hasta la conciliación (v2).
 - **Compras en COP:** `fxRate` no aplica; las columnas `Cop` son iguales a las originales y `amountCop = P`.
-- Validación: P > 0, 1 ≤ N ≤ 48 (límite razonable; confirmar), EA ≥ 0, `fxRate > 0` obligatorio si la moneda es USD y prohibido si es COP.
+- Validación: P > 0, 1 ≤ N ≤ 36, EA ≥ 0, `fxRate > 0` obligatorio si la moneda es USD y prohibido si es COP.
 
 ## Casos de prueba obligatorios
 
@@ -148,9 +148,9 @@ pnpm typecheck && pnpm lint
 
 Revisión manual:
 
-- [ ] Las dos tablas de referencia están como pruebas con los valores exactos.
-- [ ] `grep -nE "(\+|-|\*|/) ?[0-9.]+" lib/domain/money.ts lib/domain/installments.ts` no muestra aritmética de dinero con `number` (revisar a ojo los resultados).
-- [ ] Ningún tipo público usa `number` para montos.
+- [x] Las dos tablas de referencia están como pruebas con los valores exactos.
+- [x] `grep -nE "(\+|-|\*|/) ?[0-9.]+" lib/domain/money.ts lib/domain/installments.ts` no muestra aritmética de dinero con `number` (revisar a ojo los resultados).
+- [x] Ningún tipo público usa `number` para montos.
 
 ## Criterios de terminado
 
@@ -159,4 +159,4 @@ Revisión manual:
 
 ## Notas de progreso
 
-<!-- Fecha — nota -->
+2026-11-09 — Implementadas R2 y R3 con `Decimal`. Máximo de 36 cuotas según D15. Pasan `pnpm test` (29 pruebas), `pnpm test:coverage` (100% en `lib/domain/**`), `pnpm typecheck`, `pnpm lint` y `pnpm exec supabase db reset`.
