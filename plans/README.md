@@ -43,13 +43,13 @@ Prompt sugerido para el agente al iniciar un paso:
 | 13 | [Detalle, edición y borrado de movimientos](13-movimientos-detalle-edicion.md) | H4 | ✅ | 491501f |
 | 14 | [Extractos: detalle de tarjeta y de extracto](14-extractos.md) | H5 | ✅ | fdcf2db |
 | 15 | [Suscripciones y cobro diario con pg_cron](15-suscripciones.md) | H6 | ✅ | Ver historial de git |
-| 16 | [Tablero](16-tablero.md) | H7 | ⬜ | |
+| 16 | [Tablero](16-tablero.md) | H7 | ✅ | Ver historial de git |
 | 17 | [Historial con filtros y gráficos](17-historial.md) | H7 | ⬜ | |
 | 18 | [Pulido funcional: estados, accesibilidad y exportación](18-pulido-exportacion.md) | H8 | ⬜ | |
 | 19 | [Revisión y pulido del diseño visual](19-revision-diseno.md) | H8 | ⬜ | |
 | 20 | [Validación final del MVP](20-validacion-mvp.md) | — | ⬜ | |
 
-Paso actual: **16** (tablero pendiente). El paso 15 fue aceptado por el dueño con la interacción tras navegar a un fragmento sin validación táctil real. La migración remota está aplicada y el cron activo; se verificó una ejecución programada con un trabajo temporal local, no una ejecución programada remota.
+Paso actual: **17** (historial pendiente). El paso 15 fue aceptado por el dueño con la interacción tras navegar a un fragmento sin validación táctil real. La migración remota está aplicada y el cron activo; se verificó una ejecución programada con un trabajo temporal local, no una ejecución programada remota.
 
 El paso 09 solo depende del 02: se puede adelantar justo después del 03 para que el login y todo lo que siga nazcan con el diseño correcto.
 
@@ -168,3 +168,4 @@ Anota aquí cada decisión tomada durante la implementación (fecha, paso, decis
 | 2026-11-10 | 09 | Aprobadas D11, D12, D13 y `--chart-6: var(--card-6)`. | Confirmación del dueño. |
 | 2026-11-10 | 13 | Al editar se conserva la tasa original si no cambian tarjeta ni tipo; de lo contrario se usa la tasa vigente de la nueva selección. | Confirmación del dueño. |
 | 2026-11-10 | 15 | Al guardar una suscripción, se genera el cobro correspondiente a hoy si aplica, sin esperar al siguiente cron. | Confirmación del dueño. |
+| 2026-11-11 | 16 | Mostrar primero el extracto no pagado de vencimiento más antiguo, incluso si está vencido. | Confirmación del dueño. |

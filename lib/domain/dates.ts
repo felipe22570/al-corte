@@ -123,6 +123,10 @@ export function compareIsoDates(first: IsoDate, second: IsoDate): -1 | 0 | 1 {
   return firstDays < secondDays ? -1 : 1;
 }
 
+export function differenceInDays(first: IsoDate, second: IsoDate): number {
+  return daysFromCivil(parseIsoDate(first)) - daysFromCivil(parseIsoDate(second));
+}
+
 export function todayInBogota(now: Date = new Date()): IsoDate {
   return formatInTimeZone(now, TIME_ZONE, "yyyy-MM-dd");
 }
