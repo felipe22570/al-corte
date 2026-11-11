@@ -373,6 +373,15 @@ isOneToOne: false
 "ensure_statement":
 { Args: { "p_card_id": string,"p_cutoff_date": string }; Returns: string
                            },
+"generate_charges_for_subscription":
+{ Args: { "p_id": string }; Returns: number
+                           },
+"generate_subscription_charge_on":
+{ Args: { "p_date": string,"p_subscription_id": string }; Returns: number
+                           },
+"generate_subscription_charges":
+{ Args: { "p_today"?: string }; Returns: number
+                           },
 "statement_cutoff_for":
 { Args: { "cutoff_day": number,"d": string }; Returns: string
                            },
