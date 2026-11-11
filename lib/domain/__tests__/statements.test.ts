@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 
 import {
   cutoffDateForMonth,
+  classifyStatement,
   dueDateFor,
   periodStartFor,
   previousCutoff,
@@ -60,5 +61,12 @@ describe("statements", () => {
       cutoffDate: "2026-04-15",
       dueDate: "2026-05-05",
     });
+  });
+  it("classifies statements by open cutoff and payment status", () => {
+    const base = { cutoffDate: "2026-03-15", dueDate: "2026-04-05", paidAt: null };
+    expect(classifyStatement(base, "2026-03-15", "2026-03-10")).toEqual({ period: "open", status: "pending" });
+    expect(classifyStatement({ ...base, cutoffDate: "2026-04-15", paidAt: "2026-03-01T12:00:00Z" }, "2026-03-15", "2026-03-10")).toEqual({ period: "upcoming", status: "paid" });
+    expect(classifyStatement({ ...base, cutoffDate: "2026-02-15", dueDate: "2026-03-05" }, "2026-03-15", "2026-03-10")).toEqual({ period: "past", status: "overdue" });
+    expect(classifyStatement({ ...base, dueDate: "2026-03-10" }, "2026-03-15", "2026-03-10").status).toBe("pending");
   });
 });

@@ -1,10 +1,10 @@
 # Paso 13 — Detalle, edición y borrado de movimientos
 
 - **Hito PRD:** H4 (parte 2 de 2) — **H4 termina aquí**
-- **Estado:** 🟡 En progreso
+- **Estado:** ✅ Terminado (aceptado por el dueño)
 - **Inicio:** 2026-11-10
-- **Fin:** —
-- **Commit:** —
+- **Fin:** 2026-11-10
+- **Commit:** 491501f
 - **Depende de:** 12
 - **Decisiones aplicables (decididas, ver README):** D3, D6
 
@@ -69,3 +69,5 @@ Comprobaciones manuales:
 2026-11-10 — Con autorización expresa se reinició Supabase local y se aplicó `20261110040000_update_transaction_rpc.sql` al proyecto remoto; `db lint` local y remoto pasan y el remoto no tiene migraciones pendientes. Pasan 123 pgTAP, 78 Vitest, cobertura de dominio 100%, tipos, lint y build. En Chrome a 360 px y tema oscuro se editó la TRM de una compra USD y se mantuvieron las cuotas USD mientras cambiaban los equivalentes COP; se borró un avance y se verificó que también desapareció su comisión; un UUID inexistente mostró el 404 en español. La cuenta de prueba local se eliminó. La consola de desarrollo mostró un error de `performance.measure` de Next.js; al repetir el borrado con la compilación de producción local no aparecieron errores ni avisos. Se agregó tabla de cuotas en escritorio y se formateó la TRM para Colombia. El formulario desplaza «Más opciones» al abrirlo en móvil: el campo de fecha quedó accesible y se pudo cambiar sin guardar accidentalmente. Quedan pendientes la revisión de las casillas y el commit del paso; no se declara H4 terminado todavía.
 
 2026-11-10 — Se comprobó en Chrome móvil la edición de fecha del 10 al 16 de noviembre: el corte cambió del 15 de noviembre al 15 de diciembre después de guardar. La prueba pgTAP cubre específicamente el cambio del día anterior al posterior al corte. La cuenta temporal local se eliminó. La suite completa de base de datos pasa con 124 pruebas y los tipos regenerados coinciden con la base local. Sigue pendiente el commit; los cambios de los pasos 12 y 13 permanecen mezclados en el árbol de trabajo.
+
+2026-11-10 — El dueño solicitó marcar el paso como terminado. Los cambios de los pasos 12 y 13 se agruparon en el commit `491501f`, enviado al remoto. Se conserva la distinción entre la comprobación exacta del día anterior y posterior al corte en pgTAP y la prueba de interfaz del 10 al 16.

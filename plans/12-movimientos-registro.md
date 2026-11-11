@@ -1,10 +1,10 @@
 # Paso 12 — Registro de movimientos y cuotas (RPC transaccional)
 
 - **Hito PRD:** H4 (parte 1 de 2)
-- **Estado:** 🟡 En progreso
+- **Estado:** ✅ Terminado (aceptado por el dueño)
 - **Inicio:** 2026-11-10
-- **Fin:** —
-- **Commit:** —
+- **Fin:** 2026-11-10
+- **Commit:** 491501f
 - **Depende de:** 05, 08, 11
 - **Decisiones aplicables (decididas, ver README):** D1, D3, D4, D15 (máximo 36 cuotas)
 
@@ -98,3 +98,5 @@ Comprobaciones manuales:
 2026-11-10 — El dueño pidió marcar completa la medición humana; no se proporcionó un tiempo medido. Se repitió la comprobación autenticada de Ajustes en Chrome a 360 px: los temas claro y oscuro persistieron tras recargar, los dos selectores quedaron sincronizados y no hubo errores ni avisos de consola. En escritorio, cambiar la fecha con el teclado del 10 al 16 de noviembre actualizó la vista previa del corte del 15 de noviembre al 15 de diciembre sin eventos sintéticos. En la emulación móvil un clic automatizado sobre el segmento de fecha terminó guardando el formulario; no se determinó si es un problema de la herramienta o una superposición táctil y requiere comprobación adicional. La cuenta local efímera usada para estas verificaciones se eliminó al terminar.
 
 2026-11-10 — Se confirmó que el botón fijo cubría inicialmente la fecha al abrir «Más opciones» a 360 px. Al abrirlo, el formulario desplaza esa sección y la fecha queda accesible; se cambió con la interacción de Chrome sin guardar accidentalmente. El reinicio local y el despliegue de la RPC del paso 13 fueron autorizados por el dueño y completados.
+
+2026-11-10 — El dueño solicitó marcar el paso como terminado. Se conserva el detalle de las comprobaciones y sus limitaciones: la medición humana se marcó por indicación del dueño, sin tiempo registrado.

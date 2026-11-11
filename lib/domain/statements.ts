@@ -74,3 +74,10 @@ export function statementPeriod(card: CardStatementDays, date: IsoDate) {
     dueDate: dueDateFor(card.paymentDay, cutoffDate),
   };
 }
+
+export function classifyStatement(statement: { cutoffDate: IsoDate; dueDate: IsoDate; paidAt: string | null }, openCutoff: IsoDate, today: IsoDate) {
+  const cutoffComparison = compareIsoDates(statement.cutoffDate, openCutoff);
+  const period = cutoffComparison === 0 ? "open" : cutoffComparison > 0 ? "upcoming" : "past";
+  const status = statement.paidAt ? "paid" : compareIsoDates(statement.dueDate, today) < 0 ? "overdue" : "pending";
+  return { period, status } as const;
+}

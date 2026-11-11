@@ -39,9 +39,9 @@ Prompt sugerido para el agente al iniciar un paso:
 | 09 | [Sistema de diseño de Al Corte](09-sistema-diseno.md) | H3 | ✅ | f1d82af |
 | 10 | [Shell de la app: layout y navegación](10-shell-ui.md) | H3 | ✅ | 7592082 |
 | 11 | [Tarjetas y categorías (CRUD)](11-tarjetas-categorias.md) | H3 | ✅ | d2fd29e |
-| 12 | [Registro de movimientos y cuotas (RPC transaccional)](12-movimientos-registro.md) | H4 | 🟡 | |
-| 13 | [Detalle, edición y borrado de movimientos](13-movimientos-detalle-edicion.md) | H4 | 🟡 | |
-| 14 | [Extractos: detalle de tarjeta y de extracto](14-extractos.md) | H5 | ⬜ | |
+| 12 | [Registro de movimientos y cuotas (RPC transaccional)](12-movimientos-registro.md) | H4 | ✅ | 491501f |
+| 13 | [Detalle, edición y borrado de movimientos](13-movimientos-detalle-edicion.md) | H4 | ✅ | 491501f |
+| 14 | [Extractos: detalle de tarjeta y de extracto](14-extractos.md) | H5 | ✅ | |
 | 15 | [Suscripciones y cobro diario con pg_cron](15-suscripciones.md) | H6 | ⬜ | |
 | 16 | [Tablero](16-tablero.md) | H7 | ⬜ | |
 | 17 | [Historial con filtros y gráficos](17-historial.md) | H7 | ⬜ | |
@@ -49,7 +49,7 @@ Prompt sugerido para el agente al iniciar un paso:
 | 19 | [Revisión y pulido del diseño visual](19-revision-diseno.md) | H8 | ⬜ | |
 | 20 | [Validación final del MVP](20-validacion-mvp.md) | — | ⬜ | |
 
-Pasos actuales: **12** (validación pendiente) y **13** (detalle, edición y borrado en progreso).
+Paso actual: **15** (suscripciones y cobro diario pendiente).
 
 El paso 09 solo depende del 02: se puede adelantar justo después del 03 para que el login y todo lo que siga nazcan con el diseño correcto.
 
