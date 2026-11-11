@@ -17,6 +17,8 @@ import { type CardColor } from "@/lib/card-colors";
 import { formatRate } from "@/lib/format";
 import type { CardRecord, CategoryRecord } from "@/lib/settings-types";
 import { createClient } from "@/lib/supabase/server";
+import { EXPORT_TABLES } from "@/lib/export-schema";
+import { buttonVariants } from "@/components/ui/button";
 
 export const metadata: Metadata = { title: "Ajustes" };
 
@@ -61,6 +63,7 @@ export default async function SettingsPage() {
       <div className="flex flex-wrap items-center justify-between gap-4"><h2 id="categories-title" className="text-heading">Categorías</h2><CategoryForm /></div>
       {activeCategories.length === 0 ? <EmptyState icon={Tags} text="Aún no tienes categorías. Agrega la primera." /> : <ul className="divide-y divide-border rounded-xl border border-border bg-card">{activeCategories.map((category) => { const Icon = Object.hasOwn(categoryIcons, category.icon) ? categoryIcons[category.icon as CategoryIcon] : categoryIcons.ellipsis; return <li key={category.id} className="flex flex-wrap items-center justify-between gap-2 p-4"><span className="flex items-center gap-3 text-body"><Icon className="size-5 text-muted-foreground" strokeWidth={1.75} aria-hidden="true" />{category.name}</span><div className="flex flex-wrap gap-2"><CategoryForm category={category} /><ArchiveButton id={category.id} kind="category" /></div></li>; })}</ul>}
     </section>
+    <section className="flex flex-col gap-4" aria-labelledby="data-title"><h2 id="data-title" className="text-heading">Tus datos</h2><p className="text-small text-muted-foreground">Descarga un respaldo JSON completo o un CSV por tabla. Los CSV conservan el texto original: revisa las fórmulas antes de abrirlos en una hoja de cálculo.</p><div><a href="/ajustes/exportar?formato=json" className={buttonVariants({ variant: "outline" })}>Exportar JSON</a></div><details className="rounded-xl border border-border bg-card p-4"><summary className="min-h-11 cursor-pointer text-body">Exportar CSV</summary><div className="flex flex-wrap gap-2">{Object.entries(EXPORT_TABLES).map(([table, config]) => <a key={table} href={`/ajustes/exportar?formato=csv&tabla=${table}`} className={buttonVariants({ variant: "outline" })}>{config.label}</a>)}</div></details></section>
     <section className="flex flex-wrap items-center justify-between gap-4"><ThemeToggle /><form action={signOut}><Button type="submit" variant="outline">Cerrar sesión</Button></form></section>
   </>;
 }

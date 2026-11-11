@@ -17,11 +17,11 @@ export function DeleteTransactionButton({ id, installments, childrenCount }: { i
     try {
       const result = await deleteTransaction(id);
       if (!result.ok) { setError(result.error); return; }
-      router.push("/movimientos");
+      router.push("/movimientos?notice=deleted");
       router.refresh();
     } catch {
       setError("No pudimos borrar el movimiento. Intenta de nuevo.");
     } finally { setBusy(false); }
   }
-  return <div className="flex flex-col gap-2"><Button type="button" variant="destructive" disabled={busy} onClick={remove}>Borrar movimiento</Button>{error && <p role="alert" className="text-small text-danger">{error}</p>}</div>;
+  return <div className="flex flex-col gap-2"><Button type="button" variant="destructive" disabled={busy} onClick={remove}>{busy ? "Borrando…" : "Borrar movimiento"}</Button>{error && <p role="alert" className="text-small text-danger">{error}</p>}</div>;
 }

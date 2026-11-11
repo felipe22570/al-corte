@@ -1,14 +1,13 @@
 import { redirect } from "next/navigation";
 
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { Button } from "@/components/ui/button";
+import { LoginSubmitButtons } from "@/components/login-submit-buttons";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { AppWordmark } from "@/components/app-wordmark";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { APP_TAGLINE } from "@/lib/brand";
-import { signIn, signInWithMagicLink } from "@/lib/actions/auth";
 import { createClient } from "@/lib/supabase/server";
 
 type LoginPageProps = {
@@ -45,8 +44,7 @@ export default async function LoginPage({ searchParams }: LoginPageProps) {
               <Label htmlFor="password">Contraseña</Label>
               <Input id="password" name="password" type="password" autoComplete="current-password" />
             </div>
-            <Button className="w-full" type="submit" formAction={signIn}>Ingresar</Button>
-            <Button className="w-full" type="submit" variant="outline" formAction={signInWithMagicLink}>Enviarme un enlace</Button>
+            <LoginSubmitButtons />
           </form>
         </CardContent>
       </Card>
