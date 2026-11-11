@@ -39,8 +39,8 @@ Prompt sugerido para el agente al iniciar un paso:
 | 09 | [Sistema de diseño de Al Corte](09-sistema-diseno.md) | H3 | ✅ | f1d82af |
 | 10 | [Shell de la app: layout y navegación](10-shell-ui.md) | H3 | ✅ | 7592082 |
 | 11 | [Tarjetas y categorías (CRUD)](11-tarjetas-categorias.md) | H3 | ✅ | d2fd29e |
-| 12 | [Registro de movimientos y cuotas (RPC transaccional)](12-movimientos-registro.md) | H4 | ⬜ | |
-| 13 | [Detalle, edición y borrado de movimientos](13-movimientos-detalle-edicion.md) | H4 | ⬜ | |
+| 12 | [Registro de movimientos y cuotas (RPC transaccional)](12-movimientos-registro.md) | H4 | 🟡 | |
+| 13 | [Detalle, edición y borrado de movimientos](13-movimientos-detalle-edicion.md) | H4 | 🟡 | |
 | 14 | [Extractos: detalle de tarjeta y de extracto](14-extractos.md) | H5 | ⬜ | |
 | 15 | [Suscripciones y cobro diario con pg_cron](15-suscripciones.md) | H6 | ⬜ | |
 | 16 | [Tablero](16-tablero.md) | H7 | ⬜ | |
@@ -49,7 +49,7 @@ Prompt sugerido para el agente al iniciar un paso:
 | 19 | [Revisión y pulido del diseño visual](19-revision-diseno.md) | H8 | ⬜ | |
 | 20 | [Validación final del MVP](20-validacion-mvp.md) | — | ⬜ | |
 
-Paso actual: **12** (H4: registro de movimientos y cuotas).
+Pasos actuales: **12** (validación pendiente) y **13** (detalle, edición y borrado en progreso).
 
 El paso 09 solo depende del 02: se puede adelantar justo después del 03 para que el login y todo lo que siga nazcan con el diseño correcto.
 
@@ -166,3 +166,4 @@ Anota aquí cada decisión tomada durante la implementación (fecha, paso, decis
 | 2026-11-09 | 05, 12 | D15: el máximo de cuotas para compras y avances es 36. | Pedido del dueño. |
 | 2026-11-09 | 06, 08, 14 | D16: los ajustes son cargos; las correcciones a favor se registran como devoluciones. | Confirmación del dueño. |
 | 2026-11-10 | 09 | Aprobadas D11, D12, D13 y `--chart-6: var(--card-6)`. | Confirmación del dueño. |
+| 2026-11-10 | 13 | Al editar se conserva la tasa original si no cambian tarjeta ni tipo; de lo contrario se usa la tasa vigente de la nueva selección. | Confirmación del dueño. |

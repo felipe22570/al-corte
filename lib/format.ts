@@ -15,6 +15,7 @@ function formatAmount(value: Amount, decimals: number, prefix: string): string {
 
 export function formatCop(value: Amount) { return formatAmount(value, 0, "$"); }
 export function formatUsd(value: Amount) { return formatAmount(value, 2, "US$ "); }
+export function formatExchangeRate(value: Amount) { return formatAmount(value, 4, ""); }
 export function formatMoney(value: Amount, currency: Currency) { return currency === "COP" ? formatCop(value) : formatUsd(value); }
 export function formatSignedMoney(value: Amount, currency: Currency, kind: "charge" | "credit") {
   return `${kind === "credit" ? "+" : "-"}${formatMoney(toDecimal(value).abs(), currency)}`;

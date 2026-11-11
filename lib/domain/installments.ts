@@ -25,6 +25,7 @@ export function buildInstallmentPlan(input: Input) {
     const interest = roundMoney(balance.times(rate), input.currency);
     const principal = index === input.count ? balance : input.method === "french" && payment ? payment.minus(interest) : regularPrincipal;
     const total = principal.plus(interest); balance = balance.minus(principal);
+    if (principal.isNegative() || balance.isNegative()) throw new Error("El valor es muy pequeño para esa cantidad de cuotas.");
     const principalCop = input.currency === "COP" ? principal : index === input.count ? amountCop.minus(principalCopSoFar) : roundMoney(principal.times(input.fxRate!), "COP");
     principalCopSoFar = principalCopSoFar.plus(principalCop);
     const interestCop = input.currency === "COP" ? interest : roundMoney(interest.times(input.fxRate!), "COP");

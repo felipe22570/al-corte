@@ -2,7 +2,7 @@
 export type Json = string | number | boolean | null | { [key: string]: Json | undefined } | Json[]
 
 export type Database = {
-
+  
   "graphql_public": {
           Tables: {
             [_ in never]: never
@@ -35,7 +35,7 @@ export type Database = {
                     "advance_fee"?: number,"advance_rate_ea"?: number,"amortization_method"?: Database["public"]['Enums']["amortization_method"],"archived_at"?: string | null,"bank"?: string,"color"?: string,"created_at"?: string,"credit_limit"?: number,"cutoff_day"?: number,"handling_fee"?: number,"id"?: string,"last4"?: string,"name"?: string,"network"?: string,"payment_day"?: number,"purchase_rate_ea"?: number,"updated_at"?: string,"user_id"?: string
                   }
                   Relationships: [
-
+                    
                   ]
                 },"categories": {
                   Row: {
@@ -49,7 +49,7 @@ export type Database = {
                     "archived_at"?: string | null,"color"?: string | null,"created_at"?: string,"icon"?: string,"id"?: string,"monthly_budget"?: number | null,"name"?: string,"updated_at"?: string,"user_id"?: string
                   }
                   Relationships: [
-
+                    
                   ]
                 },"fx_rates": {
                   Row: {
@@ -63,7 +63,7 @@ export type Database = {
                     "date"?: string,"usd_cop"?: number
                   }
                   Relationships: [
-
+                    
                   ]
                 },"installments": {
                   Row: {
@@ -127,7 +127,7 @@ isOneToOne: false
                     "created_at"?: string,"id"?: string,"kind"?: string,"ref_id"?: string,"scheduled_for"?: string,"sent_at"?: string | null,"user_id"?: string
                   }
                   Relationships: [
-
+                    
                   ]
                 },"statements": {
                   Row: {
@@ -324,7 +324,7 @@ isOneToOne: false
                   }
                   ComputedFields: never
                   Relationships: [
-
+                    
                   ]
                 },"statement_totals": {
                   Row: {
@@ -364,6 +364,9 @@ isOneToOne: false
             "create_default_categories":
 { Args: { "p_user_id": string }; Returns: undefined
                            },
+"create_transaction_with_installments":
+{ Args: { "p_payload": Json }; Returns: string
+                           },
 "cutoff_date_for_month":
 { Args: { "cutoff_day": number,"m": number,"y": number }; Returns: string
                            },
@@ -378,6 +381,9 @@ isOneToOne: false
                            },
 "statement_period_start":
 { Args: { "cutoff_date": string,"cutoff_day": number }; Returns: string
+                           },
+"update_transaction_with_installments":
+{ Args: { "p_id": string,"p_payload": Json }; Returns: string
                            }
           }
           Enums: {
@@ -497,7 +503,7 @@ export type CompositeTypes<
 export const Constants = {
   "graphql_public": {
           Enums: {
-
+            
           }
         },"public": {
           Enums: {

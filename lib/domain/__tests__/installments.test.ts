@@ -63,4 +63,8 @@ describe("installments", () => {
     expect(() => buildInstallmentPlan({ ...input, fxRate: decimal(4000) })).toThrow("TRM");
     expect(() => buildInstallmentPlan({ ...input, currency: "USD" })).toThrow("TRM");
   });
+
+  it("rechaza planes cuyo redondeo agotaría el capital antes de la última cuota", () => {
+    expect(() => buildInstallmentPlan({ principal: decimal("2"), count: 4, annualRateEa: decimal("0"), method: "fixed_principal", interestFree: false, currency: "COP", cutoffDay: 15, purchaseDate: "2026-01-20" })).toThrow("muy pequeño");
+  });
 });
