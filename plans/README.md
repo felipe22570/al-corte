@@ -44,12 +44,12 @@ Prompt sugerido para el agente al iniciar un paso:
 | 14 | [Extractos: detalle de tarjeta y de extracto](14-extractos.md) | H5 | ✅ | fdcf2db |
 | 15 | [Suscripciones y cobro diario con pg_cron](15-suscripciones.md) | H6 | ✅ | Ver historial de git |
 | 16 | [Tablero](16-tablero.md) | H7 | ✅ | Ver historial de git |
-| 17 | [Historial con filtros y gráficos](17-historial.md) | H7 | ⬜ | |
+| 17 | [Historial con filtros y gráficos](17-historial.md) | H7 | ✅ | Ver historial de git |
 | 18 | [Pulido funcional: estados, accesibilidad y exportación](18-pulido-exportacion.md) | H8 | ⬜ | |
 | 19 | [Revisión y pulido del diseño visual](19-revision-diseno.md) | H8 | ⬜ | |
 | 20 | [Validación final del MVP](20-validacion-mvp.md) | — | ⬜ | |
 
-Paso actual: **17** (historial pendiente). El paso 15 fue aceptado por el dueño con la interacción tras navegar a un fragmento sin validación táctil real. La migración remota está aplicada y el cron activo; se verificó una ejecución programada con un trabajo temporal local, no una ejecución programada remota.
+Paso actual: **18** (pulido funcional pendiente). El paso 15 fue aceptado por el dueño con la interacción tras navegar a un fragmento sin validación táctil real. La migración remota está aplicada y el cron activo; se verificó una ejecución programada con un trabajo temporal local, no una ejecución programada remota.
 
 El paso 09 solo depende del 02: se puede adelantar justo después del 03 para que el login y todo lo que siga nazcan con el diseño correcto.
 
