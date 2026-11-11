@@ -41,7 +41,7 @@ Prompt sugerido para el agente al iniciar un paso:
 | 11 | [Tarjetas y categorías (CRUD)](11-tarjetas-categorias.md) | H3 | ✅ | d2fd29e |
 | 12 | [Registro de movimientos y cuotas (RPC transaccional)](12-movimientos-registro.md) | H4 | ✅ | 491501f |
 | 13 | [Detalle, edición y borrado de movimientos](13-movimientos-detalle-edicion.md) | H4 | ✅ | 491501f |
-| 14 | [Extractos: detalle de tarjeta y de extracto](14-extractos.md) | H5 | ✅ | |
+| 14 | [Extractos: detalle de tarjeta y de extracto](14-extractos.md) | H5 | ✅ | fdcf2db |
 | 15 | [Suscripciones y cobro diario con pg_cron](15-suscripciones.md) | H6 | ⬜ | |
 | 16 | [Tablero](16-tablero.md) | H7 | ⬜ | |
 | 17 | [Historial con filtros y gráficos](17-historial.md) | H7 | ⬜ | |

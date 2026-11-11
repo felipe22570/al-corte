@@ -4,7 +4,7 @@
 - **Estado:** ✅ Terminado
 - **Inicio:** 2026-11-10
 - **Fin:** 2026-11-10
-- **Commit:** —
+- **Commit:** fdcf2db
 - **Depende de:** 13
 - **Decisiones aplicables (decididas, ver README):** D3 (cuotas en USD con equivalente en COP)
 
