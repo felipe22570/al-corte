@@ -365,10 +365,35 @@ El mayor riesgo es que los cálculos no coincidan con los del banco; la concilia
 
 - [ ] ¿Alguna tarjeta tiene corte variable (por ejemplo, "último día hábil") en lugar de un día fijo?
 - [ ] ¿Los bancos amortizan las compras con capital fijo o con cuota fija? Se puede confirmar con la tabla de un extracto real.
-- [ ] ¿Las compras en dólares llegan a un saldo separado en USD o se convierten a pesos en el extracto?
-- [ ] Si cambia el día de corte de una tarjeta, ¿se reasignan los movimientos futuros o solo aplica desde el siguiente periodo?
+- [x] Tratamiento de USD en la app: se amortiza en USD y se guarda el equivalente estimado en COP con la TRM de la compra (D3). La forma de facturación de cada banco se confirma con su extracto real.
+- [x] Cambio de día de corte: solo afecta movimientos nuevos; no recalcula extractos existentes y la interfaz lo advierte (D10).
 - [ ] ¿Los recordatorios bastan por email o se quieren notificaciones push en el celular?
 
 **Fuera de alcance**
 
 Múltiples usuarios, conexión directa con bancos, cuentas de ahorro, inversiones, créditos distintos a tarjetas y pagos desde la app.
+
+### Decisiones aprobadas durante la implementación
+
+Este registro consolida las decisiones del dueño de `plans/README.md`; no agrega alcance ni sustituye la comprobación contra extractos bancarios. D1–D10, D15 y D16 fueron aprobadas el 9 de noviembre de 2026; D11–D13 el 10 y D14 el 11.
+
+| Decisión | Regla vigente del MVP |
+| --- | --- |
+| D1 · Cuota de manejo | Se genera al crear el extracto, con fecha de corte, si es mayor que cero. Cargo `system` e índice único por extracto para evitar duplicados. |
+| D2 · Cupo | Usado = capital completo de cargos + intereses de cuotas ya facturadas − pagos − devoluciones. Disponible = cupo − usado. |
+| D3 · USD | Cuotas en USD con redondeo a centavos; cada cuota guarda equivalentes COP con la TRM de la compra. La última absorbe las diferencias de capital en ambas monedas. |
+| D4 · TRM | La última de `fx_rates`; si no existe, la del último movimiento USD del mismo usuario. El cron omite el cobro si falta TRM y lo recupera dentro de su ventana de siete días. |
+| D5 · Gasto mensual | Compras por su valor completo, avances y suscripciones del mes calendario en Bogotá, menos devoluciones. Excluye pagos, intereses, comisiones, manejo y seguros. |
+| D6 · Edición | Se permite editar compras con cuotas en extractos pagados y se regeneran todas las cuotas; la interfaz advierte antes de guardar. |
+| D7 · Vencimiento | La fecha de pago debe ser estrictamente posterior al corte; si no lo es en el mismo mes, pasa al siguiente. |
+| D8 · Avance a una cuota | No genera intereses; su comisión se registra por separado. |
+| D9 · Categorías | Trigger al crear el usuario con las once categorías iniciales; migración idempotente para usuarios existentes. |
+| D10 · Cambio de corte | Solo afecta movimientos nuevos. Los extractos existentes se conservan. |
+| D11 · Categorías sin color | Icono Lucide y nombre; `color` queda en `null`. Gráfico por categoría neutro y gráfico mensual con los colores de tarjeta. |
+| D12 · Campos | Token de borde `--input` con contraste mínimo 3:1 y estilo `text-input` de 16 px para evitar zoom automático en iOS. |
+| D13 · Pesos | Se elimina el espacio entre `$` y la cifra; USD conserva `US$ 15,99`. |
+| D14 · Favicon | Cuadrado neutro temporal con el token primario, sin letras ni símbolos; no constituye un logo. |
+| D15 · Cuotas máximas | Entre una y 36 cuotas en compras y avances. |
+| D16 · Ajustes | `adjustment` siempre es cargo; las correcciones a favor se registran como `refund`. |
+
+Precisiones posteriores aprobadas: al editar una compra se conserva la tasa original si no cambian tarjeta ni tipo (10 de noviembre); guardar una suscripción intenta generar su cobro de hoy sin esperar al cron (10 de noviembre); el tablero prioriza el extracto no pagado con vencimiento más antiguo, incluso vencido (11 de noviembre).

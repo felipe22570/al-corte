@@ -47,9 +47,11 @@ Prompt sugerido para el agente al iniciar un paso:
 | 17 | [Historial con filtros y gráficos](17-historial.md) | H7 | ✅ | Ver historial de git |
 | 18 | [Pulido funcional: estados, accesibilidad y exportación](18-pulido-exportacion.md) | H8 | ✅ | Ver historial de git |
 | 19 | [Revisión y pulido del diseño visual](19-revision-diseno.md) | H8 | ✅ | Ver historial de git |
-| 20 | [Validación final del MVP](20-validacion-mvp.md) | — | ⬜ | |
+| 20 | [Validación final del MVP](20-validacion-mvp.md) | — | 🟡 | |
 
-Paso actual: **20** (validación final pendiente). El paso 19 fue aprobado visualmente por el dueño con las limitaciones documentadas en su plan; las capturas se eliminaron por su solicitud. El paso 18 fue aceptado con las limitaciones de validación indicadas en su plan. El paso 15 fue aceptado por el dueño con la interacción tras navegar a un fragmento sin validación táctil real. La migración remota está aplicada y el cron activo; se verificó una ejecución programada con un trabajo temporal local, no una ejecución programada remota.
+Paso actual: **20** (validación ejecutada en local aislado y producción; cierre pendiente de las comprobaciones externas detalladas en su plan). Pasan 117 pruebas de Vitest, 151 pruebas SQL, cobertura de dominio 100 %, build y lint. Se conservan los datos de la cuenta de validación en producción. Las correcciones de móvil están desplegadas y el registro público remoto quedó desactivado. El cron está activo; falta observar el cobro programado del 12 de noviembre de 2026 a las 05:00 de Bogotá. No se ha creado la etiqueta `mvp`.
+
+El paso 19 conserva la aprobación visual general del dueño; sus capturas se eliminaron por su solicitud. En el paso 20 se repitieron las verificaciones de producción a 360/1280 px en ambos temas con axe-core y pruebas de teclado. Las limitaciones que requieren dispositivo físico, configuración de servicios o aprobación explícita no se dan por resueltas automáticamente.
 
 El paso 09 solo depende del 02: se puede adelantar justo después del 03 para que el login y todo lo que siga nazcan con el diseño correcto.
 
