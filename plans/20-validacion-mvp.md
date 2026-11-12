@@ -1,10 +1,10 @@
 # Paso 20 — Validación final del MVP
 
 - **Hito PRD:** cierre del MVP
-- **Estado:** 🟡 En progreso
+- **Estado:** ✅ Cerrado por el dueño con limitaciones documentadas
 - **Inicio:** 2026-11-11
-- **Fin:** —
-- **Commit:** —
+- **Fin:** 2026-11-12
+- **Commit:** Ver etiqueta `mvp` (`chore: close mvp milestone`)
 - **Depende de:** 01–19
 
 ## Objetivo
@@ -17,7 +17,7 @@ Confirmar que el MVP cumple todos los criterios de aceptación de F1–F8 del PR
 - [x] Desplegar `main` en Vercel.
 - [x] Recorrer el checklist de abajo en **producción**, con la cuenta exclusiva autorizada por el dueño y tres tarjetas ficticias, no con sus datos bancarios reales.
 - [x] Actualizar `docs/PRD.md`: marcar las preguntas abiertas resueltas y anotar las decisiones D1–D14 tomadas (con aprobación del dueño).
-- [ ] Marcar todos los pasos como ✅ en `plans/README.md`.
+- [x] Marcar todos los pasos como ✅ en `plans/README.md`.
 
 ## Checklist de aceptación del PRD
 
@@ -30,7 +30,7 @@ Confirmar que el MVP cumple todos los criterios de aceptación de F1–F8 del PR
 - [x] Los 8 tipos se pueden registrar.
 - [x] Asignación automática al extracto según R1 (probar día del corte y día siguiente).
 - [x] Editar y borrar funcionan; las cuotas se regeneran. Edición en producción; borrado y cascadas en la instancia aislada para conservar los datos remotos.
-- [ ] Registro desde el celular en < 15 s.
+- [x] Criterio de rapidez revisado: 1,78 s en Chrome móvil automatizado. La medición humana en un celular físico queda como seguimiento, excluida del cierre por aceptación explícita del dueño; no se presenta como verificada.
 
 **F3. Compras a cuotas**
 - [x] N cuotas generadas con capital, interés, total y extracto.
@@ -39,7 +39,7 @@ Confirmar que el MVP cumple todos los criterios de aceptación de F1–F8 del PR
 
 **F4. Suscripciones**
 - [x] Todos los campos del PRD.
-- [ ] El cobro diario se generó solo en producción (revisar `cron.job_run_details` al día siguiente).
+- [x] El cobro diario se generó solo en producción: ejecución programada del 12 de noviembre a las 05:00 de Bogotá, `succeeded`, un cobro de 25.000 COP sin duplicados para la suscripción preparada.
 - [x] Costo mensual total y anual equivalente.
 
 **F5. Extractos**
@@ -62,7 +62,7 @@ Confirmar que el MVP cumple todos los criterios de aceptación de F1–F8 del PR
 
 - [x] `pnpm typecheck && pnpm lint && pnpm test && pnpm test:coverage` en verde; cobertura 100% en `lib/domain/`.
 - [x] `supabase db reset && supabase test db` en verde en la instancia temporal aislada, incluida la prueba de RLS con segundo usuario.
-- [ ] Completar la checklist visual y de interacciones que quedó parcial en el paso 19 y verificar accesibilidad con axe DevTools; la aprobación visual del dueño fue general y se usó axe-core como alternativa parcial.
+- [x] Revisión adicional con la extensión real axe DevTools: 52 escaneos WCAG 2.2 AA y buenas prácticas, sin fallas confirmadas; casos `Needs Review` de contraste y foco revisados aparte. Mantiene la aprobación visual general del dueño, sin afirmar una certificación exhaustiva WCAG.
 - [x] Ningún cálculo de dinero con `number` (revisión de `lib/`, `app/` y `components/`; las conversiones de los gráficos solo sirven para geometría, no para totales).
 - [x] Fechas de negocio como `date` / `YYYY-MM-DD`; `new Date()` en `todayInBogota` y en timestamps UTC de archivo, no para decidir días de negocio.
 - [x] Registro público desactivado en producción (comprobación equivalente al curl del paso 03; corregido en esta validación).
@@ -72,7 +72,7 @@ Confirmar que el MVP cumple todos los criterios de aceptación de F1–F8 del PR
 - [x] Tablero < 1,5 s en 4G (Lighthouse móvil).
 - [x] 360 px y modo oscuro en todas las pantallas principales y formularios; aprobación visual general previa del dueño en el paso 19.
 - [x] La UI solo usa colores, radios y estilos de texto de `app/globals.css` (`pnpm lint` con `check-design` en verde).
-- [ ] "Al Corte" escrito correctamente en la UI, títulos de pestaña, correos de Supabase y `README.md`; `al-corte` en `package.json`, Vercel y Supabase.
+- [x] Marca revisada en UI y documentación. Personalización de correos de Supabase y nueva inspección del panel de Vercel excluidas del cierre por aceptación explícita del dueño; ver limitaciones. No se dan por verificadas.
 - [x] Exportación JSON/CSV funcionando en producción.
 - [x] Sin `.env*` con valores reales en el historial de git (`git log --all -- '*.env*'`; solo `.env.example` con valores ficticios).
 
@@ -89,7 +89,7 @@ Estas no se pueden verificar el día del cierre; dejar anotado cómo se medirán
 
 ## Verificación
 
-El paso está terminado cuando todos los checklists anteriores están marcados (salvo las métricas de seguimiento) y no hay fallas abiertas.
+El paso se cierra con los controles técnicos verificados y las limitaciones aceptadas explícitamente por el dueño el 12 de noviembre de 2026. Las casillas de aceptación de limitaciones no equivalen a pruebas ejecutadas: se detallan abajo. No quedan fallas funcionales de producción detectadas sin resolver; las métricas bancarias y verificaciones externas indicadas pasan a seguimiento.
 
 ## Criterios de terminado
 
@@ -106,7 +106,7 @@ El paso está terminado cuando todos los checklists anteriores están marcados (
 
 ### Resultados de la validación del 11 de noviembre de 2026
 
-**Estado: validación técnica ejecutada; cierre del MVP pendiente.** No se marca el paso como terminado ni se crea `git tag mvp` mientras sigan las comprobaciones externas de abajo.
+**Estado al 11 de noviembre: validación técnica ejecutada; cierre pendiente.** Este registro histórico se complementa con la revisión y aprobación de cierre del 12 de noviembre que aparecen abajo.
 
 | Área | Evidencia y resultado |
 | --- | --- |
@@ -148,12 +148,34 @@ Se añadieron dieciséis pruebas de regresión, primero en rojo y luego en verde
 
 Advisors remoto ya no reporta `authenticated_security_definer_function_executable`. Para `auth_leaked_password_protection` se intentó activar únicamente `password_hibp_enabled` mediante Management API; Supabase respondió **HTTP 402**: la función requiere Pro o superior. No se cambió el plan, no se generaron cargos y no se alteraron contraseñas ni otras opciones de Auth. Tras conocer el bloqueo, el dueño eligió explícitamente **Mantener Free** y aceptar esta advertencia como limitación. La protección permanece desactivada; no se oculta ni se presenta como resuelta técnicamente. El registro público continúa desactivado.
 
-### Pendientes necesarios para cerrar el paso
+### Revisión adicional y cierre — 12 de noviembre de 2026
 
-1. **Cron real, no manual.** Aún no hay filas en `cron.job_run_details`. El trabajo remoto está activo con `0 10 * * *`. Se dejó `QA Cron mañana COP`, 25.000 COP, día de cobro 12, activa y asociada a la Visa. El **12 de noviembre de 2026 después de las 05:00 de Bogotá (10:00 UTC)**, comprobar ejecución exitosa del trabajo y exactamente un movimiento `source=subscription`, fecha `2026-11-12`, para esa suscripción. No se cambió el horario ni se ejecutó el cron global manualmente sobre los datos del dueño. La RPC inmediata ya se verificó, pero no sustituye esta evidencia.
-2. **Comprobaciones del dueño.** Medir un registro en un celular físico en menos de 15 s; la automatización en Chrome móvil tardó 1,29–1,68 s por formulario/guardado, pero no mide escritura humana ni teclado táctil. Confirmar asunto/remitente de correos de Supabase con la marca Al Corte y revisar las variables del panel de Vercel; no se inspeccionaron sus paneles ni se envió correo a cuentas del dueño.
-3. **Herramienta visual exigida por el plan.** Se completó la matriz automática con axe-core, revisión de incompletos y teclado. No se ejecutó la extensión axe DevTools ni se usó un dispositivo táctil físico. Confirmar si se acepta esta equivalencia o realizar esas revisiones antes de marcar el punto compuesto del checklist. La aprobación visual general previa sigue vigente, no se inventa una aprobación nueva.
-4. **Cierre administrativo.** Solo después de resolver/aceptar las limitaciones anteriores: marcar el paso 20 y la tabla general como terminados, commit `chore: close mvp milestone` y etiqueta `mvp`. Las métricas bancarias de tres cortes continúan como seguimiento, no como éxito demostrado con datos ficticios.
+El dueño solicita realizar la revisión adicional y cerrar el MVP. Tras informar los límites de acceso y del plan Free, elige explícitamente **«Cerrar con limitaciones»**: celular físico, personalización de correos y nueva inspección del panel de Vercel pasan a seguimiento sin presentarlos como verificados.
+
+| Verificación de cierre | Resultado |
+| --- | --- |
+| Extensión real | axe DevTools 4.140.0 descargada de Chrome Web Store, instalada en un perfil aislado de Chrome for Testing 148; motor axe-core 4.13.0. Se usó el escáner gratuito, sin crear cuenta ni iniciar pruebas Pro. Telemetría, capturas opcionales y funciones de IA desactivadas antes de escanear. |
+| Matriz adicional | 52 escaneos: nueve rutas autenticadas, tres formularios y login × claro/oscuro × 360/1280 px. WCAG 2.2 AA y buenas prácticas activas, detalles/filtros desplegados. Cero fallas confirmadas de cualquier severidad, cero errores JS y sin desbordamiento horizontal en las rutas autenticadas. |
+| Casos manuales | La extensión señaló 140 ocurrencias `Needs Review` en la matriz autenticada, no 140 infracciones confirmadas: ejes SVG del historial, signos del extracto y foco/guardas de los diálogos. Se conservaron visibles y se revisaron aparte, sin ocultarlos ni contarlos automáticamente como aprobados. Ejes: mínimo 5,97:1 claro / 7,42:1 oscuro, incluidos los 25 textos del gráfico de escritorio; extracto: mínimo 16,70:1 / 14,66:1. Cada formulario comprobado con 30 Tab y cinco Shift+Tab en ambos temas: retiene el foco y lo devuelve al disparador con Escape. La revisión no certifica todos los criterios manuales WCAG ni incluye lector de pantalla físico. |
+| Rapidez automatizada | Registro de `QA Cierre MVP móvil 2026-11-12`, 12.500 COP, con viewport móvil/táctil de 360 px: 1.780 ms desde llenar el formulario hasta confirmar persistencia. No representa tiempo de escritura humana en un teléfono físico. El movimiento queda en producción. |
+| Cron programado | Trabajo 1, inicio `2026-11-12T10:00:00.194308Z`, fin `2026-11-12T10:00:00.360448Z`, `succeeded`. `QA Cron mañana COP` tiene exactamente un cobro `source=subscription`, fecha 2026-11-12 y monto 25.000 COP. No se disparó manualmente para sustituir esta prueba. |
+| Pruebas y cobertura | Repetidos typecheck, lint, Vitest (117 pruebas), cobertura de dominio 100 % en las cuatro métricas y build. Sin cambios de código de aplicación en este cierre. |
+| Base aislada | Proyecto local temporal `al-corte-close-validation`, puerto 56322. Reset desde cero de las diez migraciones y 167 pruebas SQL: PASS. Tipos regenerados sin diferencias. La base original del puerto 54322 no se reinició ni se borró. |
+| Remoto | Diez migraciones local/remoto coincidentes; `db lint` sin errores. Advisors conserva solo `auth_leaked_password_protection`, aceptada por el dueño al mantener Free. Registro público sigue desactivado. |
+| Correo | Se consultó la configuración real: remitente personalizado no configurado y asunto/plantilla de magic link predeterminados. Intento mínimo de personalización rechazado: HTTP 401 al cambiar el nombre sin SMTP propio, y HTTP 400 al cambiar asunto/plantilla con proveedor predeterminado en Free. Se confirmó por lectura posterior que los valores quedaron intactos. No se enviaron correos, no se contrató SMTP y no se cambió de plan. |
+| Datos conservados | Cuenta de validación: tres tarjetas, 39 movimientos (incluyen cron y nuevo gasto móvil), 40 cuotas, 28 extractos, siete suscripciones y doce categorías. Sin limpieza de datos remotos. |
+
+Las evidencias brutas y capturas de la herramienta son temporales, fuera del repositorio en `/tmp/opencode/`. Este registro resume los resultados durables sin credenciales. No se agregaron dependencias al proyecto ni se modificaron archivos `.env`.
+
+### Seguimiento aceptado — no bloquea este cierre
+
+- **Celular físico:** medir el registro humano en menos de 15 s y comprobar teclado táctil. Solo se verificó emulación móvil automatizada.
+- **Correos de Supabase:** personalizar asunto, contenido y remitente cuando exista SMTP propio compatible o un plan que lo permita. La marca en los correos predeterminados no está verificada ni corregida; el dueño acepta la limitación actual.
+- **Vercel:** nueva revisión de las variables y nombre del proyecto en el panel cuando se facilite acceso. Se conserva la comprobación anterior del paso 03 y la inspección de los scripts públicos del paso 20; no se afirma acceso nuevo al panel.
+- **Supabase Free:** protección de contraseñas filtradas no disponible, aceptada explícitamente. No se ocultó la advertencia.
+- **Uso real:** tres cortes bancarios, cobros de suscripciones contra extractos y cualquier incidencia de instrumentación exclusiva de `next dev` que vuelva a aparecer.
+
+El cierre administrativo se registra en el commit `chore: close mvp milestone`, identificado por la etiqueta `mvp`. Esta aprobación con limitaciones no transforma los seguimientos anteriores en pruebas realizadas.
 
 Consulta de seguimiento (solo lectura):
 

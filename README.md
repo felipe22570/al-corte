@@ -37,7 +37,9 @@ Producción: https://al-corte-three.vercel.app/. Un push a `main` dispara el des
 
 El registro público también debe estar desactivado en **Supabase remoto**; la opción local de `config.toml` no basta. Se verificó y corrigió el 11 de noviembre de 2026: `/auth/v1/signup` responde `signup_disabled` (HTTP 422). No ejecutes `supabase config push` contra producción con las URLs de desarrollo: primero revisa `supabase config diff` y limita el cambio a las propiedades deseadas.
 
-El estado de la validación final, las evidencias y los pendientes de cierre están en [el paso 20](plans/20-validacion-mvp.md).
+El MVP se cerró el 12 de noviembre de 2026 y su commit está identificado por la etiqueta `mvp`: 117 pruebas de aplicación, 167 SQL, cobertura de dominio 100 %, revisión adicional con axe DevTools y cron comprobado en producción. Las evidencias y limitaciones aceptadas por el dueño están en [el paso 20](plans/20-validacion-mvp.md).
+
+El cierre conserva como seguimiento la prueba en celular físico, la personalización de correos de Supabase y una nueva inspección del panel de Vercel. La personalización del correo con el proveedor predeterminado está bloqueada en Free; requiere SMTP propio compatible u otro plan. No se contrató ningún servicio ni se modificó el proveedor de correo.
 
 El esquema `private` contiene la implementación privilegiada del cobro inmediato; no debe agregarse a los esquemas expuestos por la Data API. La RPC pública usa `SECURITY INVOKER` y conserva la validación de dueño en su implementación privada. La protección contra contraseñas filtradas requiere Supabase Pro o superior: el dueño decidió mantener Free y aceptar esa advertencia, sin ocultarla.
 
