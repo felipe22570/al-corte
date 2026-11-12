@@ -24,6 +24,7 @@ describe("responsive content", () => {
     const cardId = "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa";
     const categoryId = "bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb";
     const html = renderToStaticMarkup(<TransactionForm
+      userId="owner"
       cards={[{ id: cardId, name: "Visa", last4: "1234", color: "card-1", cutoffDay: 15, paymentDay: 2, purchaseRateEa: "0.28", advanceRateEa: "0.32", advanceFee: "0", amortizationMethod: "fixed_principal" }]}
       categories={[{ id: categoryId, name: "Mercado", icon: "shopping-cart" }]}
       today="2026-11-11"

@@ -1,9 +1,10 @@
 import Decimal from "decimal.js";
-import { parseIsoDate, type IsoDate } from "@/lib/domain/dates";
+import { isValidIsoDate, parseIsoDate, type IsoDate } from "@/lib/domain/dates";
 import { toDecimal, type Currency } from "@/lib/domain/money";
 
 type Amount = string | Decimal;
 const months = ["ene", "feb", "mar", "abr", "may", "jun", "jul", "ago", "sep", "oct", "nov", "dic"];
+const monthNames = ["Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio", "Julio", "Agosto", "Septiembre", "Octubre", "Noviembre", "Diciembre"];
 const weekdays = ["dom", "lun", "mar", "mié", "jue", "vie", "sáb"];
 
 function formatAmount(value: Amount, decimals: number, prefix: string): string {
@@ -31,6 +32,15 @@ export function formatDateWithWeekday(date: IsoDate, today: IsoDate) {
   const y = year - (month < 3 ? 1 : 0);
   const weekday = (y + Math.floor(y / 4) - Math.floor(y / 100) + Math.floor(y / 400) + offsets[month - 1]! + day) % 7;
   return `${weekdays[weekday]} ${formatDateShort(date, today)}`;
+}
+export function formatDateInput(date: string) {
+  if (!isValidIsoDate(date)) return date;
+  const [year, month, day] = date.split("-");
+  return `${day}/${month}/${year}`;
+}
+export function formatMonth(month: string, style: "short" | "long" = "short") {
+  const { year, month: number } = parseIsoDate(`${month}-01`);
+  return `${(style === "long" ? monthNames : months)[number - 1]} ${String(year).padStart(4, "0")}`;
 }
 export function formatPercent(value: string | Decimal) { return `${toDecimal(value).times(100).toDecimalPlaces(0, Decimal.ROUND_HALF_UP).toString()}%`; }
 export function formatRate(value: string | Decimal) { return `${toDecimal(value).times(100).toFixed(2, Decimal.ROUND_HALF_UP).replace(".", ",")}% E.A.`; }

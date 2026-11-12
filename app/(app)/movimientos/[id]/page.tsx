@@ -7,6 +7,7 @@ import { CardColorChip } from "@/components/card-color-chip";
 import { DeleteTransactionButton } from "@/components/delete-transaction-button";
 import { Money } from "@/components/money";
 import { PageHeader } from "@/components/page-header";
+import { buttonVariants } from "@/components/ui/button";
 import type { CardColor } from "@/lib/card-colors";
 import { categoryIcons, type CategoryIcon } from "@/lib/category-icons";
 import { todayInBogota } from "@/lib/domain/dates";
@@ -50,5 +51,27 @@ export default async function TransactionDetailPage({ params }: { params: Promis
     return { number: item.number, cutoffDate, principal: item.principal, interest: item.interest, total: item.total, balanceAfter: item.balance_after, principalCop: item.principal_cop, interestCop: item.interest_cop, totalCop: item.total_cop };
   });
   const today = todayInBogota();
-  return <><PageHeader title="Detalle del movimiento" subtitle={typeLabels[transaction.type] ?? transaction.type} /><div className="flex max-w-2xl flex-col gap-6"><section className="flex flex-col gap-4 rounded-xl border border-border bg-card p-4"><div><p className="text-small text-muted-foreground">Valor</p><Money value={transaction.amount} currency={transaction.currency} size="lg" /></div>{transaction.currency === "USD" && <p className="text-body">Estimado en pesos: <Money value={transaction.amount_cop} currency="COP" /> · TRM {transaction.fx_rate && formatExchangeRate(transaction.fx_rate)}</p>}<dl className="grid grid-cols-1 gap-3 text-body"><div><dt className="text-small text-muted-foreground">Tarjeta</dt><dd><CardColorChip color={card.color} name={`${card.name} · •••• ${card.last4}`} /></dd></div><div><dt className="text-small text-muted-foreground">Fecha</dt><dd>{formatDateShort(transaction.date, today)}</dd></div><div><dt className="text-small text-muted-foreground">Corte</dt><dd><Link href={`/tarjetas/${transaction.card_id}/extractos/${cutoff}`} className="underline">{formatDateShort(cutoff, today)}</Link></dd></div><div><dt className="text-small text-muted-foreground">Comercio</dt><dd>{transaction.merchant || "Sin comercio"}</dd></div><div><dt className="text-small text-muted-foreground">Categoría</dt><dd className="flex items-center gap-2">{Icon && <Icon aria-hidden="true" className="size-5 text-muted-foreground" strokeWidth={1.75} />}{category?.name ?? "Sin categoría"}</dd></div><div><dt className="text-small text-muted-foreground">Origen</dt><dd>{transaction.subscription_id ? <Link className="underline" href={`/suscripciones#suscripcion-${transaction.subscription_id}`}>Suscripción</Link> : sourceLabels[transaction.source] ?? transaction.source}</dd></div>{transaction.note && <div><dt className="text-small text-muted-foreground">Nota</dt><dd className="whitespace-pre-wrap">{transaction.note}</dd></div>}</dl></section>{items.length > 0 && <AmortizationTable items={items} currency={transaction.currency} today={today} />}{!(transaction.type === "advance_fee" && transaction.parent_id) && <><Link href={`/movimientos/${id}/editar`} className="inline-flex min-h-11 items-center justify-center rounded-md border border-border px-4 text-body">Editar movimiento</Link><DeleteTransactionButton id={id} installments={items.length} childrenCount={childrenResult.count ?? 0} /></>}</div></>;
+  const editable = !(transaction.type === "advance_fee" && transaction.parent_id);
+  return (
+    <>
+      <PageHeader title="Detalle del movimiento" subtitle={typeLabels[transaction.type] ?? transaction.type} action={editable && <Link href={`/movimientos/${id}/editar`} className={buttonVariants({ variant: "outline" })}>Editar movimiento</Link>} />
+      <div className="flex flex-col gap-6">
+        <section className="flex flex-col gap-4 rounded-xl border border-border bg-card p-4">
+          <div><p className="text-small text-muted-foreground">Valor</p><Money value={transaction.amount} currency={transaction.currency} size="lg" /></div>
+          {transaction.currency === "USD" && <p className="text-body">Estimado en pesos: <Money value={transaction.amount_cop} currency="COP" /> · TRM {transaction.fx_rate && formatExchangeRate(transaction.fx_rate)}</p>}
+          <dl className="grid grid-cols-1 gap-3 text-body">
+            <div><dt className="text-small text-muted-foreground">Tarjeta</dt><dd><CardColorChip color={card.color} name={`${card.name} · •••• ${card.last4}`} /></dd></div>
+            <div><dt className="text-small text-muted-foreground">Fecha</dt><dd>{formatDateShort(transaction.date, today)}</dd></div>
+            <div><dt className="text-small text-muted-foreground">Corte</dt><dd><Link href={`/tarjetas/${transaction.card_id}/extractos/${cutoff}`} className="underline">{formatDateShort(cutoff, today)}</Link></dd></div>
+            <div><dt className="text-small text-muted-foreground">Comercio</dt><dd>{transaction.merchant || "Sin comercio"}</dd></div>
+            <div><dt className="text-small text-muted-foreground">Categoría</dt><dd className="flex items-center gap-2">{Icon && <Icon aria-hidden="true" className="size-5 text-muted-foreground" strokeWidth={1.75} />}{category?.name ?? "Sin categoría"}</dd></div>
+            <div><dt className="text-small text-muted-foreground">Origen</dt><dd>{transaction.subscription_id ? <Link className="underline" href={`/suscripciones#suscripcion-${transaction.subscription_id}`}>Suscripción</Link> : sourceLabels[transaction.source] ?? transaction.source}</dd></div>
+            {transaction.note && <div><dt className="text-small text-muted-foreground">Nota</dt><dd className="whitespace-pre-wrap">{transaction.note}</dd></div>}
+          </dl>
+        </section>
+        {items.length > 0 && <AmortizationTable items={items} currency={transaction.currency} today={today} />}
+        {editable && <DeleteTransactionButton id={id} installments={items.length} childrenCount={childrenResult.count ?? 0} />}
+      </div>
+    </>
+  );
 }

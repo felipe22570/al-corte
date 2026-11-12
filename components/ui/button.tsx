@@ -2,8 +2,8 @@ import { Button as ButtonPrimitive } from "@base-ui/react/button"
 import { cva, type VariantProps } from "class-variance-authority"
 import { cn } from "@/lib/utils"
 
-const buttonVariants = cva(
-  "group/button inline-flex shrink-0 items-center justify-center rounded-md border border-transparent text-body font-medium whitespace-nowrap motion-safe:transition-colors outline-none focus-visible:border-ring focus-visible:ring-2 focus-visible:ring-ring/50 disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-5",
+const buttonStyles = cva(
+  "group/button inline-flex shrink-0 items-center justify-center rounded-md border border-transparent text-body font-medium whitespace-nowrap motion-safe:transition-colors outline-none focus-visible:border-ring focus-visible:ring-2 focus-visible:ring-ring/50 disabled:pointer-events-none disabled:opacity-50 pointer-coarse:min-w-11 [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-5",
   {
     variants: {
       variant: {
@@ -19,14 +19,14 @@ const buttonVariants = cva(
         link: "text-primary underline-offset-4 hover:underline",
       },
       size: {
-        default: "h-11 gap-2 px-4",
-        xs: "h-11 gap-2 px-3",
-        sm: "h-11 gap-2 px-3",
-        lg: "h-11 gap-2 px-4",
-        icon: "size-11",
-        "icon-xs": "size-11",
-        "icon-sm": "size-11",
-        "icon-lg": "size-11",
+        default: "h-10 gap-2 px-4 pointer-coarse:h-11",
+        xs: "h-9 gap-2 px-2 pointer-coarse:h-11",
+        sm: "h-9 gap-2 px-3 pointer-coarse:h-11",
+        lg: "h-10 gap-2 px-6 pointer-coarse:h-11",
+        icon: "size-10 pointer-coarse:size-11",
+        "icon-xs": "size-9 pointer-coarse:size-11",
+        "icon-sm": "size-9 pointer-coarse:size-11",
+        "icon-lg": "size-10 pointer-coarse:size-11",
       },
     },
     defaultVariants: {
@@ -35,6 +35,10 @@ const buttonVariants = cva(
     },
   }
 )
+
+function buttonVariants(props?: Parameters<typeof buttonStyles>[0]) {
+  return cn(buttonStyles(props))
+}
 
 function Button({
   className,
@@ -45,7 +49,7 @@ function Button({
   return (
     <ButtonPrimitive
       data-slot="button"
-      className={cn(buttonVariants({ variant, size, className }))}
+      className={typeof className === "function" ? (state) => cn(buttonVariants({ variant, size }), className(state)) : buttonVariants({ variant, size, className })}
       {...props}
     />
   )

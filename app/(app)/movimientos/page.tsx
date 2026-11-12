@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import Decimal from "decimal.js";
-import { List } from "lucide-react";
+import { ChevronDown, List } from "lucide-react";
 import { CategorySpendingChart } from "@/components/category-spending-chart";
 import { EmptyState } from "@/components/empty-state";
 import { HistoryFilters } from "@/components/history-filters";
@@ -50,5 +50,20 @@ export default async function MovimientosPage({ searchParams }: { searchParams: 
   const monthly = spendingByMonth(chartMovements, filters.mes).map((item) => ({ month: item.month, amounts: Object.fromEntries(Object.entries(item.cards).map(([id, value]) => [id, value.toString()])) }));
   const categoryChart = spendingByCategory(chartMovements, filters.mes).map((item) => { const category = categories.find((entry) => entry.id === item.categoryId); return { id: item.categoryId ?? "none", name: category?.name ?? "Sin categoría", icon: category?.icon ?? null, amount: item.amount.toString() }; });
   const pageUrl = (number: number) => { const params = new URLSearchParams(); for (const key of ["mes", "tarjeta", "categoria", "tipo", "q"] as const) { const value = filters[key]; if (value) params.set(key, value); } params.set("pagina", String(number)); return `/movimientos?${params}`; };
-  return <><PageHeader title="Movimientos" subtitle="Consulta tus gastos y pagos." /><div className="flex max-w-2xl flex-col gap-6"><HistoryFilters filters={filters} cards={cards} categories={categories} /><MonthlySpendingChart rows={monthly} cards={chartCards} /><CategorySpendingChart rows={categoryChart} />{shown.length ? <><TransactionList rows={shown} allRows={filtered} cards={cards} categories={categories} today={today} />{pageCount > 1 && <nav aria-label="Páginas del historial" className="flex items-center justify-between gap-4 text-body">{page > 1 ? <Link className="min-h-11 underline" href={pageUrl(page - 1)}>Anterior</Link> : <span />}<span>Página {page} de {pageCount}</span>{page < pageCount ? <Link className="min-h-11 underline" href={pageUrl(page + 1)}>Siguiente</Link> : <span />}</nav>}</> : <EmptyState icon={List} text="No hay movimientos con estos filtros." action={<Link href="/movimientos" className="text-body underline">Limpiar filtros</Link>} />}</div></>;
+  return (
+    <>
+      <PageHeader title="Movimientos" subtitle="Consulta tus gastos y pagos." />
+      <div className="flex flex-col gap-6">
+        <HistoryFilters filters={filters} cards={cards} categories={categories} count={filtered.length} />
+        {shown.length ? <>
+          <TransactionList rows={shown} allRows={filtered} cards={cards} categories={categories} today={today} />
+          {pageCount > 1 && <nav aria-label="Páginas del historial" className="flex items-center justify-between gap-4 text-body">{page > 1 ? <Link className="min-h-11 underline" href={pageUrl(page - 1)}>Anterior</Link> : <span />}<span>Página {page} de {pageCount}</span>{page < pageCount ? <Link className="min-h-11 underline" href={pageUrl(page + 1)}>Siguiente</Link> : <span />}</nav>}
+        </> : <EmptyState icon={List} text="No hay movimientos con estos filtros." action={<Link href="/movimientos" className="text-body underline">Limpiar filtros</Link>} />}
+        <details className="group border-t border-border">
+          <summary className="flex min-h-10 cursor-pointer list-none items-center justify-between gap-3 rounded-md py-2 text-body focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring pointer-coarse:min-h-11 [&::-webkit-details-marker]:hidden"><span>Ver gráficos de gasto</span><ChevronDown aria-hidden="true" className="size-5 text-muted-foreground group-open:rotate-180" strokeWidth={1.75} /></summary>
+          <div className="mt-3 flex flex-col gap-6"><MonthlySpendingChart rows={monthly} cards={chartCards} /><CategorySpendingChart rows={categoryChart} /></div>
+        </details>
+      </div>
+    </>
+  );
 }

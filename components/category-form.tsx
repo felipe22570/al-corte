@@ -7,6 +7,7 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { NativeSelect } from "@/components/ui/native-select";
 import { Sheet } from "@/components/ui/sheet";
 import { createCategory, updateCategory } from "@/lib/actions/categories";
 import { CATEGORY_ICON_NAMES, categoryIconLabels, categoryIcons, type CategoryIcon } from "@/lib/category-icons";
@@ -33,7 +34,7 @@ export function CategoryForm({ category }: { category?: CategoryRecord }) {
     <form onSubmit={onSubmit} className="flex flex-col gap-6" noValidate>
       {serverError && <Alert variant="destructive"><AlertDescription>{serverError}</AlertDescription></Alert>}
       <div className="flex flex-col gap-2"><Label htmlFor="category-name">Nombre</Label><Input id="category-name" aria-invalid={!!form.formState.errors.name} aria-describedby={form.formState.errors.name ? "category-name-error" : undefined} {...form.register("name")} />{form.formState.errors.name?.message && <p id="category-name-error" role="alert" className="text-small text-danger">{form.formState.errors.name.message}</p>}</div>
-      <div className="flex flex-col gap-2"><Label htmlFor="category-icon">Icono</Label><div className="flex items-center gap-3"><Icon className="size-5 shrink-0 text-muted-foreground" strokeWidth={1.75} aria-hidden="true" /><select id="category-icon" className="h-11 w-full rounded-md border border-input bg-card px-3 text-input text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring" {...form.register("icon")}>{CATEGORY_ICON_NAMES.map((name) => <option key={name} value={name}>{categoryIconLabels[name]}</option>)}</select></div></div>
+      <div className="flex flex-col gap-2"><Label htmlFor="category-icon">Icono</Label><div className="flex items-center gap-3"><Icon className="size-5 shrink-0 text-muted-foreground" strokeWidth={1.75} aria-hidden="true" /><NativeSelect id="category-icon" {...form.register("icon")}>{CATEGORY_ICON_NAMES.map((name) => <option key={name} value={name}>{categoryIconLabels[name]}</option>)}</NativeSelect></div></div>
       <Button type="submit" disabled={form.formState.isSubmitting}>{form.formState.isSubmitting ? "Guardando…" : "Guardar"}</Button>
     </form>
   </Sheet>{saved && <span role="status" className="text-small text-muted-foreground">Categoría guardada.</span>}</>;

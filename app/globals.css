@@ -27,6 +27,8 @@
   /* fechas, comercios, ayudas */
   --border: #e2ded5;
   /* bordes y separadores de 1px */
+  --overlay: #0f1412;
+  /* velo oscuro estable en ambos temas, independiente de la tinta */
 
   /* Marca y estados */
   --primary: #0f6b4f;
@@ -90,6 +92,7 @@
 
 .dark {
   color-scheme: dark;
+  --overlay: #0f1412;
 
   --surface: #0f1412;
   --surface-raised: #171d1a;
@@ -146,6 +149,7 @@
   --color-accent-foreground: var(--accent-foreground);
   --color-destructive: var(--destructive);
   --color-border: var(--border);
+  --color-overlay: var(--overlay);
   --color-field-border: var(--input);
   --color-ring: var(--ring);
   --color-chart-1: var(--chart-1);
@@ -231,6 +235,12 @@
   }
 }
 
+@media (width < 48rem) {
+  html {
+    scroll-padding-bottom: calc(11rem + env(safe-area-inset-bottom));
+  }
+}
+
 @utility text-small {
   font-size: 13px;
   line-height: 18px;
@@ -272,5 +282,11 @@
 
   main details li > a {
     @apply min-h-11;
+  }
+}
+
+@layer components {
+  .chart-axis {
+    @apply text-small;
   }
 }

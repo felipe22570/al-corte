@@ -157,7 +157,8 @@ const bricolage = Bricolage_Grotesque({ subsets: ["latin"], variable: "--font-br
 
 - Retícula de 4px. Padding de tarjetas y margen lateral en el celular: `p-4` / `px-4`. Entre secciones: `gap-6`.
 - Radios: `rounded-sm` (6px) etiquetas, `rounded-md` (10px) botones y campos, `rounded-xl` (16px) tarjetas y hojas, `rounded-full` botón flotante y barras de utilización.
-- Áreas táctiles de al menos 44 × 44 px.
+- Áreas táctiles de 44 × 44 px en pantallas táctiles (`pointer-coarse:`). En escritorio, botones y campos miden 36–40 px (`h-9`/`h-10`). Nunca fuerces 44 px en todos los tamaños de botón.
+- Layout: el contenido de cada página se centra en el área a la derecha de la barra lateral, con un ancho máximo común para encabezado y contenido. Las páginas de consulta pueden usar dos columnas en pantallas anchas.
 - Iconos de Lucide a 20px (`size-5`) con `strokeWidth={1.75}`, en `text-muted-foreground` salvo en estados. Sin emojis ni ilustraciones.
 
 **Textos de la interfaz**

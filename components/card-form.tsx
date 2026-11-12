@@ -10,6 +10,7 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { NativeSelect } from "@/components/ui/native-select";
 import { Sheet } from "@/components/ui/sheet";
 import { createCard, updateCard } from "@/lib/actions/cards";
 import { CARD_COLORS, type CardColor } from "@/lib/card-colors";
@@ -27,7 +28,6 @@ const fields: Array<{ name: FieldPath<CardInput>; label: string; inputMode?: "de
   { name: "advanceFee", label: "Comisión por avance", inputMode: "decimal" },
   { name: "handlingFee", label: "Cuota de manejo mensual", inputMode: "decimal" },
 ];
-const selectClass = "h-11 w-full rounded-md border border-input bg-card px-3 text-input text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring";
 const inputValue = (value: string) => value.replace(".", ",");
 
 export function CardForm({ card, usedColors }: { card?: CardRecord; usedColors: CardColor[] }) {
@@ -63,9 +63,9 @@ export function CardForm({ card, usedColors }: { card?: CardRecord; usedColors: 
     <form onSubmit={onSubmit} className="flex flex-col gap-6" noValidate>
       {serverError && <Alert variant="destructive"><AlertDescription>{serverError}</AlertDescription></Alert>}
       {card && <Alert variant="warning"><AlertDescription>Los cambios de corte o pago solo afectan movimientos nuevos. Las tasas no recalculan cuotas existentes.</AlertDescription></Alert>}
-      <fieldset className="flex flex-col gap-4"><legend className="mb-4 text-heading">Datos básicos</legend><div className="grid gap-4 sm:grid-cols-2">{fields.slice(0, 4).map(renderField)}<div className="flex flex-col gap-2"><Label htmlFor="card-network">Franquicia</Label><select id="card-network" className={selectClass} {...form.register("network")}><option>Visa</option><option>Mastercard</option><option>American Express</option><option>Diners</option><option>Otra</option></select></div></div></fieldset>
+      <fieldset className="flex flex-col gap-4"><legend className="mb-4 text-heading">Datos básicos</legend><div className="grid gap-4 sm:grid-cols-2">{fields.slice(0, 4).map(renderField)}<div className="flex flex-col gap-2"><Label htmlFor="card-network">Franquicia</Label><NativeSelect id="card-network" {...form.register("network")}><option>Visa</option><option>Mastercard</option><option>American Express</option><option>Diners</option><option>Otra</option></NativeSelect></div></div></fieldset>
       <fieldset className="flex flex-col gap-4"><legend className="mb-4 text-heading">Fechas</legend><div className="grid gap-4 sm:grid-cols-2">{fields.slice(4, 6).map(renderField)}</div></fieldset>
-      <fieldset className="flex flex-col gap-4"><legend className="mb-4 text-heading">Tasas y costos</legend><div className="grid gap-4 sm:grid-cols-2">{fields.slice(6).map(renderField)}<div className="flex flex-col gap-2"><Label htmlFor="card-method">Método de amortización</Label><select id="card-method" className={selectClass} {...form.register("amortizationMethod")}><option value="fixed_principal">Capital fijo</option><option value="french">Cuota fija</option></select></div></div></fieldset>
+      <fieldset className="flex flex-col gap-4"><legend className="mb-4 text-heading">Tasas y costos</legend><div className="grid gap-4 sm:grid-cols-2">{fields.slice(6).map(renderField)}<div className="flex flex-col gap-2"><Label htmlFor="card-method">Método de amortización</Label><NativeSelect id="card-method" {...form.register("amortizationMethod")}><option value="fixed_principal">Capital fijo</option><option value="french">Cuota fija</option></NativeSelect></div></div></fieldset>
       <Controller control={form.control} name="color" render={({ field }) => <CardColorPicker value={field.value} onChange={field.onChange} />} />
       <CardColorChip color={color ?? preferredColor} name={`${name || "Tu tarjeta"} · •••• ${last4 || "0000"}`} />
       <Button type="submit" disabled={form.formState.isSubmitting}>{form.formState.isSubmitting ? "Guardando…" : "Guardar"}</Button>
