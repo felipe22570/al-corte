@@ -130,6 +130,8 @@ El paso está terminado cuando todos los checklists anteriores están marcados (
 
 Las herramientas de navegador, axe y Lighthouse se ejecutaron fuera del repositorio; no se agregaron dependencias. Las capturas e informes brutos temporales están fuera de git en `/tmp/opencode/`. Esta tabla es el registro durable, sin contraseñas ni tokens.
 
+**Comprobación adicional local:** al borrar una compra o avance, `next dev` mostró `Performance.measure: TransactionDetailPage cannot have a negative time stamp`, después de que el borrado se completara correctamente. Se repitió el flujo completo con `next build` + `next start`, apuntando exclusivamente a la instancia aislada: compra y avance creados a tres cuotas, borrado con cascadas y cierre de sesión correctos, **cero errores de navegador**. El mensaje no se reprodujo en modo producción; queda registrado como incidencia de instrumentación de desarrollo de Next.js/React para investigar si vuelve a aparecer, no se silenció mediante código de la app.
+
 ### Fallas encontradas y corregidas
 
 | Hallazgo | Corrección y verificación |
