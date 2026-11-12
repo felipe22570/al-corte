@@ -146,7 +146,7 @@
   --color-accent-foreground: var(--accent-foreground);
   --color-destructive: var(--destructive);
   --color-border: var(--border);
-  --color-input: var(--input);
+  --color-field-border: var(--input);
   --color-ring: var(--ring);
   --color-chart-1: var(--chart-1);
   --color-chart-2: var(--chart-2);
@@ -219,6 +219,18 @@
   font-weight: 400;
 }
 
+/* Conserva el nombre de borde sin generar un color de texto text-input. */
+@utility border-input {
+  border-color: var(--input);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  /* Recharts define esta transición en línea. */
+  .recharts-tooltip-wrapper {
+    transition: none !important;
+  }
+}
+
 @utility text-small {
   font-size: 13px;
   line-height: 18px;
@@ -251,5 +263,14 @@
 
   body {
     @apply bg-background text-foreground font-sans text-body antialiased;
+  }
+
+  /* Enlaces de texto y filas dentro de desgloses deben ser fáciles de tocar. */
+  main a.underline {
+    @apply inline-flex min-h-11 min-w-11 items-center;
+  }
+
+  main details li > a {
+    @apply min-h-11;
   }
 }

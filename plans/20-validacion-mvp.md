@@ -62,6 +62,7 @@ Confirmar que el MVP cumple todos los criterios de aceptación de F1–F8 del PR
 
 - [ ] `pnpm typecheck && pnpm lint && pnpm test && pnpm test:coverage` en verde; cobertura 100% en `lib/domain/`.
 - [ ] `supabase db reset && supabase test db` en verde, incluida la prueba de RLS con segundo usuario.
+- [ ] Completar la checklist visual y de interacciones que quedó parcial en el paso 19 y verificar accesibilidad con axe DevTools; la aprobación visual del dueño fue general y se usó axe-core como alternativa parcial.
 - [ ] Ningún cálculo de dinero con `number` (revisión de `lib/` y `app/`: buscar `parseFloat`, `Number(`, `+` sobre montos).
 - [ ] Fechas de negocio como `date` / `YYYY-MM-DD`; `new Date()` solo en `todayInBogota`.
 - [ ] Registro público desactivado en producción (curl del paso 03).
@@ -98,3 +99,5 @@ El paso está terminado cuando todos los checklists anteriores están marcados (
 ## Notas de progreso
 
 <!-- Fecha — nota -->
+
+2026-11-11 — El paso 19 recibió aprobación visual general. Sus capturas se eliminaron a solicitud del dueño. El reset local no se ejecutó en el paso 19 para preservar los datos existentes: solicitar autorización antes de borrar o recrear la base local.

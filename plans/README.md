@@ -46,10 +46,10 @@ Prompt sugerido para el agente al iniciar un paso:
 | 16 | [Tablero](16-tablero.md) | H7 | ✅ | Ver historial de git |
 | 17 | [Historial con filtros y gráficos](17-historial.md) | H7 | ✅ | Ver historial de git |
 | 18 | [Pulido funcional: estados, accesibilidad y exportación](18-pulido-exportacion.md) | H8 | ✅ | Ver historial de git |
-| 19 | [Revisión y pulido del diseño visual](19-revision-diseno.md) | H8 | ⬜ | |
+| 19 | [Revisión y pulido del diseño visual](19-revision-diseno.md) | H8 | ✅ | Ver historial de git |
 | 20 | [Validación final del MVP](20-validacion-mvp.md) | — | ⬜ | |
 
-Paso actual: **19** (revisión visual pendiente). El paso 18 fue aceptado con las limitaciones de validación indicadas en su plan. El paso 15 fue aceptado por el dueño con la interacción tras navegar a un fragmento sin validación táctil real. La migración remota está aplicada y el cron activo; se verificó una ejecución programada con un trabajo temporal local, no una ejecución programada remota.
+Paso actual: **20** (validación final pendiente). El paso 19 fue aprobado visualmente por el dueño con las limitaciones documentadas en su plan; las capturas se eliminaron por su solicitud. El paso 18 fue aceptado con las limitaciones de validación indicadas en su plan. El paso 15 fue aceptado por el dueño con la interacción tras navegar a un fragmento sin validación táctil real. La migración remota está aplicada y el cron activo; se verificó una ejecución programada con un trabajo temporal local, no una ejecución programada remota.
 
 El paso 09 solo depende del 02: se puede adelantar justo después del 03 para que el login y todo lo que siga nazcan con el diseño correcto.
 
@@ -141,7 +141,7 @@ El PRD no cubría estos puntos o los dejaba ambiguos. Todas quedaron **decididas
 
 ### Decisiones de diseño
 
-Salen de comparar `AGENTS.md`, el PRD y `app/globals.css`. D11, D12, D13 y el alias `chart-6` fueron aprobados el 2026-11-10; D14 queda pendiente para el paso 19.
+Salen de comparar `AGENTS.md`, el PRD y `app/globals.css`. D11, D12, D13 y el alias `chart-6` fueron aprobados el 2026-11-10; D14 fue aprobado el 2026-11-11.
 
 | # | Tema | Propuesta por defecto | Paso afectado |
 | --- | --- | --- | --- |

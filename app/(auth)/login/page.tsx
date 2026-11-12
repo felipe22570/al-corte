@@ -2,7 +2,7 @@ import { redirect } from "next/navigation";
 
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { LoginSubmitButtons } from "@/components/login-submit-buttons";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardDescription, CardHeader } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { AppWordmark } from "@/components/app-wordmark";
@@ -29,7 +29,7 @@ export default async function LoginPage({ searchParams }: LoginPageProps) {
       <div className="w-full max-w-sm space-y-2"><AppWordmark /><p className="text-body text-muted-foreground">{APP_TAGLINE}</p></div>
       <Card className="w-full max-w-sm">
         <CardHeader>
-          <CardTitle>Inicia sesión</CardTitle>
+          <h1 className="text-heading">Inicia sesión</h1>
           <CardDescription>Ingresa para consultar tus tarjetas de crédito.</CardDescription>
         </CardHeader>
         <CardContent>

@@ -23,6 +23,15 @@ it("sincroniza los colores de marca y asegura contraste de los campos", () => {
   expect(contrast(light.input!, light["surface-raised"]!)).toBeGreaterThanOrEqual(3);
   expect(contrast(dark.input!, dark["surface-raised"]!)).toBeGreaterThanOrEqual(3);
 });
+it("separa el color del borde de la utilidad tipográfica de los campos", () => {
+  expect(css).not.toMatch(/--color-input\s*:/);
+  expect(css).toMatch(/@utility border-input\s*\{\s*border-color:\s*var\(--input\)/);
+});
+it("mantiene el favicon neutro sincronizado con el color primario", () => {
+  const icon = readFileSync("app/icon.svg", "utf8");
+  expect(icon).toContain(tokens(":root").primary);
+  expect(icon).toContain(tokens("\\.dark").primary);
+});
 it("cumple los contrastes de texto y tarjetas en ambos temas", () => {
   const pairs: Array<[string, string, number]> = [
     ["ink", "surface", 4.5], ["ink", "surface-raised", 4.5],
