@@ -39,6 +39,8 @@ El registro público también debe estar desactivado en **Supabase remoto**; la 
 
 El estado de la validación final, las evidencias y los pendientes de cierre están en [el paso 20](plans/20-validacion-mvp.md).
 
+El esquema `private` contiene la implementación privilegiada del cobro inmediato; no debe agregarse a los esquemas expuestos por la Data API. La RPC pública usa `SECURITY INVOKER` y conserva la validación de dueño en su implementación privada. La protección contra contraseñas filtradas requiere Supabase Pro o superior: el dueño decidió mantener Free y aceptar esa advertencia, sin ocultarla.
+
 ## Respaldo
 
 En Ajustes → Tus datos puedes descargar un JSON con las tablas de tu cuenta y las TRM compartidas, o CSV individuales. El JSON conserva los montos decimales como texto y es la opción recomendada para respaldar datos. Las tablas se consultan por separado: evita modificar datos mientras se genera el respaldo. Los CSV incluyen BOM UTF-8 y mantienen el texto original: antes de abrirlos en una hoja de cálculo, revisa los campos que puedan interpretarse como fórmulas. La exportación requiere una sesión activa y respeta las políticas RLS.

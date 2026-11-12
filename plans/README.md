@@ -49,7 +49,7 @@ Prompt sugerido para el agente al iniciar un paso:
 | 19 | [Revisión y pulido del diseño visual](19-revision-diseno.md) | H8 | ✅ | Ver historial de git |
 | 20 | [Validación final del MVP](20-validacion-mvp.md) | — | 🟡 | |
 
-Paso actual: **20** (validación ejecutada en local aislado y producción; cierre pendiente de las comprobaciones externas detalladas en su plan). Pasan 117 pruebas de Vitest, 151 pruebas SQL, cobertura de dominio 100 %, build y lint. Se conservan los datos de la cuenta de validación en producción. Las correcciones de móvil están desplegadas y el registro público remoto quedó desactivado. El cron está activo; falta observar el cobro programado del 12 de noviembre de 2026 a las 05:00 de Bogotá. No se ha creado la etiqueta `mvp`.
+Paso actual: **20** (validación ejecutada en local aislado y producción; cierre pendiente de las comprobaciones externas detalladas en su plan). Pasan 117 pruebas de Vitest, 167 pruebas SQL, cobertura de dominio 100 %, build y lint. Se conservan los datos de la cuenta de validación en producción. Las correcciones de móvil están desplegadas y el registro público remoto quedó desactivado. La advertencia de RPC privilegiada se corrigió con una implementación privada y fachada pública `SECURITY INVOKER`; el dueño acepta la advertencia de contraseñas filtradas al mantener Supabase Free. El cron está activo; falta observar el cobro programado del 12 de noviembre de 2026 a las 05:00 de Bogotá. No se ha creado la etiqueta `mvp`.
 
 El paso 19 conserva la aprobación visual general del dueño; sus capturas se eliminaron por su solicitud. En el paso 20 se repitieron las verificaciones de producción a 360/1280 px en ambos temas con axe-core y pruebas de teclado. Las limitaciones que requieren dispositivo físico, configuración de servicios o aprobación explícita no se dan por resueltas automáticamente.
 
@@ -171,3 +171,4 @@ Anota aquí cada decisión tomada durante la implementación (fecha, paso, decis
 | 2026-11-10 | 13 | Al editar se conserva la tasa original si no cambian tarjeta ni tipo; de lo contrario se usa la tasa vigente de la nueva selección. | Confirmación del dueño. |
 | 2026-11-10 | 15 | Al guardar una suscripción, se genera el cobro correspondiente a hoy si aplica, sin esperar al siguiente cron. | Confirmación del dueño. |
 | 2026-11-11 | 16 | Mostrar primero el extracto no pagado de vencimiento más antiguo, incluso si está vencido. | Confirmación del dueño. |
+| 2026-11-11 | 20 | Mantener Supabase Free y aceptar `auth_leaked_password_protection` como limitación del plan. | El intento de activación devuelve HTTP 402 y exige Pro o superior; el dueño elige no cambiar de plan. |
