@@ -4,6 +4,8 @@ import { notFound, redirect } from "next/navigation";
 import { z } from "zod";
 import { Money } from "@/components/money";
 import { PageHeader } from "@/components/page-header";
+import { StatementBreakdown } from "@/components/statement-breakdown";
+import type { StatementConceptData } from "@/components/statement-concept";
 import { StatementControls } from "@/components/statement-controls";
 import { StatementStatus } from "@/components/statement-status";
 import { isValidIsoDate, todayInBogota } from "@/lib/domain/dates";
@@ -76,5 +78,59 @@ export default async function StatementDetailPage({ params }: { params: Promise<
       parents = (result.data ?? []) as unknown as Movement[];
     }
   }
-  return <><PageHeader title="Extracto" subtitle={card.name} /><div className="flex max-w-2xl flex-col gap-6"><section className="flex flex-col gap-3 rounded-xl border border-border bg-card p-4"><p className="text-small text-muted-foreground">Total calculado</p><Money value={totals?.total_calculated ?? "0"} currency="COP" size="lg" /><p className="text-body">{formatDateShort(statement?.period_start ?? period.periodStart, today)} – {formatDateShort(cutoff, today)} · pagas el {formatDateShort(statement?.due_date ?? period.dueDate, today)}</p>{statement && <StatementStatus dueDate={statement.due_date} paidAt={statement.paid_at} today={today} />}</section>{statement ? <><section className="flex flex-col gap-3"><h2 className="text-heading">Desglose</h2>{groups.map(([key, label]) => { const entries = movements.filter((movement) => movementGroup(movement) === key); const isInstallments = key === "installments"; return <details key={key} className="rounded-xl border border-border bg-card p-4"><summary className="flex min-h-11 cursor-pointer items-center justify-between gap-3 text-body"><span>{label}</span><span className="text-right">{key === "refunds" && "−"}<Money value={totals?.[key] ?? "0"} currency="COP" /></span></summary><ul className="flex flex-col gap-3">{entries.map((item) => <li key={item.id}><Link href={`/movimientos/${item.id}`} className="flex items-center justify-between gap-3 text-small"><span>{item.merchant || label} · {formatDateShort(item.date, today)}</span><span className="text-right">{item.currency === "USD" && <><Money value={item.amount} currency="USD" /> · estimado </>}<Money value={item.amount_cop} currency="COP" /></span></Link></li>)}{isInstallments && installments.map((item) => { const parent = parents.find((entry) => entry.id === item.transaction_id); return <li key={`${item.transaction_id}-${item.number}`}><Link href={`/movimientos/${item.transaction_id}`} className="flex items-center justify-between gap-3 text-small"><span>{parent?.merchant || "Compra"} · cuota {item.number}</span><span className="text-right">{parent?.currency === "USD" && <><Money value={item.total} currency="USD" /> · estimado </>}<Money value={item.total_cop} currency="COP" /></span></Link></li>; })}{!entries.length && (!isInstallments || !installments.length) && <li className="text-small text-muted-foreground">Sin movimientos.</li>}</ul></details>; })}</section><section className="flex flex-col gap-3"><h2 className="text-heading">Pagos</h2><p className="text-small text-muted-foreground">Los pagos se muestran aparte y no cambian el total del extracto.</p><details className="rounded-xl border border-border bg-card p-4"><summary className="flex min-h-11 cursor-pointer items-center justify-between gap-3 text-body"><span>Abonos</span><span className="text-right">−<Money value={totals?.payments ?? "0"} currency="COP" /></span></summary><ul className="flex flex-col gap-3">{movements.filter((item) => movementGroup(item) === "payments").map((item) => <li key={item.id}><Link href={`/movimientos/${item.id}`} className="flex items-center justify-between gap-3 text-small"><span>{item.merchant || "Pago"} · {formatDateShort(item.date, today)}</span><span className="text-right">{item.currency === "USD" && <><Money value={item.amount} currency="USD" /> · estimado </>}<Money value={item.amount_cop} currency="COP" /></span></Link></li>)}</ul></details></section><StatementControls id={statement.id} realTotal={statement.real_total} paid={!!statement.paid_at} today={today} /></> : <p className="text-body text-muted-foreground">Aún no hay movimientos en este extracto.</p>}<nav aria-label="Navegación de extractos" className="flex justify-between gap-4">{previous ? <Link className="text-body underline" href={`/tarjetas/${id}/extractos/${previous}`}>Anterior</Link> : <span />}{next && <Link className="text-body underline" href={`/tarjetas/${id}/extractos/${next}`}>Siguiente</Link>}</nav></div></>;
+  const movementEntry = (item: Movement, fallback: string): StatementConceptData["entries"][number] => ({
+    id: item.id,
+    href: `/movimientos/${item.id}`,
+    description: `${item.merchant || fallback} · ${formatDateShort(item.date, today)}`,
+    amountCop: item.amount_cop,
+    amountUsd: item.currency === "USD" ? item.amount : undefined,
+  });
+  const concepts: StatementConceptData[] = groups.map(([key, label]) => ({
+    key,
+    label,
+    total: totals?.[key] ?? "0",
+    subtract: key === "refunds",
+    entries: key === "installments"
+      ? installments.map((item) => {
+          const parent = parents.find((entry) => entry.id === item.transaction_id);
+          return {
+            id: `${item.transaction_id}-${item.number}`,
+            href: `/movimientos/${item.transaction_id}`,
+            description: `${parent?.merchant || "Compra"} · cuota ${item.number}`,
+            amountCop: item.total_cop,
+            amountUsd: parent?.currency === "USD" ? item.total : undefined,
+          };
+        })
+      : movements.filter((item) => movementGroup(item) === key).map((item) => movementEntry(item, label)),
+  }));
+  const payments: StatementConceptData = {
+    key: "payments",
+    label: "Abonos",
+    total: totals?.payments ?? "0",
+    subtract: true,
+    entries: movements.filter((item) => movementGroup(item) === "payments").map((item) => movementEntry(item, "Pago")),
+  };
+
+  return (
+    <>
+      <PageHeader title="Extracto" subtitle={card.name} />
+      <div className="flex flex-col gap-6">
+        <div className="grid items-start gap-6 xl:grid-cols-2">
+          <section className="flex flex-col gap-3 rounded-xl border border-border bg-card p-4">
+            <p className="text-small text-muted-foreground">Total calculado</p>
+            <Money value={totals?.total_calculated ?? "0"} currency="COP" size="lg" />
+            <p className="text-body">{formatDateShort(statement?.period_start ?? period.periodStart, today)} – {formatDateShort(cutoff, today)} · pagas el {formatDateShort(statement?.due_date ?? period.dueDate, today)}</p>
+            {statement && <StatementStatus dueDate={statement.due_date} paidAt={statement.paid_at} today={today} />}
+            {statement && <a href="#statement-breakdown-title" className="text-body underline">Ver desglose</a>}
+          </section>
+          {statement && <StatementControls id={statement.id} realTotal={statement.real_total} paid={!!statement.paid_at} today={today} />}
+        </div>
+        {statement ? <StatementBreakdown concepts={concepts} payments={payments} /> : <p className="text-body text-muted-foreground">Aún no hay movimientos en este extracto.</p>}
+        <nav aria-label="Navegación de extractos" className="flex justify-between gap-4">
+          {previous ? <Link className="text-body underline" href={`/tarjetas/${id}/extractos/${previous}`}>Anterior</Link> : <span />}
+          {next && <Link className="text-body underline" href={`/tarjetas/${id}/extractos/${next}`}>Siguiente</Link>}
+        </nav>
+      </div>
+    </>
+  );
 }

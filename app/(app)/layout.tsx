@@ -14,5 +14,15 @@ export default async function AppLayout({ children }: { children: ReactNode }) {
     redirect("/login");
   }
 
-  return <div className="min-h-screen bg-background"><AppNav /><Suspense><ActionNotice /></Suspense><main className="mx-auto flex max-w-5xl flex-col gap-6 px-4 pt-6 pb-[calc(11rem+env(safe-area-inset-bottom))] md:ml-64 md:px-6 md:pb-8">{children}</main></div>;
+  return (
+    <div className="min-h-screen bg-background">
+      <AppNav />
+      <Suspense><ActionNotice /></Suspense>
+      <div className="px-4 md:ml-64 md:px-6">
+        <main className="mx-auto flex w-full max-w-2xl flex-col gap-6 pt-6 pb-[calc(11rem+env(safe-area-inset-bottom))] md:pb-8">
+          {children}
+        </main>
+      </div>
+    </div>
+  );
 }
