@@ -13,7 +13,7 @@ import { buttonVariants } from "@/components/ui/button";
 import type { CardColor } from "@/lib/card-colors";
 import { nextPayment, totalDueInMonth } from "@/lib/domain/dashboard";
 import { addMonths, monthKey, todayInBogota } from "@/lib/domain/dates";
-import { compareMonths, monthlySpending } from "@/lib/domain/totals";
+import { monthlySpending } from "@/lib/domain/totals";
 import { createClient } from "@/lib/supabase/server";
 import { fetchAllPages } from "@/lib/paginate";
 
@@ -69,7 +69,8 @@ export default async function DashboardPage({ searchParams }: { searchParams: Pr
             due={totalDueInMonth(statements, month)}
             debt={debt}
             spending={spending}
-            change={compareMonths(spending, monthlySpending(movements, previous)).pct}
+            previousSpending={monthlySpending(movements, previous)}
+            previousMonth={previous}
           />
           <section aria-label="Tus tarjetas" className="grid min-w-0 grid-cols-[repeat(auto-fit,minmax(min(100%,18rem),1fr))] gap-4 xl:col-span-2">
             {cards.map((card) => {

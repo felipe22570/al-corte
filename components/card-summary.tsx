@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { CardColorChip } from "@/components/card-color-chip";
+import { CreditAvailability } from "@/components/credit-availability";
 import { Money } from "@/components/money";
 import { StatementStatus } from "@/components/statement-status";
 import { UtilizationBar } from "@/components/utilization-bar";
@@ -24,7 +25,7 @@ export function CardSummary({ id, name, bank, last4, color, available, utilizati
       </div>
     ) : <p className="text-small text-muted-foreground">Sin pagos pendientes.</p>}
     <div className="mt-auto flex flex-col gap-3 border-t border-border pt-4">
-      <div className="flex flex-wrap items-baseline justify-between gap-2"><span className="text-small text-muted-foreground">Cupo disponible</span><span className="ml-auto text-right"><Money value={available} currency="COP" /></span></div>
+      <CreditAvailability value={available} />
       <UtilizationBar percent={Number(utilization) * 100} />
     </div>
   </Link>;

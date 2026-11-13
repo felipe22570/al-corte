@@ -46,12 +46,26 @@ export function formatDateInput(date: string) {
   const [year, month, day] = date.split("-");
   return `${day}/${month}/${year}`;
 }
-export function formatMonth(month: string, style: "short" | "long" | "month-only" = "short") {
+export function formatMonth(month: string, style: "short" | "long" | "month-only" | "name" = "short") {
   const { year, month: number } = parseIsoDate(`${month}-01`);
+  if (style === "name") return monthNames[number - 1]!.toLocaleLowerCase("es-CO");
   if (style === "month-only") return months[number - 1]!;
   return `${(style === "long" ? monthNames : months)[number - 1]} ${String(year).padStart(4, "0")}`;
 }
 export function formatPercent(value: string | Decimal) { return `${toDecimal(value).times(100).toDecimalPlaces(0, Decimal.ROUND_HALF_UP).toString()}%`; }
+export function formatSpendingComparison(current: Amount, previous: Amount, previousMonth: string) {
+  const currentAmount = toDecimal(current);
+  const previousAmount = toDecimal(previous);
+  const difference = currentAmount.minus(previousAmount);
+  const month = formatMonth(previousMonth, "name");
+  if (difference.isZero()) return `Igual que ${month}`;
+  const direction = difference.greaterThan(0) ? "más" : "menos";
+  // Small or negative baselines do not support a meaningful percentage.
+  if (previousAmount.lessThan(1000)) return `${difference.greaterThan(0) ? "Más" : "Menos"} que ${month}`;
+  const change = difference.div(previousAmount);
+  if (change.abs().times(100).greaterThan(999)) return `Mucho ${direction} que ${month}`;
+  return `${formatPercent(change.abs())} ${direction} que ${month}`;
+}
 export function formatRate(value: string | Decimal) { return `${toDecimal(value).times(100).toFixed(2, Decimal.ROUND_HALF_UP).replace(".", ",")}% E.A.`; }
 export function formatDueIn(days: number) {
   if (days === 0) return "hoy";
