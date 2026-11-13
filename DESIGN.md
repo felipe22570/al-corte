@@ -185,7 +185,7 @@ Los casos de presupuesto de `AGENTS.md` describen el lenguaje de estado, no auto
 - `card-1` azul, `card-2` violeta, `card-3` petróleo, `card-4` vino, `card-5` mostaza y `card-6` pizarra.
 - Guardar la clave (`card-3`), no un color literal. Usarla únicamente en el chip junto al nombre, la franja de la tarjeta y su serie en gráficos, acompañada del nombre o los últimos cuatro dígitos.
 - Recharts consume `var(--card-N)` o `var(--chart-N)`; los seis `chart-N` son alias de las tarjetas. Rejillas con `var(--border)` y etiquetas con `var(--muted-foreground)`.
-- Categorías sin color propio: icono Lucide y nombre; gráfico por categoría neutro (D11). No convertir la paleta de tarjetas en paleta de categorías.
+- Categorías sin color propio en los datos, formularios y lista: icono Lucide y nombre (D11). Por D17, el gráfico por categoría usa `chart-1` a `chart-5`, con asignación determinista por ID y los mismos colores en sus iconos de leyenda; cada categoría conserva nombre y valor. No utiliza el token gris ni modifica `categories.color`.
 - El tema usa `.dark` en `<html>` mediante next-themes; respetar la preferencia Sistema. No crear paletas locales por componente.
 
 **The Semantic Color Rule.** Ningún color de estado es decorativo. Si no existe un token adecuado, resolverlo en la fuente de verdad antes de usarlo; no inventar un literal en el componente.
@@ -332,7 +332,7 @@ La tabla describe correcciones comprobables en el código, no una certificación
 - **Don't** usar `rounded-lg`, `rounded-2xl`, `rounded-3xl`, `rounded-4xl` ni radios arbitrarios. El radio amplio canónico es `rounded-xl`.
 - **Don't** usar `text-xs`, `text-sm`, `text-base`, `text-lg`, tamaños `text-*xl` ni tamaños arbitrarios. Usar `text-small`, `text-body`, `text-input` y los demás roles documentados.
 - **Don't** añadir sombras fuera de sheet/dialog/popover/select y los menús permitidos; respetar además la lista exacta de archivos del verificador descrita en Elevation & Depth.
-- **Don't** inventar logo, iconos de marca, emojis, ilustraciones ni colores de categoría; no usar estados como adornos.
+- **Don't** inventar logo, iconos de marca, emojis, ilustraciones ni una paleta nueva de categorías; el gráfico por categoría reutiliza los tokens existentes según D17. No usar estados como adornos.
 - **Don't** forzar todos los botones a 44 px en escritorio ni duplicar selects locales o derivar el backdrop de la tinta.
 - **Don't** introducir varios primarios en una pantalla o comunicar un estado únicamente por color.
 

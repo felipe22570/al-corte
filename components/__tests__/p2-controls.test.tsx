@@ -72,7 +72,10 @@ describe("history filter context", () => {
     const html = renderToStaticMarkup(<HistoryFilters filters={{ mes: "2026-11", tarjeta: "card", categoria: "category", tipo: "purchase", q: "portátil" }} cards={[{ id: "card", name: "Visa", last4: "1234", color: "card-1" }]} categories={[{ id: "category", name: "Tecnología", icon: null }]} count={23} />);
     const visibleContext = html.slice(0, html.indexOf("<details"));
     for (const text of ["Noviembre 2026", "23 movimientos", "Visa", "Tecnología", "Compra", "Búsqueda: portátil"]) expect(visibleContext).toContain(text);
-    expect(html).toContain("Filtros (4)");
+    expect(html).toContain("Más filtros (3)");
+    expect(visibleContext).toContain('name="q"');
+    expect(visibleContext).toContain('name="mes"');
+    expect(visibleContext).toContain('type="submit"');
     expect(html).not.toContain('type="month"');
     expect(html).toContain('name="mes"');
     expect(html).not.toContain('name="pagina"');

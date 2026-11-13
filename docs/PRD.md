@@ -389,11 +389,12 @@ Este registro consolida las decisiones del dueño de `plans/README.md`; no agreg
 | D8 · Avance a una cuota | No genera intereses; su comisión se registra por separado. |
 | D9 · Categorías | Trigger al crear el usuario con las once categorías iniciales; migración idempotente para usuarios existentes. |
 | D10 · Cambio de corte | Solo afecta movimientos nuevos. Los extractos existentes se conservan. |
-| D11 · Categorías sin color | Icono Lucide y nombre; `color` queda en `null`. Gráfico por categoría neutro y gráfico mensual con los colores de tarjeta. |
+| D11 · Categorías sin color | Icono Lucide y nombre; `color` queda en `null`. El gráfico mensual conserva los colores de tarjeta; el gráfico por categoría se actualiza por D17. |
 | D12 · Campos | Token de borde `--input` con contraste mínimo 3:1 y estilo `text-input` de 16 px para evitar zoom automático en iOS. |
 | D13 · Pesos | Se elimina el espacio entre `$` y la cifra; USD conserva `US$ 15,99`. |
 | D14 · Favicon | Cuadrado neutro temporal con el token primario, sin letras ni símbolos; no constituye un logo. |
 | D15 · Cuotas máximas | Entre una y 36 cuotas en compras y avances. |
 | D16 · Ajustes | `adjustment` siempre es cargo; las correcciones a favor se registran como `refund`. |
+| D17 · Gráfico por categoría | Por petición del dueño del 13 de noviembre, usa colores de `chart-1` a `chart-5`, siempre junto al nombre y al valor. Es presentación del historial: `categories.color` sigue en `null` y no se agregan colores a los formularios ni a la lista de movimientos. Sustituye el gráfico neutro de D11. |
 
 Precisiones posteriores aprobadas: al editar una compra se conserva la tasa original si no cambian tarjeta ni tipo (10 de noviembre); guardar una suscripción intenta generar su cobro de hoy sin esperar al cron (10 de noviembre); el tablero prioriza el extracto no pagado con vencimiento más antiguo, incluso vencido (11 de noviembre).

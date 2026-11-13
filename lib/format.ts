@@ -15,6 +15,14 @@ function formatAmount(value: Amount, decimals: number, prefix: string): string {
 }
 
 export function formatCop(value: Amount) { return formatAmount(value, 0, "$"); }
+export function formatCopCompact(value: Amount) {
+  const amount = toDecimal(value);
+  const absolute = amount.abs();
+  if (absolute.lessThan(1000)) return formatCop(amount);
+  const millions = absolute.greaterThanOrEqualTo(1000000);
+  const compact = amount.div(millions ? 1000000 : 1000).toDecimalPlaces(1, Decimal.ROUND_HALF_UP);
+  return `${formatAmount(compact, compact.isInteger() ? 0 : 1, "$")} ${millions ? "M" : "mil"}`;
+}
 export function formatUsd(value: Amount) { return formatAmount(value, 2, "US$ "); }
 export function formatExchangeRate(value: Amount) { return formatAmount(value, 4, ""); }
 export function formatMoney(value: Amount, currency: Currency) { return currency === "COP" ? formatCop(value) : formatUsd(value); }
@@ -38,8 +46,9 @@ export function formatDateInput(date: string) {
   const [year, month, day] = date.split("-");
   return `${day}/${month}/${year}`;
 }
-export function formatMonth(month: string, style: "short" | "long" = "short") {
+export function formatMonth(month: string, style: "short" | "long" | "month-only" = "short") {
   const { year, month: number } = parseIsoDate(`${month}-01`);
+  if (style === "month-only") return months[number - 1]!;
   return `${(style === "long" ? monthNames : months)[number - 1]} ${String(year).padStart(4, "0")}`;
 }
 export function formatPercent(value: string | Decimal) { return `${toDecimal(value).times(100).toDecimalPlaces(0, Decimal.ROUND_HALF_UP).toString()}%`; }

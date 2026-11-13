@@ -1,5 +1,5 @@
 import { expect, it } from "vitest";
-import { formatCop, formatDateShort, formatDateWithWeekday, formatDueIn, formatMoney, formatPercent, formatRate, formatSignedMoney, formatUsd } from "@/lib/format";
+import { formatCop, formatCopCompact, formatDateShort, formatDateWithWeekday, formatDueIn, formatMoney, formatMonth, formatPercent, formatRate, formatSignedMoney, formatUsd } from "@/lib/format";
 
 it("formatea dinero sin perder precisión", () => {
   expect(formatCop("1284500")).toBe("$1.284.500");
@@ -11,6 +11,20 @@ it("formatea dinero sin perder precisión", () => {
   expect(formatMoney("15.99", "USD")).toBe("US$ 15,99");
   expect(formatSignedMoney("15.99", "USD", "credit")).toBe("+US$ 15,99");
   expect(formatSignedMoney("15.99", "USD", "charge")).toBe("-US$ 15,99");
+});
+it("abrevia los ejes de dinero sin perder el formato colombiano", () => {
+  expect(formatCopCompact("1050000000")).toBe("$1.050 M");
+  expect(formatCopCompact("350000000")).toBe("$350 M");
+  expect(formatCopCompact("1500000")).toBe("$1,5 M");
+  expect(formatCopCompact("350000")).toBe("$350 mil");
+  expect(formatCopCompact("0")).toBe("$0");
+  expect(formatCopCompact("-350000000")).toBe("-$350 M");
+});
+it("usa nombres cortos sin año solo cuando se pide para el eje", () => {
+  expect(formatMonth("2026-11", "month-only")).toBe("nov");
+  expect(formatMonth("2026-12", "month-only")).toBe("dic");
+  expect(formatMonth("2026-11")).toBe("nov 2026");
+  expect(formatMonth("2026-11", "long")).toBe("Noviembre 2026");
 });
 it("formatea fechas, porcentajes y vencimientos", () => {
   expect(formatDateShort("2026-11-15", "2026-01-01")).toBe("15 nov");
