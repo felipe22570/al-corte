@@ -22,6 +22,6 @@ export function SheetBody({ className, children }: { className?: string; childre
   return <div className={cn("flex min-h-0 flex-1 flex-col gap-4 overflow-y-auto px-4 pt-2 pb-6", className)}>{children}</div>;
 }
 
-export function SheetFooter({ children }: { children: ReactNode }) {
-  return <div className="flex shrink-0 flex-col gap-3 border-t border-border bg-card p-4 pb-[max(1rem,env(safe-area-inset-bottom))]">{children}</div>;
+export function SheetFooter({ className, children }: { className?: string; children: ReactNode }) {
+  return <div className={cn("flex shrink-0 flex-col gap-3 border-t border-border bg-card p-4 pb-[max(1rem,env(safe-area-inset-bottom))]", className)}>{children}</div>;
 }
