@@ -7,6 +7,7 @@ import { Disclosure, DisclosureContent, DisclosureSummary } from "@/components/u
 import { buttonVariants } from "@/components/ui/button";
 import { formatMonth } from "@/lib/format";
 import { historyTypeLabels, type HistoryCard, type HistoryCategory } from "@/lib/history-types";
+import { cardColorClasses } from "@/lib/card-colors";
 
 type Filters = { mes: string; tarjeta?: string; categoria?: string; tipo?: string; q?: string };
 
@@ -38,7 +39,7 @@ export function HistoryFilters({ filters, cards, categories, count }: { filters:
           </DisclosureSummary>
           <DisclosureContent className="flex flex-col gap-3">
             <div className="grid min-w-0 gap-3 sm:grid-cols-3">
-              <div className="flex flex-col gap-2 text-small"><label htmlFor="history-card">Tarjeta</label><SelectControl key={`card-${filters.tarjeta}`} id="history-card" name="tarjeta" defaultValue={filters.tarjeta ?? ""} options={[{ value: "", label: "Todas" }, ...cards.map((card) => ({ value: card.id, label: `${card.name} · •••• ${card.last4}` }))]} /></div>
+              <div className="flex flex-col gap-2 text-small"><label htmlFor="history-card">Tarjeta</label><SelectControl key={`card-${filters.tarjeta}`} id="history-card" name="tarjeta" defaultValue={filters.tarjeta ?? ""} options={[{ value: "", label: "Todas" }, ...cards.map((card) => ({ value: card.id, label: `${card.name} · •••• ${card.last4}`, startAdornment: <span className={`size-2 rounded-full ${cardColorClasses[card.color]}`} /> }))]} /></div>
               <div className="flex flex-col gap-2 text-small"><label htmlFor="history-category">Categoría</label><SelectControl key={`category-${filters.categoria}`} id="history-category" name="categoria" defaultValue={filters.categoria ?? ""} options={[{ value: "", label: "Todas" }, ...categories.map((category) => ({ value: category.id, label: category.name }))]} /></div>
               <div className="flex flex-col gap-2 text-small"><label htmlFor="history-type">Tipo</label><SelectControl key={`type-${filters.tipo}`} id="history-type" name="tipo" defaultValue={filters.tipo ?? ""} options={[{ value: "", label: "Todos" }, ...Object.entries(historyTypeLabels).map(([value, label]) => ({ value, label }))]} /></div>
             </div>

@@ -253,9 +253,9 @@ Aunque el CSS también declara `--radius-lg` con el mismo valor que `xl`, **`rou
 
 Controles sobrios, con una sola acción principal por pantalla. Reutilizar `Button` / `buttonVariants` de `components/ui/button.tsx`; no reconstruir sus estados localmente.
 
-- Primario (`variant="default"`): `bg-primary text-primary-foreground`, esquinas medias y padding horizontal de 16 px en el tamaño normal; hover actual `bg-primary/80`.
+- Primario (`variant="default"`): `bg-primary text-primary-foreground`, esquinas medias y padding horizontal de 16 px en el tamaño normal; hover `bg-primary/90` para conservar contraste. El verde sólido se reserva a la acción principal; los estados positivos usan la pareja suave.
 - Outline: borde de superficie, fondo de página y texto principal; revisar su variante oscura existente antes de extenderlo.
-- Secondary y ghost: acciones de menor jerarquía. Link: texto primario y subrayado al interactuar. Destructive: tinta y fondo suave de peligro, no un segundo primario.
+- Secondary y ghost: acciones de menor jerarquía. Link: tinta neutra y subrayado visible. Destructive: `bg-danger-soft text-danger` y borde de peligro al interactuar, no un segundo primario. La selección del calendario y la casilla «sin intereses» usan neutros, no verde de marca.
 - Foco visible con `ring`, borde de foco y anillo de dos píxeles; deshabilitado sin interacción y con opacidad reducida. Transiciones de color con `motion-safe:`.
 - Tamaños actuales: texto normal y grande de 40 px, pequeño y extra pequeño de 36 px; iconos de 36–40 px. En puntero grueso todos alcanzan 44 px mediante `pointer-coarse:`. `buttonVariants()` normaliza las clases también cuando se usa en enlaces, para no perder el borde outline.
 
@@ -278,13 +278,13 @@ Campos claros, legibles y delimitados: fondo `card`, texto `foreground`, borde `
 
 ### Cards / Containers
 
-Superficies planas con fondo `card`, borde fino, radio amplio y padding de 16 px. `CardTitle` usa `text-heading`; descripción en `text-small text-muted-foreground`. El componente `Card` separa header, content y footer, y el footer incorpora borde superior. `CardSummary` reúne identificación, próximo pago, cupo disponible y utilización sin sombra.
+Superficies planas con fondo `card`, borde fino, radio amplio y padding de 16 px. `CardTitle` usa `text-heading`; descripción en `text-small text-muted-foreground`. El componente `Card` separa header, content y footer, y el footer incorpora borde superior. `CardSummary` reúne identificación, próximo pago, cupo disponible y utilización sin sombra; una franja superior de 4 px repite la identidad `card-1…card-6` del chip y de la serie mensual, sin teñir montos ni estados.
 
 ### Chips y estados
 
 `StatusBadge` usa etiqueta textual, radio pequeño y padding de 8 × 4 px; elegir `ok`, `warning`, `danger` o `neutral` según el estado real. Su ancho se ajusta al texto (`w-fit`) sin estirarse en columnas; `max-w-full` y `wrap-anywhere` permiten envolver nombres largos sin desbordar. `CardColorChip` combina un punto de 8 px con nombre o últimos cuatro dígitos. No intercambiar color de tarjeta y color de estado.
 
-`UtilizationBar` muestra el porcentaje como texto junto a una barra de 8 px, pista secundaria y relleno semántico; conserva `role="progressbar"` y límites accesibles. No esconder valores fuera de rango en el texto aunque la longitud visual se limite.
+`UtilizationBar` muestra el porcentaje en `StatusBadge` con el par suave correspondiente: menos del 30 % positivo, entre 30 % y 70 % atención, más del 70 % problema. La barra de 8 px usa pista secundaria y relleno neutro en utilización baja, ámbar o rojo cuando hay atención o problema; no compite con el verde sólido de la acción principal. Conserva `role="progressbar"` y límites accesibles. No esconder valores fuera de rango en el texto aunque la longitud visual se limite.
 
 ### Navigation
 
@@ -343,6 +343,8 @@ La tabla describe correcciones comprobables en el código, no una certificación
 ## Catálogo y verificación de componentes
 
 `app/diseno/page.tsx` conserva el catálogo solo en desarrollo. Incluye estados en columna para comprobar `StatusBadge`, selectores con etiquetas largas (también sin espacios), opción deshabilitada, error asociado y corrección interactiva, fecha y mes, Disclosure y un Sheet con acciones fijas. `DesignControlsPreview` y `DesignSheetPreview` solo mantienen estado local; guardar el ejemplo no llama a acciones de negocio.
+
+La muestra «Identidad de tarjetas» añade seis tarjetas con datos explícitamente de ejemplo y un gráfico mensual para comparar franja, chip, series y estados. Las pantallas de detalle de tarjeta y extracto, y el filtro de tarjeta del historial, conservan la misma identidad junto al nombre o los últimos cuatro dígitos. No se agregan colores de categoría fuera del gráfico autorizado por D17.
 
 La navegación del calendario tiene 18 regresiones automatizadas, incluyendo cambios de mes, año y febrero bisiesto, y su integración en Popover y Sheet. La comprobación en Chromium sobre build de producción local cubrió 48 combinaciones de teclado, 360/1440 px y ambos temas; no equivale a una prueba en un dispositivo físico.
 

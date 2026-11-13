@@ -3,6 +3,7 @@ import { renderToStaticMarkup } from "react-dom/server";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { CategorySpendingChart } from "@/components/category-spending-chart";
 import { MonthlySpendingChart } from "@/components/monthly-spending-chart";
+import { CARD_COLORS } from "@/lib/card-colors";
 
 const chart = vi.hoisted(() => ({
   bar: vi.fn(), cell: vi.fn(), xAxis: vi.fn(), yAxis: vi.fn(),
@@ -31,6 +32,16 @@ const cards = [
 beforeEach(() => vi.clearAllMocks());
 
 describe("monthly spending chart", () => {
+  it("matches all six card identities between the series and labeled legend", () => {
+    const cards = CARD_COLORS.map((color) => ({ id: color, color, name: color, last4: "1234" }));
+    const html = renderToStaticMarkup(<MonthlySpendingChart cards={cards} rows={[{ month: "2026-11", amounts: Object.fromEntries(CARD_COLORS.map((color) => [color, "10000"])) }]} />);
+    expect(chart.bar.mock.calls.map(([props]) => props.fill)).toEqual(CARD_COLORS.map((color) => `var(--${color})`));
+    for (const color of CARD_COLORS) {
+      expect(html).toContain(`bg-${color}`);
+      expect(html).toContain(`${color} · •••• 1234`);
+    }
+  });
+
   it("shows only cards with nonzero period values, including refunds", () => {
     const html = renderToStaticMarkup(<MonthlySpendingChart cards={cards} rows={[
       { month: "2026-10", amounts: { active: "1000000000", empty: "0" } },

@@ -3,6 +3,7 @@ import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 import { z } from "zod";
 import { Money } from "@/components/money";
+import { CardColorChip } from "@/components/card-color-chip";
 import { PageHeader } from "@/components/page-header";
 import { StatementBreakdown } from "@/components/statement-breakdown";
 import type { StatementConceptData } from "@/components/statement-concept";
@@ -12,6 +13,7 @@ import { isValidIsoDate, todayInBogota } from "@/lib/domain/dates";
 import { statementPeriod } from "@/lib/domain/statements";
 import { formatDateShort } from "@/lib/format";
 import { createClient } from "@/lib/supabase/server";
+import type { CardColor } from "@/lib/card-colors";
 
 export const metadata: Metadata = { title: "Extracto" };
 type Statement = { id: string; period_start: string; cutoff_date: string; due_date: string; paid_at: string | null; real_total: string | null };
@@ -41,7 +43,7 @@ export default async function StatementDetailPage({ params }: { params: Promise<
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) redirect("/login");
   const [cardResult, statementResult, neighborsResult] = await Promise.all([
-    supabase.from("cards").select("id,name,cutoff_day,payment_day").eq("id", id).eq("user_id", user.id).maybeSingle(),
+    supabase.from("cards").select("id,name,last4,color,cutoff_day,payment_day").eq("id", id).eq("user_id", user.id).maybeSingle(),
     supabase.from("statements").select("id,period_start,cutoff_date,due_date,paid_at,real_total::text").eq("card_id", id).eq("user_id", user.id).eq("cutoff_date", cutoff).maybeSingle(),
     supabase.from("statements").select("period_start,cutoff_date").eq("card_id", id).eq("user_id", user.id).order("cutoff_date"),
   ]);
@@ -113,7 +115,7 @@ export default async function StatementDetailPage({ params }: { params: Promise<
 
   return (
     <>
-      <PageHeader title="Extracto" subtitle={card.name} />
+      <PageHeader title="Extracto" subtitle={<CardColorChip color={card.color as CardColor} name={`${card.name} · •••• ${card.last4}`} />} />
       <div className="flex flex-col gap-6">
         <div className="grid items-start gap-6 xl:grid-cols-2">
           <section className="flex flex-col items-start gap-3">

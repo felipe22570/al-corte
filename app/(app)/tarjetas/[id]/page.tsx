@@ -4,6 +4,7 @@ import { notFound, redirect } from "next/navigation";
 import Decimal from "decimal.js";
 import { z } from "zod";
 import { Money } from "@/components/money";
+import { CardColorChip } from "@/components/card-color-chip";
 import { CreditAvailability } from "@/components/credit-availability";
 import { PageHeader } from "@/components/page-header";
 import { StatementStatus } from "@/components/statement-status";
@@ -72,7 +73,7 @@ export default async function CardDetailPage({ params }: { params: Promise<{ id:
   );
   return (
     <>
-      <PageHeader title={card.name} subtitle={`${card.bank} · •••• ${card.last4}`} />
+      <PageHeader title={card.name} subtitle={<CardColorChip color={card.color} name={`${card.bank} · •••• ${card.last4}`} />} />
       <div className="flex min-w-0 flex-col gap-6 wrap-anywhere">
         <div className="grid min-w-0 items-start gap-6 xl:grid-cols-2">
           <section className="flex min-w-0 flex-col items-start gap-3">

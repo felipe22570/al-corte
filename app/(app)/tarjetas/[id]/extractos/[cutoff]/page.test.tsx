@@ -25,7 +25,7 @@ vi.mock("@/lib/supabase/server", () => ({
         select: () => query,
         eq: () => query,
         maybeSingle: () => result(table === "cards"
-          ? { id: "11111111-1111-4111-8111-111111111111", name: "Visa de prueba", cutoff_day: 15, payment_day: 30 }
+          ? { id: "11111111-1111-4111-8111-111111111111", name: "Visa de prueba", color: "card-3", last4: "1234", cutoff_day: 15, payment_day: 30 }
           : table === "statements" ? (fixture.saved ? fixture.statement : null)
           : { single_purchases: "12500", installments: "25000", subscriptions: "64000", cash_advances: "0", interest: "0", handling_fees: "0", insurance: "0", adjustments: "0", refunds: "2500", payments: "10000", total_calculated: "99000" }),
         order: () => result(table === "statements" ? (fixture.saved ? [fixture.statement] : [])
@@ -52,6 +52,8 @@ describe("statement page", () => {
   it("preserves totals, grouped movements, USD installments, and separate payments", async () => {
     const html = await renderPage();
     expect(html).toContain("$99.000");
+    expect(html).toContain("bg-card-3");
+    expect(html).toContain("Visa de prueba · •••• 1234");
     expect(html).toContain("5 conceptos sin movimientos");
     expect(html).toContain("Música · 12 nov");
     expect(html).toContain("Compra en dólares · cuota 2");

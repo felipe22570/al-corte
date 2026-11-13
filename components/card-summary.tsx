@@ -4,13 +4,14 @@ import { CreditAvailability } from "@/components/credit-availability";
 import { Money } from "@/components/money";
 import { StatementStatus } from "@/components/statement-status";
 import { UtilizationBar } from "@/components/utilization-bar";
-import type { CardColor } from "@/lib/card-colors";
+import { cardColorClasses, type CardColor } from "@/lib/card-colors";
 import { formatDateShort } from "@/lib/format";
 
 type Props = { id: string; name: string; bank: string; last4: string; color: CardColor; available: string; utilization: string; today: string; payment: { dueDate: string; total: string } | null };
 
 export function CardSummary({ id, name, bank, last4, color, available, utilization, today, payment }: Props) {
-  return <Link href={`/tarjetas/${id}`} className="flex min-w-0 flex-col gap-4 rounded-xl border border-border bg-card p-4 wrap-anywhere focus-visible:outline-2 focus-visible:outline-ring">
+  return <Link href={`/tarjetas/${id}`} className="relative flex min-w-0 flex-col gap-4 rounded-xl border border-border bg-card p-4 pt-5 wrap-anywhere focus-visible:outline-2 focus-visible:outline-ring">
+    <span aria-hidden="true" className={`absolute inset-x-0 top-0 h-1 rounded-t-xl ${cardColorClasses[color]}`} />
     <div className="flex flex-col gap-1"><CardColorChip color={color} name={`${name} · •••• ${last4}`} /><span className="text-small text-muted-foreground">{bank}</span></div>
     {payment ? (
       <div className="flex flex-col gap-2">

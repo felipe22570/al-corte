@@ -35,6 +35,8 @@ describe("card detail with extreme amounts", () => {
   it("uses the same over-limit presentation and lets statement rows wrap", async () => {
     const html = renderToStaticMarkup(await CardDetailPage({ params: Promise.resolve({ id: "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa" }) }));
     expect(html).toContain("Sobrecupo de ");
+    expect(html).toContain("bg-card-1");
+    expect(html).toContain("Banco de prueba · •••• 1234");
     expect(html).toContain("bg-danger-soft");
     expect(html).not.toContain("-$");
     expect(html).toContain("$999.999.999.999");
