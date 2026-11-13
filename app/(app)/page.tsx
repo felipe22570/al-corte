@@ -55,5 +55,34 @@ export default async function DashboardPage({ searchParams }: { searchParams: Pr
     if (!balance) throw new Error("No pudimos consultar el cupo de una tarjeta.");
     return sum.plus(balance.used);
   }, new Decimal(0));
-  return <>{saved === "1" && <SaveNotice />}<PageHeader title="Tablero" subtitle="Tus tarjetas, claras antes de cada corte." action={<Link href="/movimientos/nuevo" className={buttonVariants({ className: "hidden md:inline-flex" })}><Plus aria-hidden="true" className="size-5" strokeWidth={1.75} />Nuevo gasto</Link>} /><div className="flex flex-col gap-6">{cards.length ? <><DashboardTotals due={totalDueInMonth(statements, month)} debt={debt} spending={spending} change={compareMonths(spending, monthlySpending(movements, previous)).pct} /><section aria-label="Tus tarjetas" className="flex flex-col gap-4">{cards.map((card) => { const balance = balances.find((item) => item.card_id === card.id)!; const payment = nextPayment(statements.filter((item) => item.cardId === card.id)); return <CardSummary key={card.id} {...card} available={balance.available} utilization={balance.utilization} today={today} payment={payment ? { dueDate: payment.dueDate, total: payment.total.toString() } : null} />; })}</section></> : <EmptyState icon={WalletCards} text="Aún no tienes tarjetas. Agrega la primera." action={<Link href="/ajustes" className="text-body underline">Ir a ajustes</Link>} />}</div><NewExpenseFab /></>;
+  return (
+    <>
+      {saved === "1" && <SaveNotice />}
+      <PageHeader
+        title="Tablero"
+        subtitle="Tus tarjetas, claras antes de cada corte."
+        action={<Link href="/movimientos/nuevo" className={buttonVariants({ className: "hidden md:inline-flex" })}><Plus aria-hidden="true" className="size-5" strokeWidth={1.75} />Nuevo gasto</Link>}
+      />
+      {cards.length ? (
+        <div className="grid min-w-0 items-start gap-6 xl:grid-cols-3">
+          <DashboardTotals
+            due={totalDueInMonth(statements, month)}
+            debt={debt}
+            spending={spending}
+            change={compareMonths(spending, monthlySpending(movements, previous)).pct}
+          />
+          <section aria-label="Tus tarjetas" className="grid min-w-0 grid-cols-[repeat(auto-fit,minmax(min(100%,18rem),1fr))] gap-4 xl:col-span-2">
+            {cards.map((card) => {
+              const balance = balances.find((item) => item.card_id === card.id)!;
+              const payment = nextPayment(statements.filter((item) => item.cardId === card.id));
+              return <CardSummary key={card.id} {...card} available={balance.available} utilization={balance.utilization} today={today} payment={payment ? { dueDate: payment.dueDate, total: payment.total.toString() } : null} />;
+            })}
+          </section>
+        </div>
+      ) : (
+        <EmptyState icon={WalletCards} text="Aún no tienes tarjetas. Agrega la primera." action={<Link href="/ajustes" className="text-body underline">Ir a ajustes</Link>} />
+      )}
+      <NewExpenseFab />
+    </>
+  );
 }
