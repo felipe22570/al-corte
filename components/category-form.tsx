@@ -30,7 +30,7 @@ export function CategoryForm({ category }: { category?: CategoryRecord }) {
       if (!category) form.reset();
     } catch { setServerError("No pudimos guardar la categoría. Intenta de nuevo."); }
   });
-  return <><Sheet title={category ? "Editar categoría" : "Agregar categoría"} open={open} onOpenChange={(nextOpen) => { if (nextOpen) { form.reset({ name: category?.name ?? "", icon: category?.icon ?? "ellipsis" }); setServerError(""); setSaved(false); } setOpen(nextOpen); }} trigger={<Button type="button" variant="outline">{category ? "Editar" : "Agregar categoría"}</Button>}>
+  return <><Sheet title={category ? "Editar categoría" : "Agregar categoría"} open={open} onOpenChange={(nextOpen) => { if (nextOpen) { form.reset({ name: category?.name ?? "", icon: category?.icon ?? "ellipsis" }); setServerError(""); setSaved(false); } setOpen(nextOpen); }} trigger={<Button type="button" variant={category ? "ghost" : "outline"}>{category ? "Editar" : "Agregar categoría"}</Button>}>
     <form onSubmit={onSubmit} className="flex min-h-0 flex-1 flex-col" noValidate>
       <SheetBody>
       {serverError && <Alert variant="destructive"><AlertDescription>{serverError}</AlertDescription></Alert>}

@@ -84,4 +84,15 @@ describe("statement presentation", () => {
     const html = renderToStaticMarkup(<StatementBreakdown concepts={[empty[0]!]} payments={payment} />);
     expect(html).toContain("1 concepto sin movimientos");
   });
+
+  it("keeps column headings and puts the disclosure indicator before the label, not after amounts", () => {
+    const html = renderToStaticMarkup(<StatementBreakdown concepts={[purchase]} payments={payment} />);
+    expect(html).toContain("Concepto");
+    expect(html).toContain("Total");
+    const summary = html.match(/<summary[^>]*>(.*?)<\/summary>/)?.[1] ?? "";
+    expect(summary.indexOf("lucide-chevron-down")).toBeLessThan(summary.indexOf("Compras"));
+    expect(summary.indexOf("Compras")).toBeLessThan(summary.indexOf("$450.000"));
+    expect(summary).toMatch(/text-right/);
+    expect(summary.slice(summary.indexOf("$450.000"))).not.toContain("<svg");
+  });
 });

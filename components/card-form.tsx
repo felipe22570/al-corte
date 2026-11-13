@@ -59,7 +59,7 @@ export function CardForm({ card, usedColors }: { card?: CardRecord; usedColors: 
     } catch { setServerError("No pudimos guardar la tarjeta. Intenta de nuevo."); }
   });
 
-  return <><Sheet title={card ? "Editar tarjeta" : "Agregar tarjeta"} open={open} onOpenChange={(nextOpen) => { if (nextOpen) { form.reset(defaultValues); setServerError(""); setSaved(false); } setOpen(nextOpen); }} trigger={<Button type="button" variant="outline">{card ? "Editar" : "Agregar tarjeta"}</Button>}>
+  return <><Sheet title={card ? "Editar tarjeta" : "Agregar tarjeta"} open={open} onOpenChange={(nextOpen) => { if (nextOpen) { form.reset(defaultValues); setServerError(""); setSaved(false); } setOpen(nextOpen); }} trigger={<Button type="button" variant={card ? "ghost" : "outline"}>{card ? "Editar" : "Agregar tarjeta"}</Button>}>
     <form onSubmit={onSubmit} className="flex min-h-0 flex-1 flex-col" noValidate>
       <SheetBody className="gap-6">
       {serverError && <Alert variant="destructive"><AlertDescription>{serverError}</AlertDescription></Alert>}

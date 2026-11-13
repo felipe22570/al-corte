@@ -55,18 +55,34 @@ export default async function SettingsPage() {
 
   return <>
     <PageHeader title="Ajustes" subtitle="Administra tus tarjetas y categorías." />
-    <section aria-labelledby="preferences-title" className="flex flex-col gap-3">
-      <h2 id="preferences-title" className="text-heading">Preferencias</h2>
-      <div className="flex flex-wrap items-center justify-between gap-4"><ThemeToggle /><form action={signOut}><Button type="submit" variant="outline">Cerrar sesión</Button></form></div>
-    </section>
     <section className="flex flex-col gap-4" aria-labelledby="cards-title">
       <div className="flex flex-wrap items-center justify-between gap-4"><h2 id="cards-title" className="text-heading">Tarjetas</h2><CardForm usedColors={usedColors} /></div>
-      {activeCards.length === 0 ? <EmptyState icon={CreditCard} text="Aún no tienes tarjetas. Agrega la primera." /> : <ul className="flex flex-col gap-4">{activeCards.map((card) => <li key={card.id} className="rounded-xl border border-border bg-card p-4"><div className="flex flex-wrap justify-between gap-4"><div className="space-y-2"><Link href={`/tarjetas/${card.id}`} className="inline-flex min-h-11 items-center underline"><CardColorChip color={card.color} name={card.name} /></Link><p className="text-small text-muted-foreground">{card.bank} · {card.network} · •••• {card.last4}</p><p className="text-small text-muted-foreground">Corte el {card.cutoffDay} · Pago el {card.paymentDay}</p><p className="text-small text-muted-foreground">Compras: {formatRate(card.purchaseRateEa)}</p></div><div className="text-right"><p className="text-small text-muted-foreground">Cupo total</p><Money value={card.creditLimit} currency="COP" /></div></div><div className="mt-4 flex flex-wrap gap-2"><CardForm card={card} usedColors={usedColors} /><ArchiveButton id={card.id} kind="card" /></div></li>)}</ul>}
+      {activeCards.length === 0 ? <EmptyState icon={CreditCard} text="Aún no tienes tarjetas. Agrega la primera." /> : (
+        <ul className="divide-y divide-border border-y border-border">
+          {activeCards.map((card) => (
+            <li key={card.id} className="flex flex-wrap items-center justify-between gap-x-6 gap-y-2 py-3">
+              <div className="min-w-0 flex-1 basis-64">
+                <Link href={`/tarjetas/${card.id}`} className="inline-flex min-h-10 max-w-full items-center rounded-md wrap-anywhere underline-offset-4 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring pointer-coarse:min-h-11"><CardColorChip color={card.color} name={card.name} /></Link>
+                <p className="text-small break-words text-muted-foreground">{card.bank} · {card.network} · •••• {card.last4}</p>
+                <p className="text-small text-muted-foreground">Corte el {card.cutoffDay} · Pago el {card.paymentDay} · Compras: {formatRate(card.purchaseRateEa)}</p>
+              </div>
+              <div className="ml-auto flex flex-wrap items-center justify-end gap-x-6 gap-y-2">
+                <div className="text-right"><p className="text-small text-muted-foreground">Cupo total</p><Money value={card.creditLimit} currency="COP" /></div>
+                <div className="flex gap-2"><CardForm card={card} usedColors={usedColors} /><ArchiveButton id={card.id} kind="card" /></div>
+              </div>
+            </li>
+          ))}
+        </ul>
+      )}
       {archivedCards.length > 0 && <Disclosure><DisclosureSummary><span>Tarjetas archivadas ({archivedCards.length})</span><ChevronDown aria-hidden="true" className="size-5" strokeWidth={1.75} /></DisclosureSummary><DisclosureContent><ul className="flex flex-col gap-4">{archivedCards.map((card) => <li key={card.id} className="flex flex-wrap items-center justify-between gap-4"><CardColorChip color={card.color} name={`${card.name} · •••• ${card.last4}`} /><ArchiveButton id={card.id} kind="card" archived /></li>)}</ul></DisclosureContent></Disclosure>}
     </section>
     <section className="flex flex-col gap-4" aria-labelledby="categories-title">
       <div className="flex flex-wrap items-center justify-between gap-4"><h2 id="categories-title" className="text-heading">Categorías</h2><CategoryForm /></div>
-      {activeCategories.length === 0 ? <EmptyState icon={Tags} text="Aún no tienes categorías. Agrega la primera." /> : <ul className="divide-y divide-border rounded-xl border border-border bg-card">{activeCategories.map((category) => { const Icon = Object.hasOwn(categoryIcons, category.icon) ? categoryIcons[category.icon as CategoryIcon] : categoryIcons.ellipsis; return <li key={category.id} className="flex flex-wrap items-center justify-between gap-2 p-4"><span className="flex items-center gap-3 text-body"><Icon className="size-5 text-muted-foreground" strokeWidth={1.75} aria-hidden="true" />{category.name}</span><div className="flex flex-wrap gap-2"><CategoryForm category={category} /><ArchiveButton id={category.id} kind="category" /></div></li>; })}</ul>}
+      {activeCategories.length === 0 ? <EmptyState icon={Tags} text="Aún no tienes categorías. Agrega la primera." /> : <ul className="divide-y divide-border border-y border-border">{activeCategories.map((category) => { const Icon = Object.hasOwn(categoryIcons, category.icon) ? categoryIcons[category.icon as CategoryIcon] : categoryIcons.ellipsis; return <li key={category.id} className="flex flex-wrap items-center justify-between gap-x-6 gap-y-2 py-2"><span className="flex min-w-0 flex-1 basis-28 items-center gap-3 text-body"><Icon className="size-5 shrink-0 text-muted-foreground" strokeWidth={1.75} aria-hidden="true" /><span className="min-w-0 wrap-anywhere">{category.name}</span></span><div className="ml-auto flex gap-2"><CategoryForm category={category} /><ArchiveButton id={category.id} kind="category" /></div></li>; })}</ul>}
+    </section>
+    <section aria-labelledby="appearance-title" className="flex flex-col gap-4">
+      <h2 id="appearance-title" className="text-heading">Apariencia</h2>
+      <ThemeToggle />
     </section>
     <section className="flex flex-col gap-4" aria-labelledby="data-title">
       <h2 id="data-title" className="text-heading">Tus datos</h2>
@@ -76,6 +92,10 @@ export default async function SettingsPage() {
         <DisclosureSummary><span>Exportar CSV</span><ChevronDown aria-hidden="true" className="size-5" strokeWidth={1.75} /></DisclosureSummary>
         <DisclosureContent className="flex flex-wrap gap-2">{Object.entries(EXPORT_TABLES).map(([table, config]) => <a key={table} href={`/ajustes/exportar?formato=csv&tabla=${table}`} className={buttonVariants({ variant: "outline" })}>{config.label}</a>)}</DisclosureContent>
       </Disclosure>
+    </section>
+    <section aria-labelledby="session-title" className="flex flex-col items-start gap-4">
+      <h2 id="session-title" className="text-heading">Sesión</h2>
+      <form action={signOut}><Button type="submit" variant="outline">Cerrar sesión</Button></form>
     </section>
   </>;
 }

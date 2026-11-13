@@ -116,12 +116,11 @@ export default async function StatementDetailPage({ params }: { params: Promise<
       <PageHeader title="Extracto" subtitle={card.name} />
       <div className="flex flex-col gap-6">
         <div className="grid items-start gap-6 xl:grid-cols-2">
-          <section className="flex flex-col gap-3 rounded-xl border border-border bg-card p-4">
-            <p className="text-small text-muted-foreground">Total calculado</p>
+          <section className="flex flex-col items-start gap-3">
+            <h2 className="text-heading">Total calculado</h2>
             <Money value={totals?.total_calculated ?? "0"} currency="COP" size="lg" />
             <p className="text-body">{formatDateShort(statement?.period_start ?? period.periodStart, today)} – {formatDateShort(cutoff, today)} · pagas el {formatDateShort(statement?.due_date ?? period.dueDate, today)}</p>
             {statement && <StatementStatus dueDate={statement.due_date} paidAt={statement.paid_at} today={today} />}
-            {statement && <a href="#statement-breakdown-title" className="text-body underline">Ver desglose</a>}
           </section>
           {statement && <StatementControls id={statement.id} realTotal={statement.real_total} paid={!!statement.paid_at} today={today} />}
         </div>

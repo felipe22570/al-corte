@@ -3,7 +3,6 @@ import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 import Decimal from "decimal.js";
 import { z } from "zod";
-import { CardColorChip } from "@/components/card-color-chip";
 import { Money } from "@/components/money";
 import { PageHeader } from "@/components/page-header";
 import { StatementStatus } from "@/components/statement-status";
@@ -64,6 +63,48 @@ export default async function CardDetailPage({ params }: { params: Promise<{ id:
     const currentInstallment = entries.find((entry) => entry.number === progress.current);
     return currentInstallment ? [{ purchase, progress, currentInstallment }] : [];
   });
-  const statementRow = (item: Statement) => <Link key={item.id} href={`/tarjetas/${id}/extractos/${item.cutoff_date}`} className="flex min-h-11 flex-wrap items-center justify-between gap-3 rounded-xl border border-border bg-card p-4"><span className="flex flex-col gap-2"><span className="text-body">Corte {formatDateShort(item.cutoff_date, today)}</span><StatementStatus dueDate={item.due_date} paidAt={item.paid_at} today={today} /></span><span className="text-right"><Money value={totals.get(item.id) ?? "0"} currency="COP" /></span></Link>;
-  return <><PageHeader title={card.name} subtitle={`${card.bank} · •••• ${card.last4}`} /><div className="flex flex-col gap-6"><section className="flex flex-col gap-4 rounded-xl border border-border bg-card p-4"><CardColorChip color={card.color} name={`${card.name} · •••• ${card.last4}`} /><p className="text-body">Cupo disponible: <Money value={balance.available} currency="COP" /></p><UtilizationBar percent={Number(balance.utilization) * 100} /></section><section className="flex flex-col gap-3 rounded-xl border border-border bg-card p-4"><h2 className="text-heading">Extracto abierto</h2><Money value={open ? totals.get(open.id) ?? "0" : "0"} currency="COP" size="lg" /><p className="text-body">Pagas el {formatDateShort(open?.due_date ?? current.dueDate, today)} · corte {formatDateShort(openCutoff, today)}</p><StatementStatus dueDate={open?.due_date ?? current.dueDate} paidAt={open?.paid_at ?? null} today={today} /><Link href={`/tarjetas/${id}/extractos/${openCutoff}`} className="text-body underline">Ver extracto</Link></section><section className="flex flex-col gap-3"><h2 className="text-heading">Próximos extractos</h2>{upcoming.length ? upcoming.map(statementRow) : <p className="text-small text-muted-foreground">Aún no hay próximos extractos.</p>}</section><section className="flex flex-col gap-3"><h2 className="text-heading">Extractos anteriores</h2>{previous.length ? previous.map(statementRow) : <p className="text-small text-muted-foreground">Aún no hay extractos anteriores.</p>}</section><section className="flex flex-col gap-3"><h2 className="text-heading">Compras a cuotas activas</h2>{activePurchases.length ? activePurchases.map(({ purchase, progress, currentInstallment }) => <Link key={purchase.id} href={`/movimientos/${purchase.id}`} className="flex flex-col gap-2 rounded-xl border border-border bg-card p-4"><span className="text-body">{purchase.merchant || "Compra"} · cuota {progress.current}/{progress.count}</span><span className="text-small">Cuota: <Money value={currentInstallment.total} currency={purchase.currency} />{purchase.currency === "USD" && <> · estimado <Money value={currentInstallment.totalCop} currency="COP" /></>}</span><span className="text-small">Capital pendiente: <Money value={progress.pendingPrincipal} currency={purchase.currency} /></span></Link>) : <p className="text-small text-muted-foreground">No tienes compras a cuotas activas.</p>}</section></div></>;
+  const statementRow = (item: Statement) => (
+    <Link key={item.id} href={`/tarjetas/${id}/extractos/${item.cutoff_date}`} className="flex min-h-10 items-center justify-between gap-4 rounded-md py-3 underline-offset-4 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring pointer-coarse:min-h-11">
+      <span className="flex min-w-0 flex-col gap-2"><span className="text-body">Corte {formatDateShort(item.cutoff_date, today)}</span><StatementStatus dueDate={item.due_date} paidAt={item.paid_at} today={today} /></span>
+      <span className="shrink-0 text-right"><Money value={totals.get(item.id) ?? "0"} currency="COP" /></span>
+    </Link>
+  );
+  return (
+    <>
+      <PageHeader title={card.name} subtitle={`${card.bank} · •••• ${card.last4}`} />
+      <div className="flex flex-col gap-6">
+        <div className="grid items-start gap-6 xl:grid-cols-2">
+          <section className="flex flex-col items-start gap-3">
+            <h2 className="text-heading">Extracto abierto</h2>
+            <Money value={open ? totals.get(open.id) ?? "0" : "0"} currency="COP" size="lg" />
+            <p className="text-small text-muted-foreground">Pagas el {formatDateShort(open?.due_date ?? current.dueDate, today)} · corte {formatDateShort(openCutoff, today)}</p>
+            <StatementStatus dueDate={open?.due_date ?? current.dueDate} paidAt={open?.paid_at ?? null} today={today} />
+            <Link href={`/tarjetas/${id}/extractos/${openCutoff}`} className="inline-flex min-h-10 items-center rounded-md text-body underline underline-offset-4 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring pointer-coarse:min-h-11">Ver extracto</Link>
+          </section>
+          <section className="flex flex-col gap-4 border-t border-border pt-4 xl:border-t-0 xl:pt-0">
+            <h2 className="text-heading">Cupo disponible</h2>
+            <div className="text-right"><Money value={balance.available} currency="COP" /></div>
+            <UtilizationBar percent={Number(balance.utilization) * 100} />
+          </section>
+        </div>
+        <section className="flex flex-col gap-3">
+          <h2 className="text-heading">Próximos extractos</h2>
+          {upcoming.length ? <div className="divide-y divide-border border-y border-border">{upcoming.map(statementRow)}</div> : <p className="text-small text-muted-foreground">Aún no hay próximos extractos.</p>}
+        </section>
+        <section className="flex flex-col gap-3">
+          <h2 className="text-heading">Extractos anteriores</h2>
+          {previous.length ? <div className="divide-y divide-border border-y border-border">{previous.map(statementRow)}</div> : <p className="text-small text-muted-foreground">Aún no hay extractos anteriores.</p>}
+        </section>
+        <section className="flex flex-col gap-3">
+          <h2 className="text-heading">Compras a cuotas activas</h2>
+          {activePurchases.length ? <div className="divide-y divide-border border-y border-border">{activePurchases.map(({ purchase, progress, currentInstallment }) => (
+            <Link key={purchase.id} href={`/movimientos/${purchase.id}`} className="flex flex-wrap items-center justify-between gap-3 rounded-md py-3 underline-offset-4 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring">
+              <span className="min-w-0 flex-1 basis-40"><span className="block text-body break-words">{purchase.merchant || "Compra"}</span><span className="text-small text-muted-foreground">Cuota {progress.current}/{progress.count}</span></span>
+              <span className="ml-auto flex flex-col gap-1 text-right"><span className="text-small">Cuota: <Money value={currentInstallment.total} currency={purchase.currency} /></span>{purchase.currency === "USD" && <span className="text-small text-muted-foreground">Estimado: <Money value={currentInstallment.totalCop} currency="COP" /></span>}<span className="text-small text-muted-foreground">Capital pendiente: <Money value={progress.pendingPrincipal} currency={purchase.currency} /></span></span>
+            </Link>
+          ))}</div> : <p className="text-small text-muted-foreground">No tienes compras a cuotas activas.</p>}
+        </section>
+      </div>
+    </>
+  );
 }

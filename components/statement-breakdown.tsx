@@ -13,7 +13,8 @@ export function StatementBreakdown({ concepts, payments }: { concepts: Statement
       <section aria-labelledby="statement-breakdown-title" className="flex flex-col gap-3">
         <h2 id="statement-breakdown-title" className="text-heading">Desglose</h2>
         {active.length > 0 && (
-          <div className="divide-y divide-border rounded-xl border border-border bg-card">
+          <div className="divide-y divide-border border-y border-border">
+            <div aria-hidden="true" className="flex justify-between gap-3 py-2 pl-8 text-small text-muted-foreground"><span>Concepto</span><span>Total</span></div>
             {active.map((concept) => <StatementConcept key={concept.key} concept={concept} />)}
           </div>
         )}
@@ -33,7 +34,7 @@ export function StatementBreakdown({ concepts, payments }: { concepts: Statement
       <section aria-labelledby="statement-payments-title" className="flex flex-col gap-3">
         <h2 id="statement-payments-title" className="text-heading">Pagos</h2>
         <p className="text-small text-muted-foreground">Los pagos se muestran aparte y no cambian el total del extracto.</p>
-        <div className="rounded-xl border border-border bg-card">
+        <div className="border-y border-border">
           <StatementConcept concept={payments} />
         </div>
       </section>
