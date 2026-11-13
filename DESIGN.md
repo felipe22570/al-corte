@@ -8,6 +8,7 @@ colors:
   ink-muted: "#5b6661"
   border: "#e2ded5"
   input: "#8a8e86"
+  overlay: "#0f1412"
   primary: "#0f6b4f"
   primary-soft: "#dcefe6"
   primary-foreground: "#ffffff"
@@ -53,6 +54,12 @@ typography:
     fontWeight: 650
     lineHeight: "30px"
     letterSpacing: "-0.01em"
+  wordmark:
+    fontFamily: '"Bricolage Grotesque", Geist, system-ui, sans-serif'
+    fontSize: "24px"
+    fontWeight: 700
+    lineHeight: "30px"
+    letterSpacing: "-0.02em"
   heading:
     fontFamily: 'Geist, system-ui, -apple-system, "Segoe UI", sans-serif'
     fontSize: "17px"
@@ -193,7 +200,8 @@ Los casos de presupuesto de `AGENTS.md` describen el lenguaje de estado, no auto
 
 | Clase | Uso |
 | --- | --- |
-| `text-display` | Marca tipográfica **Al Corte**, sin icono convertido en logo. |
+| `text-display` | Marca tipográfica principal **Al Corte**, sin icono convertido en logo. |
+| `text-wordmark` | Marca compacta de 24 px en la barra lateral. |
 | `text-title` | Título principal de pantalla. |
 | `text-heading` | Encabezado de sección, en Geist. |
 | `text-body` | Texto general y botones. |
@@ -212,6 +220,7 @@ Todo formato pasa por `lib/format.ts`: COP sin decimales ni espacio después de 
 
 - Retícula de 4 px. Padding de tarjetas y margen lateral móvil de 16 px (`p-4` / `px-4`); separación de secciones de 24 px (`gap-6`); 8 px para relaciones próximas y 12–16 px dentro de grupos.
 - Contenido centrado en el área disponible **a la derecha** de la barra lateral. Encabezado y contenido comparten un mismo ancho máximo. Las pantallas de consulta pueden usar dos columnas cuando haya espacio; no imponerlas en 360 px.
+- El layout protegido desplaza el contenedor exterior desde `md` y centra un `main` común de hasta 1024 px (`max-w-5xl`); no limitar solo el cuerpo de cada página a un ancho distinto del encabezado. `PageHeader` permite envolver títulos largos y agrupa las acciones por separado.
 - Navegación inferior en celular, lateral desde `md` (768 px en Tailwind actual). La implementación tiene barra lateral de 256 px y navegación inferior de cuatro destinos: Tablero, Movimientos, Suscripciones y Ajustes.
 - Reservar espacio para la navegación fija, «Nuevo gasto» y `env(safe-area-inset-bottom)`. No ocultar la última fila o acción detrás de elementos fijos.
 - Objetivos táctiles de al menos 44 × 44 px con `pointer-coarse:`. En escritorio, botones y campos de 36–40 px (`h-9` / `h-10`). El requisito táctil no autoriza convertir todos los tamaños de escritorio en 44 px.
@@ -226,7 +235,7 @@ Las sombras se reservan para superficies superpuestas: sheet, dialog, popover y 
 
 El verificador permite técnicamente sombras solo en los archivos exactos `components/ui/{sheet,dialog,dropdown-menu,popover,select,sonner}.tsx`. La excepción técnica de `sonner` no crea una regla visual ni una obligación de incorporar notificaciones con sombra. Fuera de esa lista, prohíbe `shadow-*` salvo `shadow-none`; no evadir la regla mediante CSS en línea o cambios de ubicación.
 
-El backdrop actual de Sheet está registrado como desviación; no constituye un token de overlay aprobado ni una receta reutilizable.
+El backdrop de Sheet usa `bg-overlay/60`. `--overlay` mantiene el mismo valor oscuro en ambos temas; no derivarlo de `foreground`, cuya tinta cambia a clara en modo oscuro.
 
 ## Shapes
 
@@ -248,13 +257,24 @@ Controles sobrios, con una sola acción principal por pantalla. Reutilizar `Butt
 - Outline: borde de superficie, fondo de página y texto principal; revisar su variante oscura existente antes de extenderlo.
 - Secondary y ghost: acciones de menor jerarquía. Link: texto primario y subrayado al interactuar. Destructive: tinta y fondo suave de peligro, no un segundo primario.
 - Foco visible con `ring`, borde de foco y anillo de dos píxeles; deshabilitado sin interacción y con opacidad reducida. Transiciones de color con `motion-safe:`.
-- La API de tamaños existe, pero **sus alturas actuales no son normativas**: ver desviación D-01. El contrato de tamaño es el de Layout.
+- Tamaños actuales: texto normal y grande de 40 px, pequeño y extra pequeño de 36 px; iconos de 36–40 px. En puntero grueso todos alcanzan 44 px mediante `pointer-coarse:`. `buttonVariants()` normaliza las clases también cuando se usa en enlaces, para no perder el borde outline.
 
 ### Inputs / Fields
 
 Campos claros, legibles y delimitados: fondo `card`, texto `foreground`, borde `input`, radio medio, padding horizontal de 12 px y `text-input`. Foco visible con `ring`; error con `aria-invalid` y borde `destructive`; deshabilitado con opacidad y cursor apropiados. Conservar etiquetas accesibles y mensajes de error explícitos.
 
-No hay un componente Select compartido implementado. Los `<select>` nativos dispersos y sus clases repetidas son deuda de consistencia (D-02), no la definición del sistema de selección. No afirmar que existe un Select de shadcn ni que sus interacciones ya están validadas.
+`SelectControl` es el contrato compartido para formularios, filtros, mes y tema, construido con los primitives de Base UI de `components/ui/select.tsx`. Recibe opciones, valor controlado o inicial, `onValueChange`, nombre de formulario, placeholder y atributos accesibles del disparador. El nombre alimenta el campo oculto de Base UI; no duplicar un `<select>` nativo. La etiqueta visible se conecta al disparador mediante `id` y `htmlFor`, o un `aria-label` cuando corresponde.
+
+- Disparador de 40 px en escritorio y 44 px en puntero grueso, texto seleccionado truncado dentro de `min-w-0` y opciones con ajuste de texto.
+- Menú con borde de tema y sombra de superficie superpuesta, altura limitada al espacio disponible y scroll; selección indicada con marca y estado semántico, no solo color.
+- Conservar estados deshabilitado, foco y `aria-invalid` con `aria-describedby` hacia el error. Las flechas y Home/End recorren opciones; Enter selecciona y Escape cierra sin cerrar el Sheet padre.
+
+`DateInput` conserva la entrada manual `dd/mm/aaaa` (también acepta ocho dígitos), etiqueta, ayuda de formato y errores asociados. No usa el selector de fecha nativo del navegador. El botón nombrado abre `DateCalendar` en un Popover de Base UI con mes y días en español.
+
+- Un solo día está en el orden de tabulación. Flechas mueven uno o siete días; PageUp/PageDown cambian mes; Home/End van al primer/último día del mes. Enter activa el día enfocado. «Hoy» y «Borrar» son acciones explícitas.
+- La navegación actualiza el foco en `useLayoutEffect`, después de renderizar los días y antes de que el Popover recupere foco del mes eliminado. No diferir ese foco a `requestAnimationFrame`.
+- Al elegir, se actualiza la fecha y se cierra el calendario; Escape cierra primero el calendario y devuelve el foco al disparador, sin cerrar el Sheet. No robar el foco a los botones de cambio de mes.
+- `MonthInput` combina el Select compartido y un año numérico; envía un campo oculto `YYYY-MM`.
 
 ### Cards / Containers
 
@@ -262,17 +282,19 @@ Superficies planas con fondo `card`, borde fino, radio amplio y padding de 16 px
 
 ### Chips y estados
 
-`StatusBadge` usa etiqueta textual, radio pequeño y padding de 8 × 4 px; elegir `ok`, `warning`, `danger` o `neutral` según el estado real. `CardColorChip` combina un punto de 8 px con nombre o últimos cuatro dígitos. No intercambiar color de tarjeta y color de estado.
+`StatusBadge` usa etiqueta textual, radio pequeño y padding de 8 × 4 px; elegir `ok`, `warning`, `danger` o `neutral` según el estado real. Su ancho se ajusta al texto (`w-fit`) sin estirarse en columnas; `max-w-full` y `wrap-anywhere` permiten envolver nombres largos sin desbordar. `CardColorChip` combina un punto de 8 px con nombre o últimos cuatro dígitos. No intercambiar color de tarjeta y color de estado.
 
 `UtilizationBar` muestra el porcentaje como texto junto a una barra de 8 px, pista secundaria y relleno semántico; conserva `role="progressbar"` y límites accesibles. No esconder valores fuera de rango en el texto aunque la longitud visual se limite.
 
 ### Navigation
 
-Mismos cuatro destinos en lateral e inferior. El destino activo utiliza tinta fuerte, peso mayor y, en móvil, un indicador neutro; no usa colores de urgencia como decoración. Mantener `aria-current="page"`, etiquetas textuales y foco visible. La marca es únicamente **Al Corte** en `font-display text-display`.
+Mismos cuatro destinos en lateral e inferior. El destino activo utiliza tinta fuerte, peso mayor y, en móvil, un indicador neutro; no usa colores de urgencia como decoración. Mantener `aria-current="page"`, etiquetas textuales y foco visible. La marca es únicamente **Al Corte** en `font-display`: `text-display` en su presentación principal y `text-wordmark` compacto en la barra lateral.
 
 ### Sheet, avisos y estados vacíos
 
-`Sheet` se apoya en Dialog de Base UI para trigger, portal, backdrop, popup, título y cierre. Fondo de tarjeta, borde fino y radio amplio; el cierre lleva nombre accesible. Su backdrop pendiente se describe en D-03.
+`Sheet` se apoya en Dialog de Base UI para trigger, portal, backdrop, popup, título y cierre. Fondo de tarjeta, borde fino y radio amplio; el cierre lleva nombre accesible y el backdrop usa `bg-overlay/60`. `SheetBody` contiene el área desplazable; `SheetFooter` queda fuera de ella y mantiene Guardar visible, incluyendo el área segura inferior. Conservar foco atrapado y devolverlo al disparador al cerrar.
+
+`Disclosure`, `DisclosureSummary` y `DisclosureContent` comparten el patrón nativo `<details>/<summary>`: disparador de 40 px (44 px táctil), foco visible, indicador Lucide y espaciado del contenido que desaparece al colapsar. No agregar cajas o bordes anidados. En desgloses financieros, una lista puede sustituir `DisclosureContent` cuando necesita su semántica y espaciado propios.
 
 `Alert` tiene variantes neutra, success, warning y destructive usando los pares semánticos, con título y descripción en tamaño pequeño. `EmptyState` combina icono neutro, texto corto y una acción cuando corresponde; no usa ilustraciones, emojis ni mensajes de venta.
 
@@ -282,17 +304,17 @@ Lucide de 20 px (`size-5`), `strokeWidth={1.75}`, tinta atenuada salvo estados. 
 
 Las barras de Recharts tienen animación desactivada; el CSS elimina la transición de sus tooltips cuando se solicita movimiento reducido. Los estados de carga usan `motion-safe:animate-pulse`. No se define una nueva escala de animación o duración.
 
-### Desviaciones observadas — no son el sistema
+### Desviaciones de la captura inicial — corregidas
 
-| ID | Evidencia actual | Regla que debe prevalecer |
+| ID | Implementación corregida | Contrato vigente |
 | --- | --- | --- |
-| D-01 · Densidad uniforme | `components/ui/button.tsx`: todos los tamaños de texto son `h-11` y los de icono `size-11`; `components/ui/input.tsx` también fuerza `h-11`. | Escritorio de 36–40 px, áreas táctiles de 44 × 44 px mediante `pointer-coarse:`. No copiar el colapso de tamaños. |
-| D-02 · Selects nativos | `components/history-filters.tsx`, `components/theme-toggle.tsx` y formularios repiten `<select>` y clases locales. No existe `components/ui/select.tsx`. | Pendiente unificar el control y revisar teclado, foco, temas y densidad. La implementación nativa actual no se eleva a componente canónico por aparecer repetida. |
-| D-03 · Backdrop dependiente de la tinta | `components/ui/sheet.tsx` usa `bg-foreground/40`; `foreground` pasa de oscuro a claro entre temas y cambia el carácter del velo. | No adoptar la tinta como contrato de overlay. El token o tratamiento correcto requiere resolución explícita en la fuente de verdad; esta documentación no inventa un reemplazo. |
-| D-04 · Anchos y centrado | `app/(app)/layout.tsx` combina `max-w-5xl` y `md:ml-64`; varias páginas limitan solo el cuerpo con `max-w-2xl`, fuera de `PageHeader`. | Encabezado y cuerpo con ancho máximo común, centrados en el espacio restante a la derecha del lateral. No canonizar la diferencia 5xl/2xl. |
-| D-05 · Etiquetas de gráficos | Ambos componentes de gráficos fijan `fontSize: 10` en ticks. | La tipografía debe provenir de `app/globals.css`; que el verificador no detecte una propiedad numérica no la convierte en token aprobado. |
+| D-01 · Densidad uniforme | `Button`, `Input` y `SelectTrigger` separan escritorio de puntero grueso. | 36–40 px en escritorio y al menos 44 px táctiles. |
+| D-02 · Selects nativos | `SelectControl` y `components/ui/select.tsx` centralizan selección y estilos; `DateInput` usa calendario español propio. | Contratos compartidos, nombres accesibles, valores de formulario y navegación por teclado. |
+| D-03 · Backdrop dependiente de la tinta | `--overlay` está definido en `app/globals.css`; Sheet usa `bg-overlay/60`. | Velo oscuro estable entre temas, independiente de la tinta. |
+| D-04 · Anchos y centrado | El contenedor exterior reserva el lateral; encabezado y cuerpo comparten `main` de hasta 1024 px. | Centrado en el área restante, sin anchos de cuerpo divergentes. |
+| D-05 · Etiquetas de gráficos | Los ejes consumen `.chart-axis` con `text-small`. | Tipografía definida en `app/globals.css`, no tamaños locales de 10 px. |
 
-Estas desviaciones se documentan, **no se corrigen en esta tarea**. No interpretar que aprobar `pnpm lint:design` garantiza el cumplimiento visual completo.
+La tabla describe correcciones comprobables en el código, no una certificación de todos los estados. No interpretar que aprobar `pnpm lint:design` garantiza el cumplimiento visual completo.
 
 ## Do's and Don'ts
 
@@ -311,9 +333,21 @@ Estas desviaciones se documentan, **no se corrigen en esta tarea**. No interpret
 - **Don't** usar `text-xs`, `text-sm`, `text-base`, `text-lg`, tamaños `text-*xl` ni tamaños arbitrarios. Usar `text-small`, `text-body`, `text-input` y los demás roles documentados.
 - **Don't** añadir sombras fuera de sheet/dialog/popover/select y los menús permitidos; respetar además la lista exacta de archivos del verificador descrita en Elevation & Depth.
 - **Don't** inventar logo, iconos de marca, emojis, ilustraciones ni colores de categoría; no usar estados como adornos.
-- **Don't** forzar todos los botones a 44 px en escritorio ni copiar selects nativos o el backdrop actual como reglas del sistema.
+- **Don't** forzar todos los botones a 44 px en escritorio ni duplicar selects locales o derivar el backdrop de la tinta.
 - **Don't** introducir varios primarios en una pantalla o comunicar un estado únicamente por color.
 
 **Verificación obligatoria:** `scripts/check-design.mjs` recorre los archivos TS/TSX/JS/JSX de `app/` y `components/`; comprueba colores literales y de paleta, radios y tamaños de texto fuera de escala, emojis y sombras no permitidas. `pnpm lint` incluye esta comprobación. Una excepción `design-allow:` en la línea anterior puede omitir técnicamente una línea, pero no autoriza saltarse el sistema: requiere justificación explícita y revisión, nunca usarla para normalizar una desviación.
 
-**Procedencia y límites:** captura basada en `app/globals.css`, `AGENTS.md`, D11–D14 del PRD, componentes UI, navegación, gráficos y layouts existentes. Catálogo `/diseno` disponible solo en desarrollo; la comprobación visual del catálogo acredita sus muestras, no todo el producto ni estados privados con datos reales. El sidecar `.impeccable/design.json` conserva ejemplos observados y marca sus limitaciones; no agrega colores, rampas tonales ni componentes inexistentes.
+**Procedencia y límites:** captura basada en `app/globals.css`, `AGENTS.md`, D11–D14 del PRD, componentes UI, navegación, gráficos y layouts existentes. Catálogo `/diseno` disponible solo en desarrollo; la comprobación visual del catálogo acredita sus muestras, no todo el producto ni estados privados con datos reales. El sidecar `.impeccable/design.json` conserva muestras estáticas de la captura inicial, anterior al pulido; no sustituye este contrato actualizado ni el catálogo interactivo.
+
+## Catálogo y verificación de componentes
+
+`app/diseno/page.tsx` conserva el catálogo solo en desarrollo. Incluye estados en columna para comprobar `StatusBadge`, selectores con etiquetas largas (también sin espacios), opción deshabilitada, error asociado y corrección interactiva, fecha y mes, Disclosure y un Sheet con acciones fijas. `DesignControlsPreview` y `DesignSheetPreview` solo mantienen estado local; guardar el ejemplo no llama a acciones de negocio.
+
+La navegación del calendario tiene 18 regresiones automatizadas, incluyendo cambios de mes, año y febrero bisiesto, y su integración en Popover y Sheet. La comprobación en Chromium sobre build de producción local cubrió 48 combinaciones de teclado, 360/1440 px y ambos temas; no equivale a una prueba en un dispositivo físico.
+
+El catálogo actualizado se comprobó en Chromium a 360, 720 y 1440 px en claro y oscuro: badges compactos, opciones largas con y sin espacios sin desbordamiento, corrección del error del selector, estado deshabilitado, Disclosure por teclado y Sheet con foco contenido y guardado solo local. Hay ocho pruebas adicionales para el badge y la presencia, estados y restricción a desarrollo del catálogo.
+
+Se comprobó también reflow equivalente a ampliar una ventana de 1440 × 900 al 200 %: viewport CSS de 720 × 450 y DPR 2, en ambos temas. Menú, calendario y acciones del Sheet permanecieron dentro del viewport y sin desbordamiento horizontal. Es una simulación de reflow, no zoom nativo: el atajo del navegador automatizado no cambió la escala, y el ensayo separado con `zoom: 2` de CSS alteró la posición del menú, por lo que no se usa como evidencia de compatibilidad con zoom nativo.
+
+Zoom nativo, Safari/iOS, VoiceOver y otros lectores de pantalla reales siguen pendientes de comprobación manual. Los nombres, roles y relaciones accesibles inspeccionados o probados no sustituyen esas verificaciones. No afirmar compatibilidad o certificación por el resultado de Chromium ni por las pruebas unitarias.

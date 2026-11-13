@@ -3,6 +3,7 @@ import { ChevronDown } from "lucide-react";
 import Link from "next/link";
 
 import { Money } from "@/components/money";
+import { Disclosure, DisclosureSummary } from "@/components/ui/disclosure";
 
 export type StatementConceptData = {
   key: string;
@@ -36,13 +37,13 @@ export function StatementConcept({ concept }: { concept: StatementConceptData })
   }
 
   return (
-    <details className="group">
-      <summary className="flex min-h-10 cursor-pointer list-none items-center gap-3 rounded-xl px-4 py-2 text-body focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring pointer-coarse:min-h-11 [&::-webkit-details-marker]:hidden">
+    <Disclosure>
+      <DisclosureSummary className="px-4">
         <span className="min-w-0 flex-1">{concept.label}</span>
         {amount}
-        <ChevronDown aria-hidden="true" className="size-5 shrink-0 text-muted-foreground group-open:rotate-180" strokeWidth={1.75} />
-      </summary>
-      <ul className="flex flex-col gap-2 border-t border-border px-4 py-3">
+        <ChevronDown aria-hidden="true" className="size-5" strokeWidth={1.75} />
+      </DisclosureSummary>
+      <ul className="flex flex-col gap-2 px-4 pt-1 pb-3">
         {concept.entries.map((item) => (
           <li key={item.id}>
             <Link href={item.href} className="flex items-center justify-between gap-3 rounded-md text-small focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring">
@@ -55,6 +56,6 @@ export function StatementConcept({ concept }: { concept: StatementConceptData })
           </li>
         ))}
       </ul>
-    </details>
+    </Disclosure>
   );
 }

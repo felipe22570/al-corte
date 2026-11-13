@@ -6,12 +6,12 @@ import { useState } from "react";
 import { Controller, useForm, useWatch, type DefaultValues, type FieldPath } from "react-hook-form";
 import { CardColorChip } from "@/components/card-color-chip";
 import { CardColorPicker } from "@/components/card-color-picker";
+import { SelectControl } from "@/components/select-control";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { NativeSelect } from "@/components/ui/native-select";
-import { Sheet } from "@/components/ui/sheet";
+import { Sheet, SheetBody, SheetFooter } from "@/components/ui/sheet";
 import { createCard, updateCard } from "@/lib/actions/cards";
 import { CARD_COLORS, type CardColor } from "@/lib/card-colors";
 import type { CardRecord } from "@/lib/settings-types";
@@ -60,15 +60,17 @@ export function CardForm({ card, usedColors }: { card?: CardRecord; usedColors: 
   });
 
   return <><Sheet title={card ? "Editar tarjeta" : "Agregar tarjeta"} open={open} onOpenChange={(nextOpen) => { if (nextOpen) { form.reset(defaultValues); setServerError(""); setSaved(false); } setOpen(nextOpen); }} trigger={<Button type="button" variant="outline">{card ? "Editar" : "Agregar tarjeta"}</Button>}>
-    <form onSubmit={onSubmit} className="flex flex-col gap-6" noValidate>
+    <form onSubmit={onSubmit} className="flex min-h-0 flex-1 flex-col" noValidate>
+      <SheetBody className="gap-6">
       {serverError && <Alert variant="destructive"><AlertDescription>{serverError}</AlertDescription></Alert>}
       {card && <Alert variant="warning"><AlertDescription>Los cambios de corte o pago solo afectan movimientos nuevos. Las tasas no recalculan cuotas existentes.</AlertDescription></Alert>}
-      <fieldset className="flex flex-col gap-4"><legend className="mb-4 text-heading">Datos básicos</legend><div className="grid gap-4 sm:grid-cols-2">{fields.slice(0, 4).map(renderField)}<div className="flex flex-col gap-2"><Label htmlFor="card-network">Franquicia</Label><NativeSelect id="card-network" {...form.register("network")}><option>Visa</option><option>Mastercard</option><option>American Express</option><option>Diners</option><option>Otra</option></NativeSelect></div></div></fieldset>
+      <fieldset className="flex flex-col gap-4"><legend className="mb-4 text-heading">Datos básicos</legend><div className="grid gap-4 sm:grid-cols-2">{fields.slice(0, 4).map(renderField)}<div className="flex flex-col gap-2"><Label htmlFor="card-network">Franquicia</Label><Controller control={form.control} name="network" render={({ field: { onChange, ...field } }) => <SelectControl {...field} id="card-network" onValueChange={onChange} options={["Visa", "Mastercard", "American Express", "Diners", "Otra"].map((value) => ({ value, label: value }))} />} /></div></div></fieldset>
       <fieldset className="flex flex-col gap-4"><legend className="mb-4 text-heading">Fechas</legend><div className="grid gap-4 sm:grid-cols-2">{fields.slice(4, 6).map(renderField)}</div></fieldset>
-      <fieldset className="flex flex-col gap-4"><legend className="mb-4 text-heading">Tasas y costos</legend><div className="grid gap-4 sm:grid-cols-2">{fields.slice(6).map(renderField)}<div className="flex flex-col gap-2"><Label htmlFor="card-method">Método de amortización</Label><NativeSelect id="card-method" {...form.register("amortizationMethod")}><option value="fixed_principal">Capital fijo</option><option value="french">Cuota fija</option></NativeSelect></div></div></fieldset>
+      <fieldset className="flex flex-col gap-4"><legend className="mb-4 text-heading">Tasas y costos</legend><div className="grid gap-4 sm:grid-cols-2">{fields.slice(6).map(renderField)}<div className="flex flex-col gap-2"><Label htmlFor="card-method">Método de amortización</Label><Controller control={form.control} name="amortizationMethod" render={({ field: { onChange, ...field } }) => <SelectControl {...field} id="card-method" onValueChange={onChange} options={[{ value: "fixed_principal", label: "Capital fijo" }, { value: "french", label: "Cuota fija" }]} />} /></div></div></fieldset>
       <Controller control={form.control} name="color" render={({ field }) => <CardColorPicker value={field.value} onChange={field.onChange} />} />
       <CardColorChip color={color ?? preferredColor} name={`${name || "Tu tarjeta"} · •••• ${last4 || "0000"}`} />
-      <Button type="submit" disabled={form.formState.isSubmitting}>{form.formState.isSubmitting ? "Guardando…" : "Guardar"}</Button>
+      </SheetBody>
+      <SheetFooter><Button type="submit" disabled={form.formState.isSubmitting}>{form.formState.isSubmitting ? "Guardando…" : "Guardar"}</Button></SheetFooter>
     </form>
   </Sheet>{saved && <span role="status" className="text-small text-muted-foreground">Tarjeta guardada.</span>}</>;
 }

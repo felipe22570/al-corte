@@ -73,7 +73,7 @@ describe("statement presentation", () => {
     expect(html).toContain("<summary");
     expect(html).toContain("lucide-chevron-down");
     expect(html).toContain('aria-hidden="true"');
-    expect(html).toContain("group-open:rotate-180");
+    expect(html).toContain("group-open/disclosure:rotate-180");
     expect(html).not.toContain("aria-expanded");
   });
 

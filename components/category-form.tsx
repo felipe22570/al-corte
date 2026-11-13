@@ -2,13 +2,13 @@
 
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useState } from "react";
-import { useForm, useWatch } from "react-hook-form";
+import { Controller, useForm, useWatch } from "react-hook-form";
+import { SelectControl } from "@/components/select-control";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { NativeSelect } from "@/components/ui/native-select";
-import { Sheet } from "@/components/ui/sheet";
+import { Sheet, SheetBody, SheetFooter } from "@/components/ui/sheet";
 import { createCategory, updateCategory } from "@/lib/actions/categories";
 import { CATEGORY_ICON_NAMES, categoryIconLabels, categoryIcons, type CategoryIcon } from "@/lib/category-icons";
 import type { CategoryRecord } from "@/lib/settings-types";
@@ -31,11 +31,13 @@ export function CategoryForm({ category }: { category?: CategoryRecord }) {
     } catch { setServerError("No pudimos guardar la categoría. Intenta de nuevo."); }
   });
   return <><Sheet title={category ? "Editar categoría" : "Agregar categoría"} open={open} onOpenChange={(nextOpen) => { if (nextOpen) { form.reset({ name: category?.name ?? "", icon: category?.icon ?? "ellipsis" }); setServerError(""); setSaved(false); } setOpen(nextOpen); }} trigger={<Button type="button" variant="outline">{category ? "Editar" : "Agregar categoría"}</Button>}>
-    <form onSubmit={onSubmit} className="flex flex-col gap-6" noValidate>
+    <form onSubmit={onSubmit} className="flex min-h-0 flex-1 flex-col" noValidate>
+      <SheetBody>
       {serverError && <Alert variant="destructive"><AlertDescription>{serverError}</AlertDescription></Alert>}
       <div className="flex flex-col gap-2"><Label htmlFor="category-name">Nombre</Label><Input id="category-name" aria-invalid={!!form.formState.errors.name} aria-describedby={form.formState.errors.name ? "category-name-error" : undefined} {...form.register("name")} />{form.formState.errors.name?.message && <p id="category-name-error" role="alert" className="text-small text-danger">{form.formState.errors.name.message}</p>}</div>
-      <div className="flex flex-col gap-2"><Label htmlFor="category-icon">Icono</Label><div className="flex items-center gap-3"><Icon className="size-5 shrink-0 text-muted-foreground" strokeWidth={1.75} aria-hidden="true" /><NativeSelect id="category-icon" {...form.register("icon")}>{CATEGORY_ICON_NAMES.map((name) => <option key={name} value={name}>{categoryIconLabels[name]}</option>)}</NativeSelect></div></div>
-      <Button type="submit" disabled={form.formState.isSubmitting}>{form.formState.isSubmitting ? "Guardando…" : "Guardar"}</Button>
+      <div className="flex flex-col gap-2"><Label htmlFor="category-icon">Icono</Label><div className="flex items-center gap-3"><Icon className="size-5 shrink-0 text-muted-foreground" strokeWidth={1.75} aria-hidden="true" /><Controller control={form.control} name="icon" render={({ field: { onChange, ...field } }) => <SelectControl {...field} id="category-icon" onValueChange={onChange} options={CATEGORY_ICON_NAMES.map((name) => ({ value: name, label: categoryIconLabels[name] }))} />} /></div></div>
+      </SheetBody>
+      <SheetFooter><Button type="submit" disabled={form.formState.isSubmitting}>{form.formState.isSubmitting ? "Guardando…" : "Guardar"}</Button></SheetFooter>
     </form>
   </Sheet>{saved && <span role="status" className="text-small text-muted-foreground">Categoría guardada.</span>}</>;
 }

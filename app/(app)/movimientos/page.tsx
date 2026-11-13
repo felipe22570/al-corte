@@ -3,6 +3,7 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import Decimal from "decimal.js";
 import { ChevronDown, List } from "lucide-react";
+import { Disclosure, DisclosureContent, DisclosureSummary } from "@/components/ui/disclosure";
 import { CategorySpendingChart } from "@/components/category-spending-chart";
 import { EmptyState } from "@/components/empty-state";
 import { HistoryFilters } from "@/components/history-filters";
@@ -59,10 +60,10 @@ export default async function MovimientosPage({ searchParams }: { searchParams: 
           <TransactionList rows={shown} allRows={filtered} cards={cards} categories={categories} today={today} />
           {pageCount > 1 && <nav aria-label="Páginas del historial" className="flex items-center justify-between gap-4 text-body">{page > 1 ? <Link className="min-h-11 underline" href={pageUrl(page - 1)}>Anterior</Link> : <span />}<span>Página {page} de {pageCount}</span>{page < pageCount ? <Link className="min-h-11 underline" href={pageUrl(page + 1)}>Siguiente</Link> : <span />}</nav>}
         </> : <EmptyState icon={List} text="No hay movimientos con estos filtros." action={<Link href="/movimientos" className="text-body underline">Limpiar filtros</Link>} />}
-        <details className="group border-t border-border">
-          <summary className="flex min-h-10 cursor-pointer list-none items-center justify-between gap-3 rounded-md py-2 text-body focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring pointer-coarse:min-h-11 [&::-webkit-details-marker]:hidden"><span>Ver gráficos de gasto</span><ChevronDown aria-hidden="true" className="size-5 text-muted-foreground group-open:rotate-180" strokeWidth={1.75} /></summary>
-          <div className="mt-3 flex flex-col gap-6"><MonthlySpendingChart rows={monthly} cards={chartCards} /><CategorySpendingChart rows={categoryChart} /></div>
-        </details>
+        <Disclosure className="border-t border-border">
+          <DisclosureSummary><span>Ver gráficos de gasto</span><ChevronDown aria-hidden="true" className="size-5" strokeWidth={1.75} /></DisclosureSummary>
+          <DisclosureContent className="flex flex-col gap-6"><MonthlySpendingChart rows={monthly} cards={chartCards} /><CategorySpendingChart rows={categoryChart} /></DisclosureContent>
+        </Disclosure>
       </div>
     </>
   );
