@@ -21,7 +21,7 @@ Lema: "Tus tarjetas, claras antes de cada corte."
 | Remitente de correos (v2)                          | `Al Corte <avisos@…>`                                                                            |
 | Prefijo de claves en `localStorage`                | `al-corte:`                                                                                      |
 
-El nombre de la app se muestra como marca tipográfica en `font-display` con `text-display`; todavía no hay logo, así que no inventes uno ni uses iconos como logotipo.
+El nombre de la app se muestra como marca tipográfica en `font-display`: `text-display` (40 px) en su presentación principal y `text-wordmark` (24 px) como variante compacta en la barra lateral. Todavía no hay logo, así que no inventes uno ni uses iconos como logotipo.
 
 - Moneda base COP, secundaria USD.
 - Zona horaria única: `America/Bogota`.
@@ -142,7 +142,7 @@ La identidad visual de Al Corte vive en `app/globals.css`. Es la única fuente d
 **Tipografía**
 
 - Geist (`font-sans`) para todo; Bricolage Grotesque (`font-display`) solo para el nombre de la app y los títulos de pantalla.
-- Estilos de texto como clases: `text-display`, `text-title`, `text-heading`, `text-body`, `text-small`, `text-amount-lg`, `text-amount`.
+- Estilos de texto como clases: `text-display`, `text-wordmark`, `text-title`, `text-heading`, `text-body`, `text-small`, `text-amount-lg`, `text-amount`.
 - Todo monto usa `text-amount` o `text-amount-lg` (incluyen `tabular-nums`) y va alineado a la derecha en listas y tablas.
 - Las fuentes se cargan así en `app/layout.tsx`, con ``className={`${geist.variable} ${bricolage.variable}`}`` en `<html>`:
 

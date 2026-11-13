@@ -2,13 +2,14 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import Decimal from "decimal.js";
-import { WalletCards } from "lucide-react";
+import { Plus, WalletCards } from "lucide-react";
 import { CardSummary } from "@/components/card-summary";
 import { DashboardTotals } from "@/components/dashboard-totals";
 import { EmptyState } from "@/components/empty-state";
 import { NewExpenseFab } from "@/components/new-expense-fab";
 import { PageHeader } from "@/components/page-header";
 import { SaveNotice } from "@/components/save-notice";
+import { buttonVariants } from "@/components/ui/button";
 import type { CardColor } from "@/lib/card-colors";
 import { nextPayment, totalDueInMonth } from "@/lib/domain/dashboard";
 import { addMonths, monthKey, todayInBogota } from "@/lib/domain/dates";
@@ -54,5 +55,5 @@ export default async function DashboardPage({ searchParams }: { searchParams: Pr
     if (!balance) throw new Error("No pudimos consultar el cupo de una tarjeta.");
     return sum.plus(balance.used);
   }, new Decimal(0));
-  return <>{saved === "1" && <SaveNotice />}<PageHeader title="Tablero" subtitle="Tus tarjetas, claras antes de cada corte." /><div className="flex max-w-2xl flex-col gap-6">{cards.length ? <><DashboardTotals due={totalDueInMonth(statements, month)} debt={debt} spending={spending} change={compareMonths(spending, monthlySpending(movements, previous)).pct} /><section aria-label="Tus tarjetas" className="flex flex-col gap-4">{cards.map((card) => { const balance = balances.find((item) => item.card_id === card.id)!; const payment = nextPayment(statements.filter((item) => item.cardId === card.id)); return <CardSummary key={card.id} {...card} available={balance.available} utilization={balance.utilization} today={today} payment={payment ? { dueDate: payment.dueDate, total: payment.total.toString() } : null} />; })}</section></> : <EmptyState icon={WalletCards} text="Aún no tienes tarjetas. Agrega la primera." action={<Link href="/ajustes" className="text-body underline">Ir a ajustes</Link>} />}</div><NewExpenseFab /></>;
+  return <>{saved === "1" && <SaveNotice />}<PageHeader title="Tablero" subtitle="Tus tarjetas, claras antes de cada corte." action={<Link href="/movimientos/nuevo" className={buttonVariants({ className: "hidden md:inline-flex" })}><Plus aria-hidden="true" className="size-5" strokeWidth={1.75} />Nuevo gasto</Link>} /><div className="flex flex-col gap-6">{cards.length ? <><DashboardTotals due={totalDueInMonth(statements, month)} debt={debt} spending={spending} change={compareMonths(spending, monthlySpending(movements, previous)).pct} /><section aria-label="Tus tarjetas" className="flex flex-col gap-4">{cards.map((card) => { const balance = balances.find((item) => item.card_id === card.id)!; const payment = nextPayment(statements.filter((item) => item.cardId === card.id)); return <CardSummary key={card.id} {...card} available={balance.available} utilization={balance.utilization} today={today} payment={payment ? { dueDate: payment.dueDate, total: payment.total.toString() } : null} />; })}</section></> : <EmptyState icon={WalletCards} text="Aún no tienes tarjetas. Agrega la primera." action={<Link href="/ajustes" className="text-body underline">Ir a ajustes</Link>} />}</div><NewExpenseFab /></>;
 }

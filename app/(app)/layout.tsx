@@ -19,7 +19,7 @@ export default async function AppLayout({ children }: { children: ReactNode }) {
       <AppNav />
       <Suspense><ActionNotice /></Suspense>
       <div className="px-4 md:ml-64 md:px-6">
-        <main className="mx-auto flex w-full max-w-2xl flex-col gap-6 pt-6 pb-[calc(11rem+env(safe-area-inset-bottom))] md:pb-8">
+        <main className="mx-auto flex w-full min-w-0 max-w-5xl flex-col gap-6 pt-6 pb-[calc(11rem+env(safe-area-inset-bottom))] md:pb-8">
           {children}
         </main>
       </div>
