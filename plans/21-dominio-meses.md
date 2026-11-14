@@ -1,10 +1,10 @@
 # Paso 21 — Dominio: meses de pago y proyección (R7)
 
 - **Hito PRD:** H9 (parte 1 de 6)
-- **Estado:** ⬜ Pendiente
-- **Inicio:**
-- **Fin:**
-- **Commit:**
+- **Estado:** ✅ Terminado y verificado
+- **Inicio:** 2026-11-13
+- **Fin:** 2026-11-13
+- **Commit:** Ver historial de git
 - **Depende de:** 06, 14, 15, 16
 - **Decisiones aplicables (decididas, ver README):** D1, D2, D4, D5, D10, D16, D18–D29
 
@@ -29,28 +29,28 @@ Reutilizar `statementItemsFromMovements`, `statementTotals`, `statementPeriod`, 
 
 ## Tareas
 
-- [ ] `lib/domain/months.ts` con las funciones de arriba y tipos exportados.
-- [ ] Pruebas en `lib/domain/__tests__/months.test.ts`.
-- [ ] Tipos explícitos para identidad y origen de cada cargo, extracto real/virtual, importes conocidos, cobros sin TRM y elegibilidad de comparación. No representar un importe USD desconocido en COP como cero.
-- [ ] No duplicar lógica de calendario ni crear un segundo algoritmo de recurrencias: contrastar las proyecciones con los casos del cron existente.
-- [ ] Definir límites por mes de pago y después asignar las fechas de cobro por R1; no confundir 12 meses de cobro con 12 meses de pago.
-- [ ] Si alguna función existente del tablero (`lib/domain/dashboard.ts`) queda duplicada, documentarlo en las notas; se retira en el paso 25, no aquí.
+- [x] `lib/domain/months.ts` con las funciones de arriba y tipos exportados.
+- [x] Pruebas en `lib/domain/__tests__/months.test.ts`.
+- [x] Tipos explícitos para identidad y origen de cada cargo, extracto real/virtual, importes conocidos, cobros sin TRM y elegibilidad de comparación. No representar un importe USD desconocido en COP como cero.
+- [x] No duplicar lógica de calendario ni crear un segundo algoritmo de recurrencias: contrastar las proyecciones con los casos del cron existente.
+- [x] Definir límites por mes de pago y después asignar las fechas de cobro por R1; no confundir 12 meses de cobro con 12 meses de pago.
+- [x] Si alguna función existente del tablero (`lib/domain/dashboard.ts`) queda duplicada, documentarlo en las notas; se retira en el paso 25, no aquí.
 
 ## Pruebas
 
-- [ ] Mes de pago: corte 31 y pago 5 → el extracto de octubre pertenece a noviembre; corte 15 y pago 2 → igual. Fecha límite el último día del mes.
-- [ ] Estados: todos los extractos marcados (Pagado), algunos marcados (Pendiente), un extracto vencido (Vencido y precedencia), mes futuro (Estimado), pasado vacío (excluido) y actual vacío (presente, sin badge Pagado). Tener solo previstos no significa Pagado.
-- [ ] Confirmación: extracto de $500.000 y abono de $200.000 → pendiente de confirmar $500.000 mientras no tenga `paid_at`; marcarlo reduce ese indicador, no el total calculado ni genera pagos. El pendiente excluye proyecciones y `real_total` no altera los totales.
-- [ ] Mes actual: cerrado más abierto más suscripción pendiente (hoy 13, cobro 20, corte 25, pago 28); `total = billed + openRecorded + projected`. Incluir manejo de un extracto virtual que se paga este mes.
-- [ ] Proyección: mensual día 31 en febrero normal y bisiesto; anual dentro del rango; pausada; cancelada; tarjeta archivada; prueba que termina dentro del rango y cobro en `trial_ends_at`; USD con TRM de D4 y sin ella (importe desconocido, total conocido incompleto).
-- [ ] Dedupe: cobro de hoy ya generado; mismo ID de suscripción y fecha proyectado/real una sola vez; distintas suscripciones el mismo día sí cuentan; al pasar previsto a real con igual importe el total se mantiene; con otro importe/TRM solo cambia la diferencia.
-- [ ] Cuota de manejo: se proyecta solo en virtuales, no se duplica en reales, no se proyecta en archivadas ni cambia retroactivamente un cargo real.
-- [ ] Rango: compra a 24 cuotas → 12 meses futuros y aviso de compromisos posteriores; suscripción o manejo sin compras extienden la ventana; sin extractos, cuotas, suscripciones elegibles ni manejo → ningún mes futuro. Cruce diciembre/enero y cobro que se paga fuera de la ventana.
-- [ ] Vencidos de meses anteriores: cuentan en su mes y aparecen en `overdueStatements`, no en el total del mes actual.
-- [ ] Desglose: suma por conceptos = suma por categorías = total conocido, con ajustes, sin categoría y devoluciones. Compra de $1.200.000 a 12 cuotas sin intereses → $100.000 en cada mes de pago, no $1.200.000; cuotas con interés lo incluyen una sola vez.
-- [ ] Extractos reales con fechas antiguas tras cambiar corte/pago; varias filas de extracto de una tarjeta en el mismo mes; todos los datos de tarjetas archivadas se conservan.
-- [ ] Cero y negativos: reales en cero se conservan; devoluciones superiores a cargos conservan signos y la igualdad de desgloses.
-- [ ] Comparación: actual abierto, futuro, TRM faltante y mes anterior sin datos no generan porcentaje; dos meses cerrados comparables sí; bases cero, pequeñas, negativas y porcentajes extremos tienen salida segura.
+- [x] Mes de pago: corte 31 y pago 5 → el extracto de octubre pertenece a noviembre; corte 15 y pago 2 → igual. Fecha límite el último día del mes.
+- [x] Estados: todos los extractos marcados (Pagado), algunos marcados (Pendiente), un extracto vencido (Vencido y precedencia), mes futuro (Estimado), pasado vacío (excluido) y actual vacío (presente, sin badge Pagado). Tener solo previstos no significa Pagado.
+- [x] Confirmación: extracto de $500.000 y abono de $200.000 → pendiente de confirmar $500.000 mientras no tenga `paid_at`; marcarlo reduce ese indicador, no el total calculado ni genera pagos. El pendiente excluye proyecciones y `real_total` no altera los totales.
+- [x] Mes actual: cerrado más abierto más suscripción pendiente (hoy 13, cobro 20, corte 25, pago 28); `total = billed + openRecorded + projected`. Incluir manejo de un extracto virtual que se paga este mes.
+- [x] Proyección: mensual día 31 en febrero normal y bisiesto; anual dentro del rango; pausada; cancelada; tarjeta archivada; prueba que termina dentro del rango y cobro en `trial_ends_at`; USD con TRM de D4 y sin ella (importe desconocido, total conocido incompleto).
+- [x] Dedupe: cobro de hoy ya generado; mismo ID de suscripción y fecha proyectado/real una sola vez; distintas suscripciones el mismo día sí cuentan; al pasar previsto a real con igual importe el total se mantiene; con otro importe/TRM solo cambia la diferencia.
+- [x] Cuota de manejo: se proyecta solo en virtuales, no se duplica en reales, no se proyecta en archivadas ni cambia retroactivamente un cargo real.
+- [x] Rango: compra a 24 cuotas → 12 meses futuros y aviso de compromisos posteriores; suscripción o manejo sin compras extienden la ventana; sin extractos, cuotas, suscripciones elegibles ni manejo → ningún mes futuro. Cruce diciembre/enero y cobro que se paga fuera de la ventana.
+- [x] Vencidos de meses anteriores: cuentan en su mes y aparecen en `overdueStatements`, no en el total del mes actual.
+- [x] Desglose: suma por conceptos = suma por categorías = total conocido, con ajustes, sin categoría y devoluciones. Compra de $1.200.000 a 12 cuotas sin intereses → $100.000 en cada mes de pago, no $1.200.000; cuotas con interés lo incluyen una sola vez.
+- [x] Extractos reales con fechas antiguas tras cambiar corte/pago; varias filas de extracto de una tarjeta en el mismo mes; todos los datos de tarjetas archivadas se conservan.
+- [x] Cero y negativos: reales en cero se conservan; devoluciones superiores a cargos conservan signos y la igualdad de desgloses.
+- [x] Comparación: actual abierto, futuro, TRM faltante y mes anterior sin datos no generan porcentaje; dos meses cerrados comparables sí; bases cero, pequeñas, negativas y porcentajes extremos tienen salida segura.
 
 ## Verificación
 
@@ -58,8 +58,8 @@ Reutilizar `statementItemsFromMovements`, `statementTotals`, `statementPeriod`, 
 pnpm typecheck && pnpm lint && pnpm test && pnpm test:coverage
 ```
 
-- [ ] Cobertura de `lib/domain/` sigue en 100 %.
-- [ ] Con fixtures locales/sintéticos de QA Visa y QA Mastercard, anotar los meses que produce `buildMonths` y contrastarlos a mano con los extractos y los cargos previstos por separado. No escribir datos de prueba en producción.
+- [x] Cobertura de `lib/domain/` sigue en 100 %.
+- [x] Con fixtures locales/sintéticos de QA Visa y QA Mastercard, anotar los meses que produce `buildMonths` y contrastarlos a mano con los extractos y los cargos previstos por separado. No escribir datos de prueba en producción.
 
 ## Criterios de terminado
 
@@ -68,4 +68,14 @@ pnpm typecheck && pnpm lint && pnpm test && pnpm test:coverage
 
 ## Notas de progreso
 
-<!-- Fecha — nota -->
+- 2026-11-13 — Implementación en curso: agrupación, proyección inicial, vencidos, desgloses y comparación. Las funciones `totalDueInMonth` y `nextPayment` de `dashboard.ts` se conservan hasta el paso 25.
+- Fixture sintético (hoy 2026-11-13): Mastercard con corte 15 de octubre, pago 2 de noviembre y compra de $100.000; Visa con corte 25, pago 28, manejo de $10.000 y suscripción prevista de $20.000. Noviembre suma $130.000 ($100.000 reales + $30.000 previstos); diciembre suma $30.000 previstos. Ningún extracto de un mes anterior entra en la alerta.
+- La validación SQL local encontró siete fallas en `080-subscription-rpc-security.test.sql` por una migración de seguridad no aplicada. Con autorización del dueño se recreó la base local; las 167 pruebas SQL pasaron después.
+- Pruebas adicionales: 24 extractos con cuotas y límite de 12 meses, historial archivado, dos extractos de la misma tarjeta en un mes, suscripciones distintas el mismo día y totales cero o negativos.
+- Se conserva la moneda, el importe original y la TRM de los cargos cuando están disponibles. Pruebas adicionales verifican que los abonos y el total bancario no cambian el pendiente y que meses abiertos, futuros o incompletos no se comparan.
+- Los resúmenes incluyen subtotales por tarjeta, estado de cada extracto y elegibilidad de barra proporcional; se probó el manejo como único compromiso y la deduplicación de un cobro real del día con una TRM distinta.
+- Se reutiliza `statementTotals` para los extractos reales. Se añadieron casos de cobro el 31 en febrero normal y bisiesto, fin de prueba, y conciliación de cuotas, avances, comisiones, ajustes y devoluciones entre conceptos y categorías.
+- Proyecciones contrastadas con `supabase/tests/070-subscription-charges.test.sql`: fin de mes, anual bisiesta, estado y prueba, tarjeta archivada, cobros en el corte y después, TRM e idempotencia. La capa de lectura deberá entregar `fxRate` ya resuelta según D4; el dominio recibe `null` si no existe.
+- Implementación y verificaciones automáticas completas.
+- 2026-11-13 — Verificación manual en Chrome DevTools iniciada, pero bloqueada en el inicio de sesión: faltan las variables de credenciales de prueba en `.env.local`. No se consultaron extractos ni se ejecutó la comparación con datos remotos; no se modificaron datos de producción. La verificación manual queda pendiente.
+- 2026-11-13 — Verificación manual completada con acceso autorizado y fecha de Bogotá del 13 de noviembre. Se revisaron las tres tarjetas de QA, sus suscripciones y 28 extractos de la app; los 27 dentro del horizonte coincidieron con el dominio en importes y conceptos reales. Las diferencias futuras corresponden a suscripciones previstas según R7, no presentes en los totales de la app actual. Los desgloses mensuales cuadraron y se detectó correctamente un extracto real posterior al horizonte. No se modificaron datos remotos.

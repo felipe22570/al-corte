@@ -48,7 +48,7 @@ Prompt sugerido para el agente al iniciar un paso:
 | 18 | [Pulido funcional: estados, accesibilidad y exportación](18-pulido-exportacion.md) | H8 | ✅ | Ver historial de git |
 | 19 | [Revisión y pulido del diseño visual](19-revision-diseno.md) | H8 | ✅ | Ver historial de git |
 | 20 | [Validación final del MVP](20-validacion-mvp.md) | — | ✅ | `mvp` |
-| 21 | [Dominio: meses de pago y proyección (R7)](21-dominio-meses.md) | H9 | ⬜ | |
+| 21 | [Dominio: meses de pago y proyección (R7)](21-dominio-meses.md) | H9 | ✅ | Ver historial de git |
 | 22 | [Brief de diseño de la vista por meses](22-brief-meses.md) | H9 | ⬜ | |
 | 23 | [Inicio: lista de meses](23-lista-meses.md) | H9 | ⬜ | |
 | 24 | [Detalle de un mes](24-detalle-mes.md) | H9 | ⬜ | |
