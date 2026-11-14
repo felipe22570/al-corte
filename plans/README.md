@@ -11,7 +11,7 @@ Este directorio divide la implementación del MVP de **Al Corte** (sección 4 y 
 3. Cambia el estado del paso a 🟡 en la tabla y en el encabezado del archivo, y anota la fecha de inicio.
 4. Ve marcando las casillas `- [ ]` de las tareas a medida que avances.
 5. Ejecuta **todas** las verificaciones de la sección "Verificación". Solo si pasan, marca el paso como ✅, anota la fecha, el hash del commit y cualquier decisión en "Notas de progreso".
-6. Haz un commit por paso (Conventional Commits, en inglés). Al cerrar un hito completo (H0…H8), confirma que se cumple también la "Definición de terminado" global.
+6. Haz un commit por paso (Conventional Commits, en inglés). Al cerrar un hito completo (H0…H9), confirma que se cumple también la "Definición de terminado" global.
 
 Prompt sugerido para el agente al iniciar un paso:
 
@@ -48,10 +48,20 @@ Prompt sugerido para el agente al iniciar un paso:
 | 18 | [Pulido funcional: estados, accesibilidad y exportación](18-pulido-exportacion.md) | H8 | ✅ | Ver historial de git |
 | 19 | [Revisión y pulido del diseño visual](19-revision-diseno.md) | H8 | ✅ | Ver historial de git |
 | 20 | [Validación final del MVP](20-validacion-mvp.md) | — | ✅ | `mvp` |
+| 21 | [Dominio: meses de pago y proyección (R7)](21-dominio-meses.md) | H9 | ⬜ | |
+| 22 | [Brief de diseño de la vista por meses](22-brief-meses.md) | H9 | ⬜ | |
+| 23 | [Inicio: lista de meses](23-lista-meses.md) | H9 | ⬜ | |
+| 24 | [Detalle de un mes](24-detalle-mes.md) | H9 | ⬜ | |
+| 25 | [Ajuste de vistas relacionadas y retiro del tablero](25-ajuste-vistas.md) | H9 | ⬜ | |
+| 26 | [Pulido y validación de H9](26-validacion-meses.md) | H9 | ⬜ | |
 
 **MVP cerrado el 12 de noviembre de 2026 por aprobación explícita del dueño con las limitaciones del paso 20.** Los veinte pasos están en ✅. Pasan 117 pruebas de Vitest, 167 pruebas SQL, cobertura de dominio 100 %, build y lint. La revisión adicional con la extensión real axe DevTools cubrió 52 combinaciones sin fallas confirmadas; los casos de contraste y foco se revisaron aparte. El cron remoto se ejecutó a las 05:00 de Bogotá y generó un solo cobro de 25.000 COP para la suscripción de prueba. La etiqueta `mvp` identifica el commit de cierre.
 
 Se conservan los datos de producción. La RPC privilegiada quedó aislada y el registro público remoto está desactivado. Quedan como seguimiento aceptado: celular físico, personalización de correo de Supabase, nueva inspección del panel de Vercel, protección de contraseñas filtradas del plan Free y tres cortes bancarios reales. No se presentan como comprobaciones realizadas. El paso 19 conserva la aprobación visual general previa del dueño; sus capturas se eliminaron por su solicitud.
+
+**H9 · Vista por meses (MVP 1.1).** Aprobada por el dueño el 13 de noviembre de 2026 (D18–D29 del PRD, incluidas las precisiones de esta revisión). Cambia la pantalla de inicio: la información se organiza por mes de pago. Los pasos 21 a 26 van en orden; el 22 no escribe código de producto y produce el brief que siguen el 23 y el 24. Los pasos 23–24 se integran en una rama sin desplegar enlaces rotos; el reemplazo del inicio se publica cuando también existe el detalle. Los componentes del tablero (paso 16) se retiran en el 25 solo después de cubrir sus funciones, incluida la deuda total registrada.
+
+La revisión documental no implementa H9 ni cambia los estados pendientes. No prevé dependencias nuevas ni cambios de esquema; si durante la implementación hacen falta, deben justificarse y aprobarse en el plan del paso correspondiente.
 
 El paso 09 solo depende del 02: se puede adelantar justo después del 03 para que el login y todo lo que siga nazcan con el diseño correcto.
 
@@ -102,6 +112,8 @@ Pruebas de base de datos: se usa `supabase test db` (pgTAP, incluido en el CLI d
 - **Cuotas en USD (D3).** Una compra en USD se amortiza en USD (centavos, la última cuota absorbe la diferencia para que Σ capital = `amount`). Cada cuota guarda además su equivalente en COP (`principal_cop`, `interest_cop`, `total_cop`) con la TRM de la compra, redondeado a pesos, y la última cuota absorbe la diferencia para que Σ `principal_cop` = `amount_cop`. Los totales de extractos, cupo y gráficos usan siempre las columnas `_cop`. Para cuotas en COP, las columnas `_cop` son iguales a las originales.
 - **Vistas con `security_invoker = true`** para que respeten RLS.
 - **`user_id` con `default auth.uid()`** en todas las tablas con dueño; la tarea de `pg_cron` lo escribe explícitamente desde la suscripción.
+- **Lecturas de meses:** capa de consultas compartida por inicio y detalle, con dominio puro y paginación que nunca corte cargos de un mismo total. Las proyecciones no escriben datos y mantienen la identidad `(subscription_id, date)` para dar prioridad al cobro real.
+- **Frescura de meses:** toda escritura relevante actualiza inicio, meses y vistas dependientes, incluidas las referencias anteriores de una edición/borrado. Cron, TRM y cambio de día de Bogotá deben reflejarse en nuevas lecturas; no incorporar caché persistente sin estrategia de invalidación. Matriz y regresiones en el paso 25.
 
 ## Diseño (resumen para el plan)
 
@@ -154,6 +166,25 @@ Salen de comparar `AGENTS.md`, el PRD y `app/globals.css`. D11, D12, D13 y el al
 
 Además, `globals.css` define `--card-6` pero no `--chart-6`. El paso 09 puede agregar `--chart-6: var(--card-6)` para mantener la paridad, con tu visto bueno.
 
+### Decisiones de H9 (vista por meses)
+
+Aprobadas por el dueño el 2026-11-13. El detalle de cada regla está en R7 y en el registro de decisiones de `docs/PRD.md`.
+
+| # | Tema | Decisión | Paso afectado |
+| --- | --- | --- | --- |
+| D18 | **Qué es "un mes".** | Mes de pago: un extracto pertenece al mes de su `due_date` en Bogotá. El gasto por mes de compra (D5) es solo un dato secundario con su propia etiqueta. | 21, 23, 24 |
+| D19 | **Estados del mes.** | Vencido, Pendiente, Pagado y Estimado según R7. En el actual se separan facturados, registrados en abiertos y previstos; actual vacío sin badge Pagado. | 21–24, 26 |
+| D20 | **Proyección actual y futura.** | Reales + suscripciones elegibles + manejo de virtuales, incluido el actual abierto. Dedupe por suscripción/fecha, prevalece el real. Sin TRM, total conocido incompleto con aviso; sin compras supuestas ni persistencia. | 21–26 |
+| D21 | **Rango de meses.** | Compromisos dentro de los siguientes 12 meses de pago, incluido manejo aunque no haya compras/suscripciones. Aviso de cuotas/extractos reales posteriores. Todo el historial en bloques de 12 meses con extractos, con enlaces directos independientes. | 21–24, 26 |
+| D22 | **Orden de la lista.** | Mes actual destacado arriba; próximos ascendente; anteriores descendente. | 23 |
+| D23 | **Extractos vencidos.** | Cuentan en su mes y aparecen en alerta arriba de la lista y del actual, con acceso a cada mes afectado. Importe calculado sin descontar abonos, no sumado al actual. | 21–24, 26 |
+| D24 | **Tarjetas archivadas.** | Conservan extractos, cuotas reales, historial y saldo en deuda registrada; sin suscripciones ni manejo proyectados; fuera de la franja. Archivar todas no oculta los datos reales. | 21–26 |
+| D25 | **Inicio y navegación.** | `/` es Meses; cuatro destinos. Franja con cupo/utilización y deuda total registrada secundaria según D2. Gráfico por categoría en detalle de pago; `/movimientos` sin gráficos y filtro de mes de compra explícito. | 22–26 |
+| D26 | **Confirmación de pago.** | "Pendiente de confirmar pago": total calculado de extractos reales sin `paid_at`, sin descontar abonos ni sumar previstos. Marcar pagado no registra pago ni libera cupo. Sin asignación de abonos parciales en H9. | 21–26 |
+| D27 | **Total mensual.** | Siempre calculado más previstos conocidos; `real_total` solo referencia en el extracto. Falta de TRM se identifica, no se convierte a cero ni en un total definitivo. | 21–26 |
+| D28 | **Conceptos y categorías.** | Mismo mes de pago y total neto: cuotas por `total_cop` con categoría original, cargos y previstos con categoría o "Sin categoría", ajustes incluidos y devoluciones restadas. Sin duplicar capital/interés; signos conservados y barra con fallback para cero/negativos. | 21–26 |
+| D29 | **Comparación de meses.** | Solo meses cerrados comparables, sin proyección ni TRM faltante. Sin afirmar ahorro en meses abiertos/estimados/incompletos; bases no significativas con texto neutro o diferencia monetaria. | 21–26 |
+
 Preguntas abiertas del PRD que no bloquean el MVP: corte variable ("último día hábil"), notificaciones push (v2). Se dejan anotadas en `docs/PRD.md`.
 
 ## Registro de decisiones
@@ -173,3 +204,6 @@ Anota aquí cada decisión tomada durante la implementación (fecha, paso, decis
 | 2026-11-11 | 16 | Mostrar primero el extracto no pagado de vencimiento más antiguo, incluso si está vencido. | Confirmación del dueño. |
 | 2026-11-11 | 20 | Mantener Supabase Free y aceptar `auth_leaked_password_protection` como limitación del plan. | El intento de activación devuelve HTTP 402 y exige Pro o superior; el dueño elige no cambiar de plan. |
 | 2026-11-12 | 20 | Cerrar el MVP con celular físico, personalización de correo y nueva inspección del panel de Vercel como seguimiento no verificado. | El dueño selecciona explícitamente «Cerrar con limitaciones» tras conocer los bloqueos; se completa la revisión real de axe DevTools y se verifica el cron programado. |
+| 2026-11-13 | 21–26 | H9 · Vista por meses: D18–D25 aprobadas. La pantalla de inicio pasa a organizarse por mes de pago y sustituye al tablero; "Compromisos futuros" sale de v2. | Pedido del dueño. |
+| 2026-11-13 | 21–26 | Precisiones de H9 aprobadas: proyección también en el actual abierto, dedupe real/previsto, TRM faltante explícita, manejo que por sí solo extiende hasta 12 meses, conservación de deuda e historial, desgloses R7 y comparaciones seguras. D26–D29 registradas. | El dueño pide aplicar todas las recomendaciones y confirma por separado control por extracto, total calculado y manejo hasta 12 meses. |
+| 2026-11-13 | 21–26 | Se amplían planes/pruebas para invalidación transversal, pagos compactos accesibles, navegación histórica y ceros/negativos; se recuperan reglas/evidencias anteriores de `DESIGN.md`. Los seis pasos siguen pendientes. | Evitar errores de cálculo, regresiones y confundir una aprobación documental con implementación validada. |

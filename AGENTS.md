@@ -181,7 +181,13 @@ Detalle completo en la sección 5 de `docs/PRD.md`.
 - **Cuota k** cae en el extracto de la compra más k − 1 meses. Compras a 1 cuota o marcadas sin intereses usan i = 0.
 - **Avance:** genera el movimiento del avance (tasa de avances) y otro de comisión, misma fecha y extracto.
 - **Suscripciones:** un cobro por fecha, garantizado por índice único `(subscription_id, date)`.
-- **Total del extracto:** compras de 1 cuota + cuotas + suscripciones + avances y comisiones + intereses + cuota de manejo + seguros − devoluciones. Los pagos van aparte.
+- **Total del extracto:** compras de 1 cuota + cuotas + suscripciones + avances y comisiones + intereses + cuota de manejo + seguros + ajustes − devoluciones. Los pagos van aparte y el interés ya incluido en una cuota no se suma dos veces.
+- **Mes de pago (R7):** un extracto pertenece al mes de su `due_date` en Bogotá. Toda la vista por meses usa este criterio; el gasto por mes de compra (D5) solo aparece como dato secundario y con su propia etiqueta. Nunca mezcles ambos criterios en un mismo total.
+- **Proyección (R7, H9 pendiente):** mes actual abierto y futuros combinan reales con suscripciones elegibles de tarjetas activas y manejo solo de extractos virtuales. Dedupe por `(subscription_id, date)` dando prioridad a importe, TRM y asignación del real. Conservar fechas/importes guardados; sin compras supuestas ni persistencia. Sin TRM, "Total conocido" incompleto con aviso, no cero inventado. Lógica en `lib/domain/months.ts`.
+- **Confirmación de pago (D26):** "Pendiente de confirmar pago" suma totales calculados de extractos reales sin `paid_at`, sin descontar abonos ni sumar previstos. Marcar pagado no crea pagos ni libera cupo. `real_total` no sustituye al calculado (D27).
+- **Rango y deuda:** 12 meses de pago futuros como máximo; manejo puede generarlos por sí solo. Avisar de cuotas/extractos reales posteriores. Preservar historial y saldos de archivadas; deuda total registrada secundaria según D2, sin proyecciones ni límite de horizonte.
+- **Desglose y comparación:** conceptos y categorías usan R7, cuotas por `total_cop` y categoría original, ajustes incluidos, devoluciones restadas, sin duplicar compra/interés. D5 solo como dato separado. Comparaciones solo entre meses cerrados con datos y sin proyección/TRM faltante (D28, D29). Conservar ceros/negativos y usar alternativa textual si una barra proporcional no es válida.
+- **Integración de meses:** lecturas compartidas entre inicio/detalle y actualización de todas las vistas afectadas por cada escritura, incluidas referencias anteriores tras editar/borrar. Considerar cron, TRM y cambio de día; no añadir caché persistente sin invalidación. Controles de pago repetibles con IDs únicos y botones secundarios, no varias copias completas de `StatementControls`.
 
 ## Casos de prueba obligatorios en `lib/domain/`
 
@@ -192,6 +198,13 @@ Detalle completo en la sección 5 de `docs/PRD.md`.
 - Compra a 1 cuota y compra sin intereses: interés 0.
 - Suscripción mensual con día de cobro 31.
 - Suscripción anual que renueva en un año bisiesto.
+- Mes de pago: extracto con corte en un mes y fecha límite en el siguiente (corte 31, pago 5).
+- Proyección: día 31, anual en rango, pausada/cancelada, prueba y tarjeta archivada; actual abierto con cobro antes del corte pagadero este mes; manejo no duplicado y horizonte solo con manejo.
+- Dedupe real/previsto por suscripción/fecha y transición por cron sin doble conteo; USD sin TRM mantiene aviso de total incompleto.
+- Estados: vencido, pendiente, todos/algunos extractos marcados y estimado; actual vacío no Pagado. Un abono parcial no reduce el pendiente de confirmar y `real_total` no cambia el total.
+- Rango con cuotas posteriores a 12 meses, aviso de límite e historial conservado con todas las tarjetas archivadas.
+- Desgloses por concepto/categoría que cuadran, con ajustes, cuotas/interés sin duplicar, "Sin categoría", devoluciones y totales cero/negativos.
+- Comparación entre meses de pago cerrados; mes abierto, futuro o incompleto sin afirmación de ahorro ni porcentajes inválidos.
 
 ## Forma de trabajar
 

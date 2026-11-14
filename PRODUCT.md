@@ -31,7 +31,8 @@ Las métricas del PRD son objetivos, no resultados demostrados:
 - La fecha de corte organiza el producto: cada movimiento se asigna al extracto correspondiente y cada cuota a su periodo.
 - En el computador, el dueño revisa el desglose del extracto, registra el total real del banco y marca el extracto como pagado. La app registra pagos; no los ejecuta.
 - En el celular, registra valor, tarjeta, categoría, comercio y cuotas. La fecha de hoy y la última tarjeta usada reducen pasos. Antes de guardar una compra a cuotas, ve la primera cuota, los intereses y el extracto asignado.
-- El tablero prioriza el extracto no pagado con vencimiento más antiguo, incluso si está vencido.
+- H9 aprobado y pendiente de implementar: la pantalla de inicio organizará todo por **mes de pago** (D18), con el actual destacado, próximos estimados y anteriores como historial. El actual abierto incluirá cobros previstos identificados aparte; cada mes permitirá entender los cargos por tarjeta y concepto. Los vencidos seguirán en su mes con alerta adicional (D23), no sumados al actual.
+- El control de pago es por extracto: "Pendiente de confirmar pago" no descuenta abonos registrados ni incluye previstos. Marcar pagado no crea un abono ni libera cupo. El total mensual usa el calculado, no el total bancario de referencia (D26, D27).
 - Las suscripciones activas generan sus cobros automáticamente. La automatización debe evitar duplicados y recuperar cobros pendientes dentro de la ventana definida en el PRD.
 - Moneda base COP, secundaria USD; zona horaria única `America/Bogota`. Los días de negocio no dependen de la zona del dispositivo.
 
@@ -39,8 +40,11 @@ Las métricas del PRD son objetivos, no resultados demostrados:
 
 `docs/PRD.md` es la autoridad funcional, incluido su registro de decisiones aprobadas. `AGENTS.md` establece las reglas de implementación. Este archivo captura contexto duradero, no sustituye esas fuentes ni amplía el alcance.
 
-- MVP: tarjetas y categorías editables, movimientos y cuotas, extractos, suscripciones, tablero, historial y respaldo de datos. Una tarjeta puede archivarse sin perder su historial.
-- Planeación, alertas, conciliación detallada, automatización de TRM e instalación PWA pertenecen a v2 según el PRD. La captura por PDF o email y otras automatizaciones pertenecen a v3. No anticiparlas sin petición explícita.
+- MVP: tarjetas y categorías editables, movimientos y cuotas, extractos, suscripciones, historial y respaldo de datos. MVP 1.1 (H9): vista por meses como pantalla de inicio, en lugar del tablero. Una tarjeta puede archivarse sin perder su historial.
+- Planeación adicional, recordatorios por email, conciliación detallada, automatización de TRM e instalación PWA pertenecen a v2. H9 sí incluye proyecciones y avisos en pantalla de vencidos/TRM faltante. La captura por PDF o email y otras automatizaciones pertenecen a v3. No anticiparlas sin petición explícita.
+- H9 proyecta hasta 12 meses de pago con compromisos conocidos, incluido manejo aunque no haya compras o suscripciones; avisa de cuotas/extractos reales posteriores. Sin TRM muestra un total conocido incompleto, no inventa COP. Al convertir un cobro previsto en real se deduplica por suscripción y fecha.
+- La deuda total registrada se conserva como dato secundario según D2, incluidas tarjetas archivadas con saldo, sin proyecciones ni límite de 12 meses. Archivar todas las tarjetas no oculta el historial.
+- En el detalle mensual, categorías y conceptos explican el mismo total de R7: cuotas del periodo, no compras completas. Las comparaciones no atribuyen ahorro a meses abiertos, estimados o incompletos; ceros y devoluciones negativas no se ocultan (D28, D29).
 - No hay conexión directa con bancos, cuentas de ahorro, inversiones, créditos distintos a tarjetas, pagos desde la app ni funcionalidad multiusuario.
 - Mantener autenticación y aislamiento de datos mediante RLS aunque solo exista una cuenta.
 - Nunca almacenar número completo de tarjeta, CVV ni vencimiento; únicamente los últimos cuatro dígitos.
@@ -69,7 +73,7 @@ No inventar extractos bancarios reales, comprobaciones de exactitud, testimonios
 
 ## Product Principles
 
-1. Entender cuánto pagar y por qué tiene prioridad sobre acumular indicadores.
+1. Entender cuánto pagar y por qué tiene prioridad sobre acumular indicadores. El mes de pago es la unidad principal de lectura.
 2. El registro debe ser suficientemente rápido para sostener la revisión de extractos sin convertirse en una carga.
 3. Conservar la exactitud, la trazabilidad y el historial antes que simplificar silenciosamente las reglas del banco.
 4. Automatizar cobros sin duplicar datos ni ocultar información faltante.

@@ -1,10 +1,10 @@
 # PRD — App de control de tarjetas de crédito
 
-Versión 1.0 · 5 de noviembre de 2026
+Versión 1.1 · 13 de noviembre de 2026 · H9 aprobado, pendiente de implementación
 
 ## 1. Resumen y objetivos
 
-La app es un tablero personal para controlar tarjetas de crédito: registra cada movimiento, lo asigna al extracto correcto y muestra cuánto se pagará en cada corte y cuánto queda comprometido a futuro.
+La app es una herramienta personal para controlar tarjetas de crédito: registra cada movimiento, lo asigna al extracto correcto y organiza la información por **mes de pago**, para mostrar cuánto se paga este mes, el historial de meses anteriores y lo ya comprometido en los meses futuros.
 
 **Problema.** El banco muestra el extracto mes a mes, pero no la foto completa: cuotas pendientes de varias compras, suscripciones repartidas entre tarjetas, avances con comisiones y cobros en dólares que cambian con la TRM. Eso hace difícil saber cuánto se debe de verdad y cuánto se puede gastar.
 
@@ -93,22 +93,38 @@ El MVP cubre registrar movimientos y ver el extracto proyectado de cada tarjeta;
 - Cada tarjeta muestra el extracto abierto, el próximo y los anteriores.
 - El extracto desglosa: compras de una cuota, cuotas, suscripciones, avances, intereses, cuota de manejo y pagos.
 - Se puede registrar el total real del extracto del banco y marcar el extracto como pagado.
+- Registrar un abono y marcar un extracto como pagado son acciones independientes. Marcar pagado no crea un movimiento de pago ni libera cupo; el total bancario es una referencia y no sustituye el calculado (D26, D27).
 
-**F6. Tablero.** Como dueño, quiero ver en una pantalla el estado de todas mis tarjetas.
+**F6. Meses (pantalla de inicio).** Como dueño, quiero ver apenas entro la lista de meses con un resumen de cada uno, para saber cuánto pago este mes, revisar los anteriores y anticipar los próximos. Sustituye al tablero original (D25).
 
-- Por tarjeta: próximo pago y fecha límite, cupo disponible, % de utilización.
-- Totales: deuda total pendiente, total a pagar este mes, gasto del mes actual frente al anterior.
+- Los meses se organizan por **mes de pago**: un extracto pertenece al mes de su fecha límite (R7, D18).
+- Orden: el mes actual arriba y destacado; luego "Próximos meses" en orden ascendente; luego "Meses anteriores" en orden descendente (D22).
+- Cada fila muestra el nombre del mes, el total del mes, el importe **"Pendiente de confirmar pago"** si es distinto del total, una barra apilada con el color de cada tarjeta y el estado del mes (D19, D26). El pendiente es un control por extracto, no un saldo después de abonos; las proyecciones se identifican aparte según R7.
+- El mes actual incluye cobros previstos en sus extractos aún abiertos. Los meses futuros muestran solo lo comprometido y se marcan como **Estimado** (D20). El rango futuro cubre los compromisos conocidos dentro de los siguientes 12 meses, incluida la cuota de manejo aunque no haya cuotas ni suscripciones; los pasados muestran todo el historial, de 12 meses con datos en 12 (D21).
+- Si hay extractos vencidos de meses anteriores, una alerta arriba de la lista muestra el total calculado de los extractos vencidos sin confirmar pago y ofrece acceso a cada mes afectado (D23, D26).
+- Una franja compacta muestra cada tarjeta activa con su cupo disponible y utilización, y enlaza a `/tarjetas/[id]` (D25). La deuda total registrada se conserva como dato secundario, sin sumar proyecciones ni limitarse a los próximos 12 meses.
+- El mes actual siempre se muestra; si no tiene extractos ni compromisos previstos indica "Sin extractos", sin aparentar que está pagado. Archivar todas las tarjetas no oculta el historial ni los compromisos reales.
+- Toda la fila del mes enlaza a su detalle.
 
 **F7. Historial.** Como dueño, quiero consultar mis gastos mes a mes.
 
-- Lista filtrable por mes, tarjeta, categoría, tipo y texto del comercio.
-- Gráfico de gasto mensual de los últimos 12 meses y gasto por categoría del mes elegido.
+- Lista filtrable por mes de compra (fecha del movimiento, D5), tarjeta, categoría, tipo y texto del comercio. La etiqueta del filtro explicita ese criterio; no se reutiliza para filtrar cuotas por mes de pago.
+- La lista con filtros es el contenido principal. El gráfico por categoría se muestra en el detalle de cada mes (F9) y la evolución mensual la cubre la lista de meses (F6), así que esta vista no repite gráficos (D25).
 
 **F8. Categorías.** Lista editable con categorías iniciales: mercado, restaurantes, transporte, servicios, salud, entretenimiento, suscripciones, viajes, educación, hogar, otros.
 
+**F9. Detalle de un mes.** Como dueño, quiero entrar a un mes y ver cuánto pago por tarjeta y en total, y por qué.
+
+- Encabezado: total calculado del mes, "Pendiente de confirmar pago", estado y comparación con el mes calendario anterior cuando sea comparable (D26, D27, D29).
+- Mes actual con extractos aún abiertos: separa "Ya facturado" de "Aún puede crecer"; dentro de este último distingue lo registrado de los cobros recurrentes previstos, indicando qué tarjeta corta y cuándo (D19, D20).
+- Un bloque por tarjeta con los extractos del mes: total, fecha límite, estado, periodo de compras que cubre ("compras del 16 sep al 15 oct") y enlace a cada extracto. Conserva las fechas guardadas aunque las condiciones de la tarjeta hayan cambiado. Desde aquí se puede marcar cada extracto real como pagado o deshacer la marca, con acciones secundarias e identificadores accesibles únicos; el total bancario se edita en el extracto.
+- Desglose del mes por concepto (compras de 1 cuota, cuotas, suscripciones, avances y comisiones, intereses, cuota de manejo, seguros, ajustes, devoluciones) y por categoría, con el gráfico por categoría (D17, D28). Ambos usan los cargos y cuotas asignados al mes de pago, no el valor completo de las compras del mes calendario.
+- Dato secundario, etiquetado por separado: "Compraste en este mes", según D5 (mes de compra), para no confundirlo con lo que se paga.
+- Mes futuro: extractos reales más suscripciones y manejo previstos, con la nota "Se sumará lo que gastes antes de cada corte". Las suscripciones en USD se estiman con la última TRM (D4); si falta, se muestra "Total conocido" y una advertencia con los cobros sin convertir. Los extractos virtuales no tienen enlace ni acción de pago.
+- Navegación al mes disponible anterior y siguiente. URL `/meses/AAAA-MM`; cargar más historial en la lista no es requisito para acceder directamente a un mes histórico.
+
 ### v2 — planeación y alertas
 
-- **Compromisos futuros:** gráfico de los próximos 12 meses con lo ya comprometido por cuotas y suscripciones, por tarjeta.
 - **Cobros en USD:** el movimiento guarda el valor en USD, la TRM usada y el valor en COP. Las suscripciones en USD se estiman con la TRM del día y luego se corrigen con el valor real del extracto.
 - **Recordatorios por email:** 3 días antes de la fecha límite de pago, 2 días antes de que termine una prueba gratis y 7 días antes de una renovación anual.
 - **Detección de alzas:** aviso cuando el cobro real de una suscripción supera en más del 5% al anterior.
@@ -175,7 +191,7 @@ Un avance genera dos movimientos: el avance (con cuotas, usando la tasa de avanc
 
 ### R5. Totales
 
-- Total del extracto = compras de 1 cuota + cuotas asignadas + cobros de suscripciones + avances y comisiones + intereses + cuotas de manejo + seguros − devoluciones. Los pagos se muestran aparte como abonos.
+- Total del extracto = compras de 1 cuota + cuotas asignadas + cobros de suscripciones + avances y comisiones + intereses + cuotas de manejo + seguros + ajustes − devoluciones. Los pagos se muestran aparte como abonos. El total de cada cuota ya incluye su interés; no se suma otra vez como interés separado.
 - Cupo disponible = cupo total − (capital pendiente de todos los cargos − pagos y devoluciones).
 - Utilización = (cupo total − cupo disponible) / cupo total.
 
@@ -183,6 +199,30 @@ Un avance genera dos movimientos: el avance (con cuotas, usando la tasa de avanc
 
 - Cada movimiento guarda `amount` y `currency` originales; si es USD, también `fx_rate` y `amount_cop`.
 - En el MVP la TRM se ingresa a mano o se precarga con la última conocida; en v2 se consulta automáticamente una vez al día.
+
+### R7. Meses de pago y proyección
+
+- **Mes de pago:** un extracto pertenece al mes calendario de su `due_date` en `America/Bogota`. Ejemplo con corte el 15 y pago el 2: el extracto que corta el 15 de octubre se paga el 2 de noviembre y pertenece a noviembre.
+- **Total del mes** = suma de los totales calculados de los extractos reales del mes según R5 más los cargos proyectados que correspondan. `real_total` se muestra como referencia en el extracto, pero nunca sustituye al calculado ni altera el desglose mensual (D27). La lista, los bloques por tarjeta y los desgloses deben cuadrar sobre la misma base.
+- **Pendiente de confirmar pago (D26):** suma de los totales calculados de los extractos reales del mes sin `paid_at`. No descuenta movimientos `payment` ni incluye importes aún proyectados, que se muestran aparte como "Cobros previstos". Ayuda visible: "Suma de extractos sin marcar como pagados. No descuenta abonos registrados." No se etiqueta como "Falta por pagar" ni como saldo bancario. Marcar o desmarcar pagado no crea ni elimina abonos, no libera cupo y no cambia el total del mes. Si solo hay proyecciones, no se presenta pendiente cero como confirmación de que el mes está pagado.
+- **Extracto cerrado o abierto:** cerrado si su fecha de corte es anterior a hoy; abierto si es hoy o posterior, porque aún puede recibir movimientos.
+- **Proyección del mes actual y los futuros:** combina datos reales y proyectados sin escribir extractos ni movimientos en la base:
+    - Se conservan todos los movimientos y cuotas de los extractos reales, incluso de tarjetas archivadas. Sus fechas guardadas (`period_start`, `cutoff_date`, `due_date`) prevalecen sobre las condiciones actuales de la tarjeta; estas se usan para calcular extractos virtuales.
+    - Se generan fechas de cobro desde hoy, inclusive, con `chargeDatesBetween` (R4). Solo suscripciones activas de tarjetas no archivadas y fuera del periodo de prueba; una prueba deja de excluir cobros desde `trial_ends_at`, como en el cron. No se reconstruyen cobros históricos mediante la proyección.
+    - Cada cobro previsto se asigna por R1, tanto a un extracto real como a uno virtual. Si se paga este mes y el corte aún no ha pasado, se incluye en el mes actual. Ejemplo: hoy 13, cobro 20, corte 25, pago 28 del mismo mes.
+    - Se deduplica por `(subscription_id, date)` antes de sumar; si ya existe un cobro real, prevalecen su importe, TRM y extracto guardados. Convertir una proyección en cobro real no puede duplicar el total; si el importe o la TRM cambian, solo se refleja la diferencia.
+    - Cuota de manejo solo para extractos virtuales de tarjetas activas con manejo mayor que cero; los reales ya la tienen por D1. Se incluye también en un extracto virtual abierto que se pague este mes. No se vuelven a valorar cargos reales con condiciones o TRM nuevas.
+    - Suscripciones USD previstas usan D4. Si no hay TRM, conservan su importe USD sin inventar un equivalente COP ni sustituirlo por cero: el agregado en COP se identifica como **"Total conocido"**, con aviso de estimación incompleta, cobros afectados y acción para revisar la TRM. Esta condición llega hasta la fila del mes y desactiva comparaciones.
+    - Nunca se suponen compras nuevas. En el mes actual, `total = billed + openRecorded + projected`: "Ya facturado" son cargos reales de extractos cerrados; "Aún puede crecer" reúne lo registrado en abiertos y los cobros previstos, separados. Las cifras en COP son las conocidas si falta TRM.
+- **Rango futuro:** se consideran los siguientes 12 meses de pago completos, del siguiente al actual hasta actual + 12, inclusive. Dentro de esa ventana se llega al último mes con extractos reales o compromisos previstos (cuotas, suscripciones o manejo), no al mínimo entre sus fechas. El manejo mensual puede, por sí solo, extender el rango a los 12 meses. Sin extractos, cuotas, suscripciones elegibles ni manejo, no hay meses futuros. Se omiten meses sin datos ni cargos previstos, pero no extractos reales con total cero o negativo ni cobros USD pendientes de TRM. Si hay cuotas o extractos reales posteriores a la ventana, se informa "Tienes compromisos posteriores a estos 12 meses"; no se presenta el límite de la vista como final de la deuda.
+- **Estados de un mes:** un mes futuro tiene estado Estimado, aunque sus bloques reales conservan su estado individual. Para el mes actual y los pasados, prevalece Vencido si algún extracto real no está marcado pagado y su `due_date` es anterior a hoy; después Pendiente si hay extractos reales sin marcar o cobros previstos; Pagado solo si hay extractos reales, todos están marcados y no quedan cobros previstos. Un mes actual sin datos se muestra como "Sin extractos", sin badge Pagado; los pasados sin extractos se omiten. "Parcialmente pagado" en las pruebas significa que algunos extractos están marcados y otros no, no abonos parciales dentro de un extracto.
+- **Vencidos:** se agrupan por sus meses de pago originales; la alerta permite acceder a todos los meses afectados y aclara que su importe corresponde a extractos sin confirmar pago, sin descontar abonos ni sumarlos al mes actual.
+- **Desgloses (D28):** por concepto se usa R5, incluidos ajustes como cargos y devoluciones con signo negativo, excluidos pagos. Por categoría se distribuyen esos mismos importes: cuotas por `total_cop` y categoría de la compra original, cargos de una cuota por su categoría, cobros previstos por la categoría de su suscripción y cargos sin categoría en "Sin categoría". El capital completo de una compra a varias cuotas no se vuelve a contar y el interés de la cuota no se duplica. El gráfico se etiqueta "Cargos del mes de pago por categoría"; nombre, importe y signo están disponibles como texto. La suma neta por categoría coincide con la suma por concepto y el total conocido.
+- **Barras y saldos a favor:** la barra apilada de cada fila representa la composición relativa por tarjeta, no la magnitud entre meses. Solo se dibuja como proporción del total si este es positivo y ninguna tarjeta tiene subtotal negativo. Con subtotal negativo o total no positivo se sustituye por un desglose textual firmado por tarjeta; nunca se ocultan devoluciones, se convierten negativos en positivos ni se divide por cero. La misma regla de conservar signos se aplica al gráfico por categoría, con eje apto para negativos. Un total negativo se acompaña de "Saldo a favor", sin presentarlo como dinero a pagar ni alterar las marcas de pago.
+- **Comparaciones (D29):** siempre mes de pago contra el mes calendario anterior, nunca D5 contra R7. Solo se comunica variación porcentual entre dos meses con datos, cerrados, sin proyección y sin TRM faltante. Si alguno está abierto, es futuro o está incompleto, se informa "Mes en curso", "Estimado" o "Comparación no disponible", sin afirmar ahorro ni "gastaste menos". Bases cero, negativas, pequeñas o porcentajes extremos usan diferencia monetaria o texto neutro con las protecciones de `lib/format.ts`; sin colores de éxito o problema. No se trata un mes sin datos como cero.
+- **Historial y navegación:** el mes actual siempre está disponible. El historial conserva todas las tarjetas, incluso si ninguna sigue activa, y se carga en bloques de 12 meses con extractos, sin truncar los datos que forman cada total. Los enlaces directos a meses históricos no dependen de la página cargada en `/`; los vecinos son los meses disponibles anteriores y siguientes, omitiendo huecos. Devuelven `notFound()` un parámetro inválido, un pasado sin extractos y un futuro fuera de los siguientes 12 meses o sin datos/compromisos. Para extractos reales posteriores al horizonte se conserva el acceso por tarjeta/extracto, sin crear un enlace a una ruta de mes fuera de rango.
+- **Deuda total registrada:** dato secundario en el inicio a partir de `card_balances.used` (D2), incluyendo tarjetas archivadas con saldo. No incluye proyecciones ni se limita al horizonte de 12 meses. Marcar extractos pagados no reduce esta cifra; los movimientos de abono sí participan en D2.
+- La lógica vive en funciones puras de `lib/domain/months.ts`, con pruebas, igual que el resto de reglas.
 
 ## 6. Modelo de datos
 
@@ -221,7 +261,7 @@ La app usa Next.js en Vercel con Supabase como base de datos, autenticación y t
 | Framework | Next.js (App Router) + TypeScript | Server Components para leer, Server Actions para escribir, un solo despliegue. |
 | Interfaz | Tailwind CSS + shadcn/ui | Componentes accesibles que viven en el repo y se pueden editar. |
 | Formularios | React Hook Form + Zod | La misma validación en cliente y servidor. |
-| Gráficos | Recharts | Suficiente para barras, líneas y tortas del tablero. |
+| Gráficos | Recharts | Suficiente para barras, líneas y tortas de la app. |
 | Base de datos y auth | Supabase (Postgres, Auth, RLS) | Postgres real, migraciones con CLI y tipos generados. |
 | Tareas programadas | Supabase Cron + Edge Functions | Corren junto a los datos, sin depender del hosting. |
 | Dinero y fechas | decimal.js, date-fns + date-fns-tz | Aritmética exacta y zona horaria fija. |
@@ -258,12 +298,13 @@ Todo lo que escribe datos pasa por Server Actions, que usan `lib/domain` para ca
 
 ## 8. Pantallas y flujos
 
-El MVP tiene ocho pantallas. El diseño es mobile-first, con navegación inferior en el celular y lateral en el computador, y soporta modo claro y oscuro.
+El producto tiene nueve pantallas. El diseño es mobile-first, con navegación inferior en el celular y lateral en el computador, y soporta modo claro y oscuro.
 
 | Ruta | Pantalla | Contenido |
 | --- | --- | --- |
-| `/` | Tablero | Tarjeta por tarjeta: próximo pago, fecha límite, cupo disponible y utilización. Totales del mes y botón flotante "Nuevo gasto". |
-| `/movimientos` | Historial | Lista agrupada por día con filtros (mes, tarjeta, categoría, tipo, texto) y gráficos del mes. |
+| `/` | Meses | Franja de tarjetas con cupo y utilización, deuda total registrada secundaria, alerta de vencidos y lista de meses (actual, próximos y anteriores). Acción "Nuevo gasto". |
+| `/meses/[mes]` | Detalle del mes | Total calculado o conocido, pendiente de confirmar pago, cargos previstos, bloques por tarjeta, desglose por concepto y categoría, y navegación entre meses. |
+| `/movimientos` | Historial | Lista agrupada por día con filtros por mes de compra, tarjeta, categoría, tipo y texto; sin gráficos. |
 | `/movimientos/nuevo` | Registro rápido | Valor, tarjeta (la última usada por defecto), categoría, comercio, cuotas. Fecha de hoy por defecto. |
 | `/movimientos/[id]` | Detalle | Datos del movimiento y, si tiene cuotas, su tabla de amortización. |
 | `/tarjetas/[id]` | Detalle de tarjeta | Extracto abierto, próximos y anteriores; compras a cuotas activas con su avance (ej. 4/12). |
@@ -273,11 +314,11 @@ El MVP tiene ocho pantallas. El diseño es mobile-first, con navegación inferio
 
 **Flujo principal: registrar una compra a cuotas**
 
-1. Desde el tablero, el usuario toca "Nuevo gasto".
+1. Desde Meses, el usuario toca "Nuevo gasto".
 2. Escribe el valor, elige tarjeta y categoría, y cambia cuotas de 1 a 6.
 3. Antes de guardar, el formulario muestra la vista previa: valor de la primera cuota, total de intereses y extracto donde cae la primera cuota.
 4. Al guardar, se crean el movimiento y sus 6 cuotas en una sola transacción de base de datos.
-5. El tablero se actualiza con el nuevo próximo pago y cupo disponible.
+5. Al volver, los meses afectados muestran los nuevos totales y la franja de tarjetas el nuevo cupo disponible.
 
 ## 9. Tareas programadas y notificaciones
 
@@ -318,7 +359,7 @@ Las tareas corren con Supabase Cron (`pg_cron`), dentro de la base de datos, par
 
 **Rendimiento y uso**
 
-- El tablero carga en menos de 1,5 s en 4G.
+- La pantalla de inicio (Meses) carga en menos de 1,5 s en 4G.
 - Funciona bien en pantallas desde 360 px de ancho.
 - Textos de la interfaz en español de Colombia.
 
@@ -328,7 +369,7 @@ Las tareas corren con Supabase Cron (`pg_cron`), dentro de la base de datos, par
 
 ## 11. Plan de implementación
 
-El MVP se construye en 9 hitos, uno por sesión de trabajo con el agente de código. La lógica de dominio va antes que la interfaz: así hay pruebas que confirman que los cálculos están bien antes de construir pantallas encima.
+El MVP original se construyó en 9 hitos (H0–H8); H9 agrega la vista por meses como MVP 1.1 en seis pasos. La lógica de dominio va antes que la interfaz: así hay pruebas que confirman que los cálculos están bien antes de construir pantallas encima.
 
 1. **H0. Base del proyecto.** Next.js + TypeScript + Tailwind + shadcn/ui, proyecto en Supabase, CLI enlazado, login con Supabase Auth, despliegue en Vercel. Listo cuando el login funciona en producción.
 2. **H1. Dominio puro.** Funciones de R1 a R5 en `lib/domain/` con pruebas en Vitest. Listo cuando todas las pruebas pasan, incluidos los casos de fin de mes.
@@ -339,6 +380,7 @@ El MVP se construye en 9 hitos, uno por sesión de trabajo con el agente de cód
 7. **H6. Suscripciones.** CRUD y la tarea diaria de cobros con `pg_cron`.
 8. **H7. Tablero e historial.** Indicadores, filtros y gráficos.
 9. **H8. Pulido.** Diseño responsive, estados vacíos, modo oscuro y exportación de datos.
+10. **H9. Vista por meses (MVP 1.1).** Dominio de meses de pago y proyección (R7), brief de diseño, lista de meses como inicio, detalle de mes, ajuste de vistas relacionadas y validación. Pasos 21 a 26 de `plans/`.
 
 **Cómo trabajar cada hito**
 
@@ -375,7 +417,7 @@ Múltiples usuarios, conexión directa con bancos, cuentas de ahorro, inversione
 
 ### Decisiones aprobadas durante la implementación
 
-Este registro consolida las decisiones del dueño de `plans/README.md`; no agrega alcance ni sustituye la comprobación contra extractos bancarios. D1–D10, D15 y D16 fueron aprobadas el 9 de noviembre de 2026; D11–D13 el 10 y D14 el 11.
+Este registro consolida las decisiones del dueño de `plans/README.md`; no sustituye la comprobación contra extractos bancarios. D1–D10, D15 y D16 fueron aprobadas el 9 de noviembre de 2026; D11–D13 el 10; D14 el 11; D17 y D18–D29 el 13, incluidas las precisiones de la revisión de H9. Aprobar una regla no equivale a haberla implementado.
 
 | Decisión | Regla vigente del MVP |
 | --- | --- |
@@ -395,6 +437,18 @@ Este registro consolida las decisiones del dueño de `plans/README.md`; no agreg
 | D14 · Favicon | Cuadrado neutro temporal con el token primario, sin letras ni símbolos; no constituye un logo. |
 | D15 · Cuotas máximas | Entre una y 36 cuotas en compras y avances. |
 | D16 · Ajustes | `adjustment` siempre es cargo; las correcciones a favor se registran como `refund`. |
-| D17 · Gráfico por categoría | Por petición del dueño del 13 de noviembre, usa colores de `chart-1` a `chart-5`, siempre junto al nombre y al valor. Es presentación del historial: `categories.color` sigue en `null` y no se agregan colores a los formularios ni a la lista de movimientos. Sustituye el gráfico neutro de D11. |
+| D17 · Gráfico por categoría | Por petición del dueño del 13 de noviembre, usa colores de `chart-1` a `chart-5`, siempre junto al nombre y al valor. Desde H9 vive en el detalle de mes de pago (D25, D28): `categories.color` sigue en `null` y no se agregan colores a los formularios ni a la lista de movimientos. Sustituye el gráfico neutro de D11. |
+| D18 · Mes de pago | La información se organiza por mes de pago: un extracto pertenece al mes de su `due_date` en Bogotá. El gasto por mes de compra (D5) solo aparece como dato secundario etiquetado "Compraste en este mes". |
+| D19 · Estados del mes | Vencido, Pendiente, Pagado y Estimado según R7. En el actual se separa "Ya facturado" de "Aún puede crecer", distinguiendo registrados y previstos. Sin datos se muestra "Sin extractos", no Pagado. Las marcas de pago no representan abonos parciales (D26). |
+| D20 · Proyección | Mes actual abierto y meses futuros: extractos reales más suscripciones activas elegibles de tarjetas no archivadas y manejo de extractos virtuales. Se deduplica por suscripción y fecha, prevalece el real y no se inventa COP si falta TRM. Sin compras nuevas ni persistencia; futuros Estimados y actual con previstos identificados. |
+| D21 · Rango | Futuro: compromisos conocidos dentro de los siguientes 12 meses de pago, incluido manejo aunque no haya cuotas ni suscripciones. Se avisa si hay cuotas o extractos reales posteriores. Pasado: todo el historial, cargado de 12 meses con extractos en 12, sin condicionar enlaces directos a esa paginación. |
+| D22 · Orden | Mes actual arriba y destacado; "Próximos meses" ascendente; "Meses anteriores" descendente. |
+| D23 · Vencidos | Los extractos vencidos de meses anteriores siguen en su propio mes y aparecen como alerta arriba de la lista y del mes actual, con acceso a todos los meses afectados. No se suman al mes actual; el importe es calculado y sin descontar abonos (D26). |
+| D24 · Tarjetas archivadas | Conservan extractos, cuotas reales, historial y saldo en la deuda total registrada; no se les proyectan suscripciones ni manejo. La franja solo muestra activas. Archivar todas no oculta la información real. |
+| D25 · Inicio y navegación | `/` pasa a ser Meses y sustituye al tablero. Navegación: Meses, Movimientos, Suscripciones y Ajustes. Cupo y utilización en la franja; deuda total registrada secundaria según D2. Gráfico por categoría en el detalle del mes; `/movimientos` sin gráficos y con filtro por mes de compra explícito. "Compromisos futuros" sale de v2. |
+| D26 · Confirmación de pago | Modelo por extracto: "Pendiente de confirmar pago" suma totales calculados de extractos reales sin `paid_at`, no descuenta abonos ni incluye proyecciones. Marcar pagado no registra un abono ni libera cupo. No se implementa asignación de pagos parciales en H9. |
+| D27 · Total calculado | El total mensual usa el cálculo y los cargos previstos conocidos; `real_total` se conserva como referencia en el extracto, sin sustituir importes ni crear ajustes implícitos. Si falta TRM, se identifica como "Total conocido" incompleto. |
+| D28 · Desglose mensual | Conceptos y categorías explican el mismo mes de pago: cuotas por `total_cop`, categoría de la compra original, cargos y proyecciones con su categoría o "Sin categoría". Ajustes incluidos, devoluciones restadas y pagos aparte; no se duplica compra completa ni interés. Se conservan ceros y negativos según R7. |
+| D29 · Comparación mensual | Solo meses de pago cerrados, con datos y sin proyecciones ni TRM faltante admiten variación porcentual; para el actual abierto o futuro se indica su condición sin afirmar ahorro. Bases no significativas y porcentajes extremos usan texto neutro o diferencia monetaria. |
 
-Precisiones posteriores aprobadas: al editar una compra se conserva la tasa original si no cambian tarjeta ni tipo (10 de noviembre); guardar una suscripción intenta generar su cobro de hoy sin esperar al cron (10 de noviembre); el tablero prioriza el extracto no pagado con vencimiento más antiguo, incluso vencido (11 de noviembre).
+Precisiones posteriores aprobadas: al editar una compra se conserva la tasa original si no cambian tarjeta ni tipo (10 de noviembre); guardar una suscripción intenta generar su cobro de hoy sin esperar al cron (10 de noviembre); el tablero prioriza el extracto no pagado con vencimiento más antiguo, incluso vencido (11 de noviembre; desde D25 lo cubre la alerta de vencidos de D23).

@@ -221,7 +221,7 @@ Todo formato pasa por `lib/format.ts`: COP sin decimales ni espacio después de 
 - Retícula de 4 px. Padding de tarjetas y margen lateral móvil de 16 px (`p-4` / `px-4`); separación de secciones de 24 px (`gap-6`); 8 px para relaciones próximas y 12–16 px dentro de grupos.
 - Contenido centrado en el área disponible **a la derecha** de la barra lateral. Encabezado y contenido comparten un mismo ancho máximo. Las pantallas de consulta pueden usar dos columnas cuando haya espacio; no imponerlas en 360 px.
 - El layout protegido desplaza el contenedor exterior desde `md` y centra un `main` común de hasta 1024 px (`max-w-5xl`); no limitar solo el cuerpo de cada página a un ancho distinto del encabezado. `PageHeader` permite envolver títulos largos y agrupa las acciones por separado.
-- Navegación inferior en celular, lateral desde `md` (768 px en Tailwind actual). La implementación tiene barra lateral de 256 px y navegación inferior de cuatro destinos: Tablero, Movimientos, Suscripciones y Ajustes.
+- Navegación inferior en celular, lateral desde `md` (768 px en Tailwind actual). La implementación tiene barra lateral de 256 px y cuatro destinos. Actualmente el primero es Tablero; H9, todavía pendiente, lo sustituirá por Meses junto a Movimientos, Suscripciones y Ajustes (D25).
 - Reservar espacio para la navegación fija, «Nuevo gasto» y `env(safe-area-inset-bottom)`. No ocultar la última fila o acción detrás de elementos fijos.
 - Objetivos táctiles de al menos 44 × 44 px con `pointer-coarse:`. En escritorio, botones y campos de 36–40 px (`h-9` / `h-10`). El requisito táctil no autoriza convertir todos los tamaños de escritorio en 44 px.
 - Las hojas se presentan abajo en móvil y a la derecha en escritorio; contenido desplazable dentro del alto disponible. La hoja actual limita su alto móvil a `90dvh` y su ancho de escritorio a `max-w-lg`.
@@ -306,6 +306,19 @@ Lucide de 20 px (`size-5`), `strokeWidth={1.75}`, tinta atenuada salvo estados. 
 
 Las barras de Recharts tienen animación desactivada; el CSS elimina la transición de sus tooltips cuando se solicita movimiento reducido. Los estados de carga usan `motion-safe:animate-pulse`. No se define una nueva escala de animación o duración.
 
+### Contratos de H9 — aprobados, pendientes de implementación
+
+Los pasos 22–24 definirán y construirán las superficies; esta sección no afirma que existan ni que hayan pasado verificación visual.
+
+- En el inicio, el mes actual tiene el único monto protagonista; en el detalle lo tiene el mes seleccionado. Franja de tarjetas y deuda total registrada son secundarios. La alerta de vencidos prevalece si existe y permite acceder a todos los meses afectados.
+- «Pendiente de confirmar pago» es control por extracto, no saldo tras abonos. La ayuda de D26 es visible; «Cobros previstos» va aparte. Actual vacío no se presenta como Pagado. El total bancario se edita en el extracto y no sustituye al calculado.
+- «Ya facturado» y «Aún puede crecer» distinguen cargos reales cerrados, registrados en abiertos y previstos. Mes futuro lleva Estimado; USD sin TRM lleva «Total conocido» y aviso de incompletitud visible también en la lista.
+- La barra apilada de la fila usa `card-N` junto a nombres/últimos cuatro dígitos y representa composición, no magnitud comparativa. Si el total no es positivo o una tarjeta tiene subtotal negativo, usar desglose textual firmado; no ocultar devoluciones ni dividir por cero.
+- El gráfico «Cargos del mes de pago por categoría» usa D17 con datos R7/D28, no el cálculo por fecha de compra del historial. Conserva texto con nombres, importes y signos, «Sin categoría» y eje apto para negativos. Un total negativo se acompaña de «Saldo a favor», no de una instrucción de pago.
+- Solo se comparan porcentajes entre meses cerrados comparables. Actual abierto, futuro e incompleto muestran su condición sin afirmar ahorro; comparaciones siempre neutras (D29).
+- Los controles compactos de marcar/deshacer pago son acciones secundarias con IDs únicos y nombres accesibles contextualizados. No repetir `StatementControls` completo ni ofrecer pago/enlace de extracto para virtuales.
+- Archivar todas las tarjetas no oculta historial ni deuda registrada. La navegación histórica no depende de haber cargado ese bloque de meses en el inicio. El límite futuro de 12 meses no se presenta como final de la deuda.
+
 ### Desviaciones de la captura inicial — corregidas
 
 | ID | Implementación corregida | Contrato vigente |
@@ -346,7 +359,7 @@ La tabla describe correcciones comprobables en el código, no una certificación
 
 `app/diseno/page.tsx` conserva el catálogo solo en desarrollo. Incluye estados en columna para comprobar `StatusBadge`, selectores con etiquetas largas (también sin espacios), opción deshabilitada, error asociado y corrección interactiva, fecha y mes, Disclosure y un Sheet con acciones fijas. `DesignControlsPreview` y `DesignSheetPreview` solo mantienen estado local; guardar el ejemplo no llama a acciones de negocio.
 
-La muestra «Identidad de tarjetas» añade seis tarjetas con datos explícitamente de ejemplo y un gráfico mensual para comparar franja, chip, series y estados. Las pantallas de detalle de tarjeta y extracto, y el filtro de tarjeta del historial, conservan la misma identidad junto al nombre o los últimos cuatro dígitos. No se agregan colores de categoría fuera del gráfico autorizado por D17.
+La muestra «Identidad de tarjetas» añade seis tarjetas con datos explícitamente de ejemplo y un gráfico mensual para comparar franja, chip, series y estados. Las pantallas de detalle de tarjeta y extracto, y el filtro de tarjeta del historial, conservan la misma identidad junto al nombre o los últimos cuatro dígitos. No se agregan colores de categoría fuera del gráfico autorizado por D17. Al retirar componentes en H9 se adaptará la muestra si corresponde, sin perder cobertura de identidad.
 
 La navegación del calendario tiene 18 regresiones automatizadas, incluyendo cambios de mes, año y febrero bisiesto, y su integración en Popover y Sheet. La comprobación en Chromium sobre build de producción local cubrió 48 combinaciones de teclado, 360/1440 px y ambos temas; no equivale a una prueba en un dispositivo físico.
 
@@ -357,3 +370,5 @@ Se comprobó también reflow equivalente a ampliar una ventana de 1440 × 900 al
 Zoom nativo, Safari/iOS, VoiceOver y otros lectores de pantalla reales siguen pendientes de comprobación manual. Los nombres, roles y relaciones accesibles inspeccionados o probados no sustituyen esas verificaciones. No afirmar compatibilidad o certificación por el resultado de Chromium ni por las pruebas unitarias.
 
 La adaptación de noviembre de 2026 incluye regresiones en `mobile-responsive.test.tsx`. Su opción `AL_CORTE_UI_FIXTURES` exporta fuera del repositorio el markup actual de las páginas con Supabase simulado: nombres sin espacios, importes máximos, estados vacíos y error. Ese markup se revisó en Chromium a 360, 720, 768 y 1440 px, en ambos temas, sin desbordamiento horizontal. Los formularios, selectores, calendario y hojas se comprobaron además hidratados con datos sintéticos, sin escribir movimientos. Son pruebas de interfaz, no evidencia de funcionamiento bancario, rendimiento en 4G ni compatibilidad con dispositivos físicos.
+
+Las evidencias anteriores pertenecen al trabajo ya registrado, no son nuevas verificaciones de H9. La revisión documental del 13 de noviembre conserva esas reglas y evidencias; la validación de las vistas por meses queda en el paso 26.
