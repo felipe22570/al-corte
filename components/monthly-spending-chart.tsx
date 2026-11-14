@@ -25,9 +25,9 @@ export function MonthlySpendingChart({ rows, cards }: { rows: MonthlyChartRow[];
             <CartesianGrid stroke="var(--border)" vertical={false} />
             <XAxis dataKey="month" tick={{ fill: "var(--muted-foreground)", className: "chart-axis" }} tickFormatter={(value: string) => formatMonth(value, "month-only")} interval="preserveStartEnd" minTickGap={8} height={40} />
             <YAxis width={80} tick={{ fill: "var(--muted-foreground)", className: "chart-axis" }} tickFormatter={(value: number) => formatCopCompact(String(value))} />
-            <Tooltip content={({ active, label }) => {
+            <Tooltip position={{ x: 0 }} wrapperStyle={{ maxWidth: "100%" }} content={({ active, label }) => {
               const row = rows.find((item) => item.month === String(label));
-              return active && row ? <div className="rounded-md border border-border bg-popover p-4 text-small text-popover-foreground"><p>{formatMonth(row.month, "long")}</p>{activeCards.map((card) => <p key={card.id}>{card.name} · •••• {card.last4}: <span className="text-amount">{formatCop(row.amounts[card.id] ?? "0")}</span></p>)}</div> : null;
+              return active && row ? <div className="max-w-[min(20rem,calc(100vw-4rem))] rounded-md border border-border bg-popover p-4 text-small wrap-anywhere text-popover-foreground"><p>{formatMonth(row.month, "long")}</p>{activeCards.map((card) => <p key={card.id}>{card.name} · •••• {card.last4}: <span className="text-amount">{formatCop(row.amounts[card.id] ?? "0")}</span></p>)}</div> : null;
             }} />
             {activeCards.map((card) => <Bar key={card.id} dataKey={card.id} stackId="spending" fill={`var(--${card.color})`} />)}
           </BarChart>

@@ -26,9 +26,9 @@ export function CategorySpendingChart({ rows }: { rows: CategoryChartRow[] }) {
             <CartesianGrid stroke="var(--border)" horizontal={false} />
             <XAxis type="number" tick={{ fill: "var(--muted-foreground)", className: "chart-axis" }} tickFormatter={(value: number) => formatCopCompact(String(value))} interval="preserveStartEnd" minTickGap={20} height={40} />
             <YAxis dataKey="name" type="category" width={112} tick={{ fill: "var(--muted-foreground)", className: "chart-axis" }} tickFormatter={(value: string) => value.length > 16 ? `${value.slice(0, 15)}…` : value} />
-            <Tooltip content={({ active, label }) => {
+            <Tooltip position={{ x: 0 }} wrapperStyle={{ maxWidth: "100%" }} content={({ active, label }) => {
               const row = rows.find((item) => item.name === String(label));
-              return active && row ? <div className="rounded-md border border-border bg-popover p-4 text-small text-popover-foreground">{row.name}: <span className="text-amount">{formatCop(row.amount)}</span></div> : null;
+              return active && row ? <div className="max-w-[min(20rem,calc(100vw-4rem))] rounded-md border border-border bg-popover p-4 text-small wrap-anywhere text-popover-foreground">{row.name}: <span className="text-amount">{formatCop(row.amount)}</span></div> : null;
             }} />
             <Bar dataKey="value">{data.map((row) => <Cell key={row.id} fill={row.fill} />)}</Bar>
           </BarChart>
@@ -36,7 +36,7 @@ export function CategorySpendingChart({ rows }: { rows: CategoryChartRow[] }) {
       </div>
       <ul className="flex flex-col gap-2">{rows.map((row) => {
         const Icon = row.icon && Object.hasOwn(categoryIcons, row.icon) ? categoryIcons[row.icon as CategoryIcon] : Tags;
-        return <li key={row.id} className="flex justify-between gap-2 text-small"><span className="inline-flex min-w-0 items-center gap-2 break-words"><Icon aria-hidden="true" className="size-5 shrink-0" style={{ color: categoryColor(row.id) }} strokeWidth={1.75} />{row.name}</span><span className="shrink-0 text-right text-amount">{formatCop(row.amount)}</span></li>;
+        return <li key={row.id} className="flex min-w-0 flex-wrap items-start justify-between gap-2 text-small"><span className="inline-flex min-w-0 flex-1 basis-40 items-start gap-2 wrap-anywhere"><Icon aria-hidden="true" className="size-5 shrink-0" style={{ color: categoryColor(row.id) }} strokeWidth={1.75} /><span className="min-w-0">{row.name}</span></span><span className="ml-auto min-w-0 max-w-full text-right text-amount wrap-anywhere">{formatCop(row.amount)}</span></li>;
       })}</ul>
     </section>
   );

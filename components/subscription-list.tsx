@@ -27,7 +27,7 @@ export function SubscriptionList({ subscriptions, cards, activeCards, categories
       const recent = charges.filter((charge) => charge.subscription_id === item.id).slice(0, 3);
       const next = nextChargeDate(item, recent.some((charge) => charge.date === today) ? addDays(today, 1) : today);
       const trialEnding = item.status === "active" && isTrialEndingSoon(item.trialEndsAt, today);
-      return <article key={item.id} id={`suscripcion-${item.id}`} className="grid grid-cols-[minmax(0,1fr)_auto] items-start gap-x-4 gap-y-3 p-4 sm:grid-cols-[minmax(0,1fr)_auto_auto]">
+      return <article key={item.id} id={`suscripcion-${item.id}`} className="grid min-w-0 grid-cols-1 items-start gap-x-4 gap-y-3 p-4 sm:grid-cols-[minmax(0,1fr)_auto_auto]">
         <div className="flex min-w-0 flex-col items-start gap-1 wrap-anywhere">
           <h2 className="text-body font-medium">{item.name}</h2>
           {card && <CardColorChip color={card.color} name={`${card.name} · •••• ${card.last4}`} />}
@@ -36,11 +36,11 @@ export function SubscriptionList({ subscriptions, cards, activeCards, categories
           {trialEnding && <StatusBadge tone="warning" text={`Prueba hasta el ${formatDateShort(item.trialEndsAt!, today)}`} />}
         </div>
         <span className="text-right"><Money value={item.amount} currency={item.currency} /></span>
-        <div className="col-span-2 flex flex-wrap items-start justify-end gap-1 sm:col-span-1">
+        <div className="flex min-w-0 flex-wrap items-start justify-end gap-1">
           <SubscriptionForm cards={activeCards} categories={categories} today={today} subscription={item} />
           <SubscriptionStatusActions id={item.id} status={item.status} name={item.name} />
         </div>
-        {recent.length > 0 && <Disclosure className="col-span-2 sm:col-span-3">
+        {recent.length > 0 && <Disclosure className="sm:col-span-3">
           <DisclosureSummary className="justify-start text-small text-muted-foreground">Últimos cobros<span className="sr-only"> de {item.name}</span><ChevronDown aria-hidden="true" className="size-5" strokeWidth={1.75} /></DisclosureSummary>
           <DisclosureContent className="pt-1">
             {recent.map((charge) => <Link key={charge.id} href={`/movimientos/${charge.id}`} className="flex min-h-10 items-center justify-between gap-3 rounded-md text-small underline-offset-4 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring pointer-coarse:min-h-11">

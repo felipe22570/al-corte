@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import Link from "next/link";
 import { redirect } from "next/navigation";
 import Decimal from "decimal.js";
 import { ChevronDown, Repeat } from "lucide-react";
@@ -55,7 +56,7 @@ export default async function SubscriptionsPage() {
   return <>
     <PageHeader title="Suscripciones" subtitle="Consulta tus cobros recurrentes." action={<SubscriptionForm cards={activeCards} categories={categories} today={today} />} />
     <div className="flex flex-col gap-6">
-      {!activeCards.length && <p className="text-body text-muted-foreground">Agrega una tarjeta activa para registrar suscripciones.</p>}
+      {!activeCards.length && <p className="text-body text-muted-foreground">Agrega una tarjeta activa para registrar suscripciones. <Link href="/ajustes" className="underline">Ir a ajustes</Link></p>}
       {subscriptions.length ? <>
         <section className="flex flex-col gap-2 rounded-xl border border-border bg-card p-4" aria-label="Costo de suscripciones activas">
           <p className="text-small text-muted-foreground">Costo mensual</p>
@@ -69,7 +70,7 @@ export default async function SubscriptionsPage() {
           <DisclosureSummary><span>Canceladas ({cancelled.length})</span><ChevronDown aria-hidden="true" className="size-5" strokeWidth={1.75} /></DisclosureSummary>
           <DisclosureContent><SubscriptionList subscriptions={cancelled} {...listProps} /></DisclosureContent>
         </Disclosure>}
-      </> : <EmptyState icon={Repeat} text="Aún no tienes suscripciones. Agrega la primera." />}
+      </> : <EmptyState icon={Repeat} text={activeCards.length ? "Aún no tienes suscripciones. Agrega la primera." : "Aún no tienes suscripciones."} />}
     </div>
   </>;
 }

@@ -226,6 +226,8 @@ Todo formato pasa por `lib/format.ts`: COP sin decimales ni espacio después de 
 - Objetivos táctiles de al menos 44 × 44 px con `pointer-coarse:`. En escritorio, botones y campos de 36–40 px (`h-9` / `h-10`). El requisito táctil no autoriza convertir todos los tamaños de escritorio en 44 px.
 - Las hojas se presentan abajo en móvil y a la derecha en escritorio; contenido desplazable dentro del alto disponible. La hoja actual limita su alto móvil a `90dvh` y su ancho de escritorio a `max-w-lg`.
 - Comprobar desde 360 px, texto largo, foco por teclado y ambos temas. La revisión del catálogo no sustituye comprobar formularios, tablas o estados con datos reales.
+- Las filas del historial y los detalles del extracto permiten pasar el importe a la siguiente línea cuando falta espacio, sin truncar comercios ni categorías. En 360 px, las suscripciones separan identificación, importe y acciones; desde `sm` recuperan las columnas. Las cuotas se presentan como filas de etiqueta y valor con reflujo hasta `xl`; la tabla de escritorio usa columnas acotadas y no requiere scroll horizontal.
+- El layout protegido ofrece «Saltar al contenido» y un destino enfocable. Los anillos de foco de botones, campos y selectores usan el token completo, sin reducir su opacidad. Los botones Editar y Archivar repetidos incluyen el nombre del elemento en su nombre accesible.
 
 ## Elevation & Depth
 
@@ -353,3 +355,5 @@ El catálogo actualizado se comprobó en Chromium a 360, 720 y 1440 px en claro 
 Se comprobó también reflow equivalente a ampliar una ventana de 1440 × 900 al 200 %: viewport CSS de 720 × 450 y DPR 2, en ambos temas. Menú, calendario y acciones del Sheet permanecieron dentro del viewport y sin desbordamiento horizontal. Es una simulación de reflow, no zoom nativo: el atajo del navegador automatizado no cambió la escala, y el ensayo separado con `zoom: 2` de CSS alteró la posición del menú, por lo que no se usa como evidencia de compatibilidad con zoom nativo.
 
 Zoom nativo, Safari/iOS, VoiceOver y otros lectores de pantalla reales siguen pendientes de comprobación manual. Los nombres, roles y relaciones accesibles inspeccionados o probados no sustituyen esas verificaciones. No afirmar compatibilidad o certificación por el resultado de Chromium ni por las pruebas unitarias.
+
+La adaptación de noviembre de 2026 incluye regresiones en `mobile-responsive.test.tsx`. Su opción `AL_CORTE_UI_FIXTURES` exporta fuera del repositorio el markup actual de las páginas con Supabase simulado: nombres sin espacios, importes máximos, estados vacíos y error. Ese markup se revisó en Chromium a 360, 720, 768 y 1440 px, en ambos temas, sin desbordamiento horizontal. Los formularios, selectores, calendario y hojas se comprobaron además hidratados con datos sintéticos, sin escribir movimientos. Son pruebas de interfaz, no evidencia de funcionamiento bancario, rendimiento en 4G ni compatibilidad con dispositivos físicos.

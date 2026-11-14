@@ -6,7 +6,7 @@ import { MonthlySpendingChart } from "@/components/monthly-spending-chart";
 import { CARD_COLORS } from "@/lib/card-colors";
 
 const chart = vi.hoisted(() => ({
-  bar: vi.fn(), cell: vi.fn(), xAxis: vi.fn(), yAxis: vi.fn(),
+  bar: vi.fn(), cell: vi.fn(), xAxis: vi.fn(), yAxis: vi.fn(), tooltip: vi.fn(),
 }));
 
 vi.mock("recharts", () => {
@@ -15,7 +15,7 @@ vi.mock("recharts", () => {
     ResponsiveContainer: Container,
     BarChart: Container,
     CartesianGrid: () => null,
-    Tooltip: () => null,
+    Tooltip: (props: unknown) => { chart.tooltip(props); return null; },
     XAxis: (props: unknown) => { chart.xAxis(props); return null; },
     YAxis: (props: unknown) => { chart.yAxis(props); return null; },
     Bar: (props: { children?: ReactNode }) => { chart.bar(props); return <>{props.children}</>; },
@@ -54,6 +54,8 @@ describe("monthly spending chart", () => {
     expect(chart.bar.mock.calls.map(([props]) => props.dataKey)).toEqual(["active", "refund"]);
     expect(chart.xAxis.mock.calls[0]![0].tickFormatter("2026-11")).toBe("nov");
     expect(chart.yAxis.mock.calls[0]![0].tickFormatter(1050000000)).toBe("$1.050 M");
+    expect(chart.tooltip.mock.calls[0]![0].position).toEqual({ x: 0 });
+    expect(chart.tooltip.mock.calls[0]![0].wrapperStyle).toEqual({ maxWidth: "100%" });
   });
 
   it("uses the empty state when there are cards but no spending", () => {
@@ -76,6 +78,8 @@ describe("category spending chart", () => {
     expect(html).toContain("Mercado");
     expect(html).toContain("$350.000.000");
     expect(chart.xAxis.mock.calls[0]![0].tickFormatter(350000000)).toBe("$350 M");
+    expect(chart.tooltip.mock.calls[0]![0].position).toEqual({ x: 0 });
+    expect(chart.tooltip.mock.calls[0]![0].wrapperStyle).toEqual({ maxWidth: "100%" });
     chart.cell.mockClear();
     renderToStaticMarkup(<CategorySpendingChart rows={[...rows].reverse()} />);
     expect(chart.cell.mock.calls.map(([props]) => props.fill)).toEqual(colors.reverse());

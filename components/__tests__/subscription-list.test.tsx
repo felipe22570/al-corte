@@ -18,6 +18,8 @@ describe("compact subscription list", () => {
     for (const text of ["Música", "Visa · •••• 1234", "Mensual", "próximo cobro 15 nov", "$15.990", "Editar", "Más opciones"]) expect(html).toContain(text);
     expect(html).toContain('class="text-right"');
     expect(html).toContain("minmax(0,1fr)");
+    expect(html).toContain("grid-cols-1");
+    expect(html).not.toContain("grid-cols-[minmax(0,1fr)_auto]");
   });
 
   it("keeps trial warnings inside the subscription row with intrinsic badge width", () => {

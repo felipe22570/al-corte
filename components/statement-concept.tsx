@@ -46,9 +46,9 @@ export function StatementConcept({ concept }: { concept: StatementConceptData })
       <ul className="flex flex-col gap-2 pb-3 pl-8">
         {concept.entries.map((item) => (
           <li key={item.id}>
-            <Link href={item.href} className="flex min-h-10 items-center justify-between gap-3 rounded-md text-small underline-offset-4 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring pointer-coarse:min-h-11">
-              <span className="min-w-0 wrap-anywhere">{item.description}</span>
-              <span className="shrink-0 text-right">
+            <Link href={item.href} className="flex min-h-10 min-w-0 flex-wrap items-center justify-between gap-3 rounded-md text-small underline-offset-4 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring pointer-coarse:min-h-11">
+              <span className="min-w-0 flex-1 basis-48 wrap-anywhere">{item.description}</span>
+              <span className="ml-auto min-w-0 max-w-full text-right">
                 {item.amountUsd !== undefined && <><Money value={item.amountUsd} currency="USD" /><span className="block text-small text-muted-foreground">Estimado en pesos</span></>}
                 <Money value={item.amountCop} currency="COP" />
               </span>

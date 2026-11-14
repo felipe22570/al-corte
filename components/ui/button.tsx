@@ -3,7 +3,7 @@ import { cva, type VariantProps } from "class-variance-authority"
 import { cn } from "@/lib/utils"
 
 const buttonStyles = cva(
-  "group/button inline-flex shrink-0 items-center justify-center rounded-md border border-transparent text-body font-medium whitespace-nowrap motion-safe:transition-colors outline-none focus-visible:border-ring focus-visible:ring-2 focus-visible:ring-ring/50 disabled:pointer-events-none disabled:opacity-50 pointer-coarse:min-w-11 [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-5",
+  "group/button inline-flex shrink-0 items-center justify-center rounded-md border border-transparent text-body font-medium whitespace-nowrap motion-safe:transition-colors outline-none focus-visible:border-ring focus-visible:ring-2 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50 pointer-coarse:min-w-11 [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-5",
   {
     variants: {
       variant: {
@@ -15,7 +15,7 @@ const buttonStyles = cva(
         ghost:
           "hover:bg-muted hover:text-foreground aria-expanded:bg-muted aria-expanded:text-foreground dark:hover:bg-muted/50",
         destructive:
-          "bg-danger-soft text-danger hover:border-danger focus-visible:border-danger focus-visible:ring-danger/50",
+          "bg-danger-soft text-danger hover:border-danger focus-visible:border-danger focus-visible:ring-danger",
         link: "text-foreground underline underline-offset-4",
       },
       size: {

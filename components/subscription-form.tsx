@@ -38,7 +38,7 @@ export function SubscriptionForm({ cards, categories, today, subscription }: { c
   });
   const missingCard = subscription && !cards.some((card) => card.id === subscription.cardId);
   const missingCategory = subscription?.categoryId && !categories.some((category) => category.id === subscription.categoryId);
-  return <><Sheet title={subscription ? "Editar suscripción" : "Agregar suscripción"} open={open} onOpenChange={(next) => { if (next) { form.reset(defaults); setServerError(""); setSaved(false); setWarning(""); } setOpen(next); }} trigger={<Button type="button" variant={subscription ? "outline" : "default"} disabled={!cards.length}>{subscription ? "Editar" : "Agregar suscripción"}</Button>}>
+  return <><Sheet title={subscription ? "Editar suscripción" : "Agregar suscripción"} open={open} onOpenChange={(next) => { if (next) { form.reset(defaults); setServerError(""); setSaved(false); setWarning(""); } setOpen(next); }} trigger={<Button type="button" variant={subscription ? "outline" : "default"} aria-label={subscription ? `Editar suscripción ${subscription.name}` : undefined} disabled={!cards.length}>{subscription ? "Editar" : "Agregar suscripción"}</Button>}>
     <form onSubmit={submit} noValidate className="flex min-h-0 flex-1 flex-col">
       <SheetBody>
       {serverError && <Alert variant="destructive"><AlertDescription>{serverError}</AlertDescription></Alert>}

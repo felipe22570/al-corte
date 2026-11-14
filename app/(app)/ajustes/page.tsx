@@ -68,17 +68,17 @@ export default async function SettingsPage() {
               </div>
               <div className="ml-auto flex flex-wrap items-center justify-end gap-x-6 gap-y-2">
                 <div className="text-right"><p className="text-small text-muted-foreground">Cupo total</p><Money value={card.creditLimit} currency="COP" /></div>
-                <div className="flex gap-2"><CardForm card={card} usedColors={usedColors} /><ArchiveButton id={card.id} kind="card" /></div>
+                <div className="flex gap-2"><CardForm card={card} usedColors={usedColors} /><ArchiveButton id={card.id} kind="card" name={card.name} /></div>
               </div>
             </li>
           ))}
         </ul>
       )}
-      {archivedCards.length > 0 && <Disclosure><DisclosureSummary><span>Tarjetas archivadas ({archivedCards.length})</span><ChevronDown aria-hidden="true" className="size-5" strokeWidth={1.75} /></DisclosureSummary><DisclosureContent><ul className="flex flex-col gap-4">{archivedCards.map((card) => <li key={card.id} className="flex flex-wrap items-center justify-between gap-4"><CardColorChip color={card.color} name={`${card.name} · •••• ${card.last4}`} /><ArchiveButton id={card.id} kind="card" archived /></li>)}</ul></DisclosureContent></Disclosure>}
+      {archivedCards.length > 0 && <Disclosure><DisclosureSummary><span>Tarjetas archivadas ({archivedCards.length})</span><ChevronDown aria-hidden="true" className="size-5" strokeWidth={1.75} /></DisclosureSummary><DisclosureContent><ul className="flex flex-col gap-4">{archivedCards.map((card) => <li key={card.id} className="flex flex-wrap items-center justify-between gap-4"><CardColorChip color={card.color} name={`${card.name} · •••• ${card.last4}`} /><ArchiveButton id={card.id} kind="card" name={card.name} archived /></li>)}</ul></DisclosureContent></Disclosure>}
     </section>
     <section className="flex flex-col gap-4" aria-labelledby="categories-title">
       <div className="flex flex-wrap items-center justify-between gap-4"><h2 id="categories-title" className="text-heading">Categorías</h2><CategoryForm /></div>
-      {activeCategories.length === 0 ? <EmptyState icon={Tags} text="Aún no tienes categorías. Agrega la primera." /> : <ul className="divide-y divide-border border-y border-border">{activeCategories.map((category) => { const Icon = Object.hasOwn(categoryIcons, category.icon) ? categoryIcons[category.icon as CategoryIcon] : categoryIcons.ellipsis; return <li key={category.id} className="flex flex-wrap items-center justify-between gap-x-6 gap-y-2 py-2"><span className="flex min-w-0 flex-1 basis-28 items-center gap-3 text-body"><Icon className="size-5 shrink-0 text-muted-foreground" strokeWidth={1.75} aria-hidden="true" /><span className="min-w-0 wrap-anywhere">{category.name}</span></span><div className="ml-auto flex gap-2"><CategoryForm category={category} /><ArchiveButton id={category.id} kind="category" /></div></li>; })}</ul>}
+      {activeCategories.length === 0 ? <EmptyState icon={Tags} text="Aún no tienes categorías. Agrega la primera." /> : <ul className="divide-y divide-border border-y border-border">{activeCategories.map((category) => { const Icon = Object.hasOwn(categoryIcons, category.icon) ? categoryIcons[category.icon as CategoryIcon] : categoryIcons.ellipsis; return <li key={category.id} className="flex flex-wrap items-center justify-between gap-x-6 gap-y-2 py-2"><span className="flex min-w-0 flex-1 basis-48 items-center gap-3 text-body"><Icon className="size-5 shrink-0 text-muted-foreground" strokeWidth={1.75} aria-hidden="true" /><span className="min-w-0 wrap-anywhere">{category.name}</span></span><div className="ml-auto flex gap-2"><CategoryForm category={category} /><ArchiveButton id={category.id} kind="category" name={category.name} /></div></li>; })}</ul>}
     </section>
     <section aria-labelledby="appearance-title" className="flex flex-col gap-4">
       <h2 id="appearance-title" className="text-heading">Apariencia</h2>

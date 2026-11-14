@@ -5,7 +5,7 @@ import { archiveCard, unarchiveCard } from "@/lib/actions/cards";
 import { archiveCategory } from "@/lib/actions/categories";
 import { Button } from "@/components/ui/button";
 
-export function ArchiveButton({ id, kind, archived = false }: { id: string; kind: "card" | "category"; archived?: boolean }) {
+export function ArchiveButton({ id, kind, name, archived = false }: { id: string; kind: "card" | "category"; name?: string; archived?: boolean }) {
   const [pending, startTransition] = useTransition();
   const [error, setError] = useState("");
   const [message, setMessage] = useState("");
@@ -16,8 +16,8 @@ export function ArchiveButton({ id, kind, archived = false }: { id: string; kind
       try {
         const result = kind === "category" ? await archiveCategory(id) : archived ? await unarchiveCard(id) : await archiveCard(id);
         if (!result.ok) setError(result.error); else setMessage(archived ? "Restaurada." : "Archivada.");
-      } catch { setError("No pudimos actualizar el elemento. Intenta de nuevo."); }
+      } catch { setError(`No pudimos actualizar ${kind === "card" ? "la tarjeta" : "la categoría"}. Intenta de nuevo.`); }
     });
   }
-  return <div className="flex flex-col items-start gap-2"><Button type="button" variant="ghost" onClick={onClick} disabled={pending}>{pending ? "Guardando…" : archived ? "Restaurar" : "Archivar"}</Button>{message && <p role="status" className="text-small text-muted-foreground">{message}</p>}{error && <p role="alert" className="text-small text-danger">{error}</p>}</div>;
+  return <div className="flex min-w-0 flex-col items-start gap-2"><Button type="button" variant="ghost" aria-label={name ? `${archived ? "Restaurar" : "Archivar"} ${kind === "card" ? "tarjeta" : "categoría"} ${name}` : undefined} onClick={onClick} disabled={pending}>{pending ? "Guardando…" : archived ? "Restaurar" : "Archivar"}</Button>{message && <p role="status" className="text-small wrap-anywhere text-muted-foreground">{message}</p>}{error && <p role="alert" className="text-small wrap-anywhere text-danger">{error}</p>}</div>;
 }

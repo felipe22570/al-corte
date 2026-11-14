@@ -11,7 +11,7 @@ function SelectValue({ className, ...props }: SelectPrimitive.Value.Props) {
 }
 
 function SelectTrigger({ className, children, ...props }: SelectPrimitive.Trigger.Props) {
-  return <SelectPrimitive.Trigger data-slot="select-trigger" className={cn("flex h-10 w-full min-w-0 items-center justify-between gap-2 rounded-md border border-input bg-card px-3 text-input text-foreground outline-none focus-visible:border-ring focus-visible:ring-2 focus-visible:ring-ring/50 disabled:cursor-not-allowed disabled:opacity-50 aria-invalid:border-destructive data-placeholder:text-muted-foreground pointer-coarse:h-11", className)} {...props}>
+  return <SelectPrimitive.Trigger data-slot="select-trigger" className={cn("flex h-10 w-full min-w-0 items-center justify-between gap-2 rounded-md border border-input bg-card px-3 text-input text-foreground outline-none focus-visible:border-ring focus-visible:ring-2 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50 aria-invalid:border-destructive data-placeholder:text-muted-foreground pointer-coarse:h-11", className)} {...props}>
     {children}<SelectPrimitive.Icon><ChevronDown aria-hidden="true" className="size-5 shrink-0 text-muted-foreground" strokeWidth={1.75} /></SelectPrimitive.Icon>
   </SelectPrimitive.Trigger>;
 }

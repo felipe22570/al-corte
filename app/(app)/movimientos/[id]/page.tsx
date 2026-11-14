@@ -55,8 +55,8 @@ export default async function TransactionDetailPage({ params }: { params: Promis
   return (
     <>
       <PageHeader title="Detalle del movimiento" subtitle={typeLabels[transaction.type] ?? transaction.type} action={editable && <Link href={`/movimientos/${id}/editar`} className={buttonVariants({ variant: "outline" })}>Editar movimiento</Link>} />
-      <div className="flex flex-col gap-6">
-        <section className="flex flex-col gap-4 rounded-xl border border-border bg-card p-4">
+      <div className="flex min-w-0 flex-col gap-6 wrap-anywhere">
+        <section className="flex min-w-0 flex-col gap-4 rounded-xl border border-border bg-card p-4">
           <div><p className="text-small text-muted-foreground">Valor</p><Money value={transaction.amount} currency={transaction.currency} size="lg" /></div>
           {transaction.currency === "USD" && <p className="text-body">Estimado en pesos: <Money value={transaction.amount_cop} currency="COP" /> · TRM {transaction.fx_rate && formatExchangeRate(transaction.fx_rate)}</p>}
           <dl className="grid grid-cols-1 gap-3 text-body">
@@ -64,7 +64,7 @@ export default async function TransactionDetailPage({ params }: { params: Promis
             <div><dt className="text-small text-muted-foreground">Fecha</dt><dd>{formatDateShort(transaction.date, today)}</dd></div>
             <div><dt className="text-small text-muted-foreground">Corte</dt><dd><Link href={`/tarjetas/${transaction.card_id}/extractos/${cutoff}`} className="underline">{formatDateShort(cutoff, today)}</Link></dd></div>
             <div><dt className="text-small text-muted-foreground">Comercio</dt><dd>{transaction.merchant || "Sin comercio"}</dd></div>
-            <div><dt className="text-small text-muted-foreground">Categoría</dt><dd className="flex items-center gap-2">{Icon && <Icon aria-hidden="true" className="size-5 text-muted-foreground" strokeWidth={1.75} />}{category?.name ?? "Sin categoría"}</dd></div>
+            <div><dt className="text-small text-muted-foreground">Categoría</dt><dd className="flex min-w-0 items-start gap-2">{Icon && <Icon aria-hidden="true" className="size-5 shrink-0 text-muted-foreground" strokeWidth={1.75} />}<span className="min-w-0">{category?.name ?? "Sin categoría"}</span></dd></div>
             <div><dt className="text-small text-muted-foreground">Origen</dt><dd>{transaction.subscription_id ? <Link className="underline" href={`/suscripciones#suscripcion-${transaction.subscription_id}`}>Suscripción</Link> : sourceLabels[transaction.source] ?? transaction.source}</dd></div>
             {transaction.note && <div><dt className="text-small text-muted-foreground">Nota</dt><dd className="whitespace-pre-wrap">{transaction.note}</dd></div>}
           </dl>
