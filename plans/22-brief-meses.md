@@ -1,10 +1,10 @@
 # Paso 22 — Brief de diseño de la vista por meses
 
 - **Hito PRD:** H9 (parte 2 de 6)
-- **Estado:** ⬜ Pendiente
-- **Inicio:**
-- **Fin:**
-- **Commit:**
+- **Estado:** ✅ Terminado y verificado
+- **Inicio:** 2026-11-14
+- **Fin:** 2026-11-14
+- **Commit:** Ver historial de git
 - **Depende de:** 21
 - **Decisiones aplicables (decididas, ver README):** D17–D29
 
@@ -14,10 +14,10 @@ Definir con Impeccable cómo se ven la lista de meses (`/`) y el detalle de un m
 
 ## Tareas
 
-- [ ] Ejecutar `/impeccable shape` para la pantalla de inicio (lista de meses), con el prompt del dueño.
-- [ ] Ejecutar `/impeccable shape` para el detalle de un mes.
-- [ ] Revisar con el dueño los dos briefs guardados en `.impeccable/surfaces/` y anotar ajustes.
-- [ ] Confirmar que los briefs no contradicen R7, D18–D29, `DESIGN.md` ni `scripts/check-design.mjs`. Si lo hacen, manda el PRD y se corrige el brief.
+- [x] Ejecutar `/impeccable shape` para la pantalla de inicio (lista de meses), con el prompt del dueño.
+- [x] Ejecutar `/impeccable shape` para el detalle de un mes.
+- [x] Revisar con el dueño los briefs guardados en `.impeccable/surfaces/` y anotar ajustes.
+- [x] Confirmar que los briefs no contradicen R7, D18–D29, `DESIGN.md` ni `scripts/check-design.mjs`. Si lo hacen, manda el PRD y se corrige el brief.
 
 ## Contenido mínimo de cada brief
 
@@ -44,9 +44,9 @@ Detalle de mes:
 
 ## Verificación
 
-- [ ] Los dos briefs existen y el dueño los aprobó.
-- [ ] No hay cambios en `app/`, `components/` ni `lib/`.
-- [ ] Los briefs incluyen ejemplos de pago confirmado sin abono, abono sin confirmar, previsto convertido a real y USD sin TRM, sin cambiar el significado de D26.
+- [x] Los briefs requeridos existen y el dueño los aprobó.
+- [x] No hay cambios en `app/`, `components/` ni `lib/`.
+- [x] Los briefs incluyen ejemplos de pago confirmado sin abono, abono sin confirmar, previsto convertido a real y USD sin TRM, sin cambiar el significado de D26.
 
 ## Criterios de terminado
 
@@ -54,4 +54,8 @@ Detalle de mes:
 
 ## Notas de progreso
 
-<!-- Fecha — nota -->
+- 2026-11-14 — Brief de inicio guardado en `.impeccable/surfaces/app-app-page-tsx.md`; se toma «continúa» como aprobación de la propuesta presentada. El brief del detalle aún requiere revisión y aprobación.
+- 2026-11-14 — Propuesta de detalle guardada en `.impeccable/surfaces/app-app-meses-mes-page-tsx.md`: extractos por tarjeta primero y dos columnas flexibles en escritorio, según las preferencias del dueño. Pendiente de aprobación del brief completo.
+- 2026-11-14 — El dueño aprobó la propuesta presentada y pidió no cerrar el paso porque falta generar otro brief. `pnpm lint:design` pasó. No se modificó código de producto.
+- 2026-11-14 — Se recibió la confirmación del brief de detalle existente. El paso permanece en progreso por indicación del dueño; no se ha hecho commit.
+- 2026-11-14 — El dueño confirma ambos briefs y solicita cerrar el paso. Revisión documental contra R7, D18–D29, `DESIGN.md` y `scripts/check-design.mjs` sin contradicciones; los ejemplos requeridos están en ambos briefs y no hay cambios de producto. Pasan `pnpm typecheck`, `pnpm lint` y 307 pruebas. La reconstrucción local y 167 pruebas SQL pasaron el 13 de noviembre en el paso 21, sin cambios de esquema desde entonces; no se repitieron hoy porque Docker no está disponible. La verificación visual de las nuevas vistas corresponde al paso 26.
