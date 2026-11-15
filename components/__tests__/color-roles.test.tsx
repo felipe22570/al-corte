@@ -1,21 +1,25 @@
 import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it } from "vitest";
 import { CardColorChip } from "@/components/card-color-chip";
-import { CardSummary } from "@/components/card-summary";
+import Decimal from "decimal.js";
+import { MonthCardsStrip } from "@/components/month-cards-strip";
+import { MonthRow } from "@/components/month-row";
 import { DateCalendar } from "@/components/date-calendar";
 import { HistoryFilters } from "@/components/history-filters";
 import { StatusBadge } from "@/components/status-badge";
 import { buttonVariants } from "@/components/ui/button";
 import { UtilizationBar } from "@/components/utilization-bar";
 import { CARD_COLORS } from "@/lib/card-colors";
+import { buildMonths } from "@/lib/domain/months";
 
 describe("functional color roles", () => {
-  it.each(CARD_COLORS)("keeps %s on the card strip and chip, not the amount or status", (color) => {
-    const html = renderToStaticMarkup(<CardSummary id="card" color={color} name="Visa principal" last4="1234" bank="Banco de ejemplo" available="3750000" utilization="0.25" today="2026-11-13" payment={{ total: "1250000", dueDate: "2026-11-15" }} />);
-    expect(html).toMatch(new RegExp(`aria-hidden="true" class="[^"]*absolute[^"]*h-1[^"]*bg-${color}`));
+  it.each(CARD_COLORS)("keeps %s on the month composition and chip, not the amount or status", (color) => {
+    const card = { id: "card", color, name: "Visa principal", last4: "1234", bank: "Banco de ejemplo", archived: false, cutoffDay: 15, paymentDay: 28, handlingFee: new Decimal(0), available: new Decimal(3750000), used: new Decimal(1250000), utilization: new Decimal("0.25") };
+    const [month] = buildMonths([{ cardId: "card", origin: "real", cutoffDate: "2026-11-15", dueDate: "2026-11-28", paidAt: null, recordedTotal: new Decimal(1250000), projectedTotal: new Decimal(0), unconvertedCharges: [] }], "2026-11-13");
+    const html = renderToStaticMarkup(<><MonthCardsStrip cards={[card]} /><MonthRow month={month!} cards={[card]} subscriptionNames={{}} featured /></>);
+    expect(html).toContain(`bg-${color}`);
     expect(html).toMatch(new RegExp(`aria-hidden="true" class="[^"]*size-2 shrink-0[^"]*bg-${color}`));
     expect(html).toContain("Visa principal · •••• 1234");
-    expect(html).toContain("bg-warning-soft text-warning");
     expect(html).toMatch(/text-amount-lg text-foreground[^>]*>\$1\.250\.000/);
   });
 

@@ -1,7 +1,7 @@
 "use server";
 
-import { revalidatePath } from "next/cache";
 import { z } from "zod";
+import { revalidateFinancialViews } from "@/lib/revalidate-views";
 import { todayInBogota } from "@/lib/domain/dates";
 import { chargeDatesBetween } from "@/lib/domain/subscriptions";
 import { createClient } from "@/lib/supabase/server";
@@ -9,9 +9,6 @@ import { subscriptionSchema, type ValidSubscription } from "@/lib/validation/sub
 
 function fields(value: ValidSubscription) {
   return { name: value.name, card_id: value.cardId, category_id: value.categoryId, amount: value.amount, currency: value.currency, frequency: value.frequency, billing_day: value.billingDay, start_date: value.startDate, trial_ends_at: value.trialEndsAt };
-}
-function refresh(cardId: string) {
-  revalidatePath("/suscripciones"); revalidatePath("/movimientos"); revalidatePath(`/tarjetas/${cardId}`); revalidatePath("/");
 }
 
 export async function createSubscription(input: unknown) {
@@ -36,7 +33,7 @@ export async function createSubscription(input: unknown) {
     const result = await supabase.from("transactions").select("id").eq("subscription_id", data.id).eq("user_id", user.id).eq("date", today).maybeSingle();
     chargeMissing = !!result.error || !result.data;
   }
-  refresh(parsed.data.cardId);
+  revalidateFinancialViews();
   return { ok: true as const, id: data.id, warning: chargeError || chargeMissing ? "La suscripción se guardó, pero no se generó el cobro de hoy. Revisa la tarjeta y la TRM; la tarea diaria lo intentará de nuevo." : null };
 }
 
@@ -55,7 +52,7 @@ export async function updateSubscription(id: unknown, input: unknown) {
   }
   const { data, error } = await supabase.from("subscriptions").update(fields(parsed.data)).eq("id", id).eq("user_id", user.id).select("id").maybeSingle();
   if (error || !data) return { ok: false as const, error: "No pudimos actualizar la suscripción." };
-  refresh(parsed.data.cardId);
+  revalidateFinancialViews();
   return { ok: true as const, id: data.id, warning: null };
 }
 
@@ -66,6 +63,6 @@ export async function setSubscriptionStatus(id: unknown, status: unknown) {
   if (!user) return { ok: false as const, error: "Inicia sesión para continuar." };
   const { data, error } = await supabase.from("subscriptions").update({ status: status as "active" | "paused" | "cancelled" }).eq("id", id).eq("user_id", user.id).select("card_id").maybeSingle();
   if (error || !data) return { ok: false as const, error: "No pudimos actualizar la suscripción." };
-  refresh(data.card_id);
+  revalidateFinancialViews();
   return { ok: true as const };
 }

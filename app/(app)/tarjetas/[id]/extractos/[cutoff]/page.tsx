@@ -10,6 +10,7 @@ import type { StatementConceptData } from "@/components/statement-concept";
 import { StatementControls } from "@/components/statement-controls";
 import { StatementStatus } from "@/components/statement-status";
 import { isValidIsoDate, todayInBogota } from "@/lib/domain/dates";
+import { isWithinMonthProjectionWindow, paymentMonth } from "@/lib/domain/months";
 import { statementPeriod } from "@/lib/domain/statements";
 import { formatDateShort } from "@/lib/format";
 import { createClient } from "@/lib/supabase/server";
@@ -123,6 +124,7 @@ export default async function StatementDetailPage({ params }: { params: Promise<
             <Money value={totals?.total_calculated ?? "0"} currency="COP" size="lg" />
             <p className="text-body">{formatDateShort(statement?.period_start ?? period.periodStart, today)} – {formatDateShort(cutoff, today)} · pagas el {formatDateShort(statement?.due_date ?? period.dueDate, today)}</p>
             {statement && <StatementStatus dueDate={statement.due_date} paidAt={statement.paid_at} today={today} />}
+            {statement && isWithinMonthProjectionWindow(statement.due_date, today) && <Link className="text-body underline" href={`/meses/${paymentMonth(statement.due_date)}`}>Ver mes de pago</Link>}
           </section>
           {statement && <StatementControls id={statement.id} realTotal={statement.real_total} paid={!!statement.paid_at} today={today} />}
         </div>

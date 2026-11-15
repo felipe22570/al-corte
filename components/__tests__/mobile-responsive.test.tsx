@@ -16,7 +16,7 @@ import NotFound from "@/app/not-found";
 import { TransactionList } from "@/components/transaction-list";
 import { buttonVariants } from "@/components/ui/button";
 
-const state = vi.hoisted(() => ({ empty: false, route: "/" }));
+const state = vi.hoisted(() => ({ empty: false, route: "/", dueDate: "2026-11-30" }));
 const cardId = "11111111-1111-4111-8111-111111111111";
 const transactionId = "22222222-2222-4222-8222-222222222222";
 const categoryId = "33333333-3333-4333-8333-333333333333";
@@ -35,7 +35,7 @@ vi.mock("@/lib/supabase/server", () => ({ createClient: async () => ({
   auth: { getUser: async () => ({ data: { user: { id: "owner" } } }) },
   from: (table: string) => {
     const cards = [{ id: cardId, name: longName, bank: longName, network: "Visa", last4: "1234", color: "card-1", archived_at: null, credit_limit: amount, advance_fee: "15000", handling_fee: "15000", cutoff_day: 15, payment_day: 30, purchase_rate_ea: "0.25", advance_rate_ea: "0.28", amortization_method: "fixed_principal" }];
-    const statements = [{ id: "statement", card_id: cardId, period_start: "2026-10-16", cutoff_date: "2026-11-15", due_date: "2026-11-30", paid_at: null, real_total: null }];
+    const statements = [{ id: "statement", card_id: cardId, period_start: "2026-10-16", cutoff_date: "2026-11-15", due_date: state.dueDate, paid_at: null, real_total: null }];
     const transactions = [{ id: transactionId, card_id: cardId, category_id: categoryId, statement_id: "statement", parent_id: null, subscription_id: null, merchant: longName, note: longName.repeat(3), type: "purchase", source: "manual", date: "2026-11-13", currency: "USD", amount, amount_cop: amount, fx_rate: "4000", installments_count: 12 }];
     const tables: Record<string, object[]> = {
       cards,
@@ -51,7 +51,7 @@ vi.mock("@/lib/supabase/server", () => ({ createClient: async () => ({
     const result = { data: state.empty ? [] : tables[table] ?? [], error: null, count: 0 };
     const query = {
       select: () => query, eq: () => query, is: () => query, in: () => query, gt: () => query,
-      gte: () => query, lt: () => query, order: () => query, range: () => query, limit: () => query, not: () => query,
+      gte: () => query, lt: () => query, lte: () => query, order: () => query, range: () => query, limit: () => query, not: () => query,
       single: async () => ({ ...result, data: result.data[0] ?? null }),
       maybeSingle: async () => ({ ...result, data: result.data[0] ?? null }),
       then: (resolve: (value: typeof result) => void) => Promise.resolve(result).then(resolve),
@@ -71,7 +71,7 @@ async function renderPage(name: string, page: React.ReactNode) {
   return html;
 }
 
-beforeEach(() => { state.empty = false; state.route = "/"; });
+beforeEach(() => { state.empty = false; state.route = "/"; state.dueDate = "2026-11-30"; });
 
 describe("mobile reflow contracts", () => {
   it("keeps four navigation destinations with labels and a focusable skip target", async () => {
@@ -124,7 +124,14 @@ describe("mobile reflow contracts", () => {
     expect(settings).toContain(`aria-label="Editar tarjeta ${longName}"`);
     expect(settings).toContain(`aria-label="Archivar categoría ${longName}"`);
     expect(settings).toContain("flex-1 basis-48 items-center");
+    const history = await renderPage("history", pages.history);
+    expect(history).toContain("Mes de compra");
+    expect(history).not.toContain("Gasto por categoría");
+    expect(history).not.toContain("Los gráficos usan");
     const transaction = await renderPage("transaction", pages.transaction);
+    const statement = await renderPage("statement", pages.statement);
+    expect(transaction).toContain('href="/meses/2026-11"');
+    expect(statement).toContain('href="/meses/2026-11"');
     expect(transaction).toContain("bg-card xl:block");
     expect(transaction).toContain("xl:hidden");
     expect(transaction).not.toContain("overflow-x-auto");
@@ -136,6 +143,15 @@ describe("mobile reflow contracts", () => {
     expect(html).toContain("No tienes movimientos en este mes.");
     expect(html).toContain("Agregar una tarjeta");
     expect(html).not.toContain("Limpiar filtros");
+  });
+
+  it("does not link to payment months beyond the supported horizon", async () => {
+    state.dueDate = "2027-12-05";
+    const transaction = await renderPage("transaction-later", await TransactionDetailPage({ params: Promise.resolve({ id: transactionId }) }));
+    const statement = await renderPage("statement-later", await StatementDetailPage({ params: Promise.resolve({ id: cardId, cutoff: "2026-11-15" }) }));
+    expect(transaction).not.toContain('href="/meses/2027-12"');
+    expect(statement).not.toContain('href="/meses/2027-12"');
+    expect(transaction).toContain(`/tarjetas/${cardId}/extractos/2026-11-15`);
   });
 
   it("keeps clear filters as the recovery action for a filtered empty result", async () => {
@@ -166,6 +182,6 @@ describe("mobile reflow contracts", () => {
     }
     const missing = renderToStaticMarkup(<NotFound />);
     expect(missing).toContain("No encontramos esta página");
-    expect(missing).toContain("Volver al tablero");
+    expect(missing).toContain("Volver a meses");
   });
 });

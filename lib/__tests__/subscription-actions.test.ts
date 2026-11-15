@@ -4,7 +4,7 @@ const mocks = vi.hoisted(() => ({ createClient: vi.fn(), revalidatePath: vi.fn()
 vi.mock("@/lib/supabase/server", () => ({ createClient: mocks.createClient }));
 vi.mock("next/cache", () => ({ revalidatePath: mocks.revalidatePath }));
 vi.mock("@/lib/domain/dates", async (importOriginal) => ({ ...(await importOriginal<typeof import("@/lib/domain/dates")>()), todayInBogota: () => "2026-11-10" }));
-import { createSubscription } from "@/lib/actions/subscriptions";
+import { createSubscription, setSubscriptionStatus } from "@/lib/actions/subscriptions";
 
 const id = "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa";
 const input = { name: "Servicio", cardId: id, categoryId: "", amount: "100.000", currency: "COP", frequency: "monthly", billingDay: "10", startDate: "2026-11-01", trialEndsAt: "" };
@@ -30,6 +30,15 @@ it("creates the subscription and immediately generates today's charge", async ()
   expect(card.eq).toHaveBeenCalledWith("user_id", "owner");
   expect(subscriptions.insert).toHaveBeenCalledWith(expect.objectContaining({ user_id: "owner", amount: "100000" }));
   expect(rpc).toHaveBeenCalledWith("generate_charges_for_subscription", { p_id: id });
+  expect(mocks.revalidatePath).toHaveBeenCalledWith("/meses/[mes]", "page");
+});
+it("invalidates projected months when a subscription is paused", async () => {
+  const query = { update: vi.fn(), eq: vi.fn(), select: vi.fn(), maybeSingle: vi.fn().mockResolvedValue({ data: { card_id: id }, error: null }) };
+  query.update.mockReturnValue(query); query.eq.mockReturnValue(query); query.select.mockReturnValue(query);
+  mocks.createClient.mockResolvedValue({ auth: { getUser: vi.fn().mockResolvedValue({ data: { user: { id: "owner" } } }) }, from: vi.fn().mockReturnValue(query) });
+  expect((await setSubscriptionStatus(id, "paused")).ok).toBe(true);
+  expect(mocks.revalidatePath).toHaveBeenCalledWith("/meses/[mes]", "page");
+  expect(mocks.revalidatePath).toHaveBeenCalledWith("/");
 });
 it("reports a saved subscription when today's charge could not be generated", async () => {
   setup(0);

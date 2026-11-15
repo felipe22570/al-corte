@@ -11,6 +11,7 @@ import { buttonVariants } from "@/components/ui/button";
 import type { CardColor } from "@/lib/card-colors";
 import { categoryIcons, type CategoryIcon } from "@/lib/category-icons";
 import { todayInBogota } from "@/lib/domain/dates";
+import { isWithinMonthProjectionWindow, paymentMonth } from "@/lib/domain/months";
 import type { Currency } from "@/lib/domain/money";
 import { formatDateShort, formatExchangeRate } from "@/lib/format";
 import { createClient } from "@/lib/supabase/server";
@@ -35,20 +36,21 @@ export default async function TransactionDetailPage({ params }: { params: Promis
     supabase.from("cards").select("name,last4,color").eq("id", transaction.card_id).eq("user_id", user.id).single(),
     transaction.category_id ? supabase.from("categories").select("name,icon").eq("id", transaction.category_id).eq("user_id", user.id).maybeSingle() : Promise.resolve({ data: null, error: null }),
     supabase.from("installments").select("number,statement_id,principal::text,interest::text,total::text,balance_after::text,principal_cop::text,interest_cop::text,total_cop::text").eq("transaction_id", id).eq("user_id", user.id).order("number"),
-    supabase.from("statements").select("id,cutoff_date").eq("card_id", transaction.card_id).eq("user_id", user.id),
+    supabase.from("statements").select("id,cutoff_date,due_date").eq("card_id", transaction.card_id).eq("user_id", user.id),
     supabase.from("transactions").select("id", { count: "exact", head: true }).eq("parent_id", id).eq("user_id", user.id),
   ]);
   if (cardResult.error || categoryResult.error || installmentResult.error || statementsResult.error || childrenResult.error) throw new Error("No pudimos consultar los detalles del movimiento.");
   const card = cardResult.data as { name: string; last4: string; color: CardColor };
   const category = categoryResult.data as { name: string; icon: string } | null;
   const Icon = category && Object.hasOwn(categoryIcons, category.icon) ? categoryIcons[category.icon as CategoryIcon] : null;
-  const statements = new Map((statementsResult.data ?? []).map((statement) => [statement.id, statement.cutoff_date]));
-  const cutoff = statements.get(transaction.statement_id);
-  if (!cutoff) throw new Error("No pudimos consultar el extracto del movimiento.");
+  const statements = new Map((statementsResult.data ?? []).map((statement) => [statement.id, statement]));
+  const savedStatement = statements.get(transaction.statement_id);
+  if (!savedStatement) throw new Error("No pudimos consultar el extracto del movimiento.");
+  const cutoff = savedStatement.cutoff_date;
   const items: AmortizationItem[] = ((installmentResult.data ?? []) as unknown as RawInstallment[]).map((item) => {
-    const cutoffDate = statements.get(item.statement_id);
-    if (!cutoffDate) throw new Error("No pudimos consultar el extracto de una cuota.");
-    return { number: item.number, cutoffDate, principal: item.principal, interest: item.interest, total: item.total, balanceAfter: item.balance_after, principalCop: item.principal_cop, interestCop: item.interest_cop, totalCop: item.total_cop };
+    const installmentStatement = statements.get(item.statement_id);
+    if (!installmentStatement) throw new Error("No pudimos consultar el extracto de una cuota.");
+    return { number: item.number, cutoffDate: installmentStatement.cutoff_date, principal: item.principal, interest: item.interest, total: item.total, balanceAfter: item.balance_after, principalCop: item.principal_cop, interestCop: item.interest_cop, totalCop: item.total_cop };
   });
   const today = todayInBogota();
   const editable = !(transaction.type === "advance_fee" && transaction.parent_id);
@@ -63,6 +65,7 @@ export default async function TransactionDetailPage({ params }: { params: Promis
             <div><dt className="text-small text-muted-foreground">Tarjeta</dt><dd><CardColorChip color={card.color} name={`${card.name} · •••• ${card.last4}`} /></dd></div>
             <div><dt className="text-small text-muted-foreground">Fecha</dt><dd>{formatDateShort(transaction.date, today)}</dd></div>
             <div><dt className="text-small text-muted-foreground">Corte</dt><dd><Link href={`/tarjetas/${transaction.card_id}/extractos/${cutoff}`} className="underline">{formatDateShort(cutoff, today)}</Link></dd></div>
+            {isWithinMonthProjectionWindow(savedStatement.due_date, today) && <div><dt className="text-small text-muted-foreground">Mes de pago</dt><dd><Link href={`/meses/${paymentMonth(savedStatement.due_date)}`} className="underline">Ver mes de pago</Link></dd></div>}
             <div><dt className="text-small text-muted-foreground">Comercio</dt><dd>{transaction.merchant || "Sin comercio"}</dd></div>
             <div><dt className="text-small text-muted-foreground">Categoría</dt><dd className="flex min-w-0 items-start gap-2">{Icon && <Icon aria-hidden="true" className="size-5 shrink-0 text-muted-foreground" strokeWidth={1.75} />}<span className="min-w-0">{category?.name ?? "Sin categoría"}</span></dd></div>
             <div><dt className="text-small text-muted-foreground">Origen</dt><dd>{transaction.subscription_id ? <Link className="underline" href={`/suscripciones#suscripcion-${transaction.subscription_id}`}>Suscripción</Link> : sourceLabels[transaction.source] ?? transaction.source}</dd></div>

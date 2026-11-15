@@ -1,7 +1,7 @@
 "use server";
 
-import { revalidatePath } from "next/cache";
 import { z } from "zod";
+import { revalidateFinancialViews } from "@/lib/revalidate-views";
 import { createClient } from "@/lib/supabase/server";
 import { cardSchema, type ValidCard } from "@/lib/validation/card";
 
@@ -22,7 +22,7 @@ export async function createCard(input: unknown) {
   if (!user) return { ok: false as const, error: "Inicia sesión para guardar la tarjeta." };
   const { error } = await supabase.from("cards").insert({ ...databaseFields(parsed.data), user_id: user.id });
   if (error) return { ok: false as const, error: "No pudimos guardar la tarjeta. Inténtalo de nuevo." };
-  revalidatePath("/ajustes");
+  revalidateFinancialViews();
   return { ok: true as const };
 }
 
@@ -35,7 +35,7 @@ export async function updateCard(id: string, input: unknown) {
   if (!user) return { ok: false as const, error: "Inicia sesión para guardar la tarjeta." };
   const { data, error } = await supabase.from("cards").update(databaseFields(parsed.data)).eq("id", id).eq("user_id", user.id).select("id").maybeSingle();
   if (error || !data) return { ok: false as const, error: "No pudimos actualizar la tarjeta." };
-  revalidatePath("/ajustes");
+  revalidateFinancialViews();
   return { ok: true as const };
 }
 
@@ -46,7 +46,7 @@ async function setCardArchived(id: string, archived: boolean) {
   if (!user) return { ok: false as const, error: "Inicia sesión para continuar." };
   const { data, error } = await supabase.from("cards").update({ archived_at: archived ? new Date().toISOString() : null }).eq("id", id).eq("user_id", user.id).select("id").maybeSingle();
   if (error || !data) return { ok: false as const, error: "No pudimos actualizar la tarjeta." };
-  revalidatePath("/ajustes");
+  revalidateFinancialViews();
   return { ok: true as const };
 }
 

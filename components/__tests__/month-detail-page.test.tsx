@@ -81,7 +81,20 @@ describe("payment month detail", () => {
     const html = renderToStaticMarkup(await MonthDetailPage({ params: Promise.resolve({ mes: "2026-10" }) }));
     expect(html).toContain("Mercado: -20");
     expect(html).toContain("Saldo a favor");
-    expect(html).toContain("Diferencia frente al mes anterior: -$220");
+    expect(html).toContain("Menos que septiembre · Diferencia: -$220");
+    expect(html).not.toContain("%");
     expect(html).not.toContain("ahorraste");
+  });
+
+  it("shows a neutral percentage only between closed months with a meaningful base", async () => {
+    const [previous, month] = buildMonths([
+      { id: "p", cardId: "c", origin: "real", cutoffDate: "2026-08-15", dueDate: "2026-09-02", paidAt: "paid", recordedTotal: new Decimal(200000), projectedTotal: new Decimal(0), unconvertedCharges: [] },
+      { id: "s", cardId: "c", origin: "real", cutoffDate: "2026-09-15", dueDate: "2026-10-02", paidAt: "paid", recordedTotal: new Decimal(220000), projectedTotal: new Decimal(0), unconvertedCharges: [] },
+    ], "2026-11-14");
+    state.detail = { month, previous, neighbors: { previous: "2026-09", next: "2026-11" }, overdue: { months: new Map(), total: new Decimal(0) }, subscriptionNames: {} };
+    state.cards = [{ id: "c", name: "Visa", last4: "1234", color: "card-1" }];
+    const html = renderToStaticMarkup(await MonthDetailPage({ params: Promise.resolve({ mes: "2026-10" }) }));
+    expect(html).toContain("10% más que septiembre · Diferencia: $20.000");
+    expect(html).not.toMatch(/ahorr|gastaste/i);
   });
 });

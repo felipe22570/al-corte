@@ -28,7 +28,7 @@ export function HistoryFilters({ filters, cards, categories, count }: { filters:
       {applied.length > 0 && <p className="break-words text-small text-muted-foreground">{applied.join(" · ")}</p>}
       <form action="/movimientos" className="flex flex-col gap-3">
         <div className="flex flex-wrap items-end gap-3">
-          <div className="w-full min-w-0 sm:w-72"><MonthInput key={filters.mes} value={filters.mes} name="mes" /></div>
+          <div className="w-full min-w-0 sm:w-72"><MonthInput key={filters.mes} value={filters.mes} name="mes" label="Mes de compra" /></div>
           <label className="flex min-w-0 flex-1 basis-40 flex-col gap-2 text-small">Comercio o nota<Input key={filters.q ?? ""} name="q" defaultValue={filters.q ?? ""} maxLength={100} placeholder="Buscar movimientos" /></label>
           <button type="submit" className={buttonVariants({ variant: "outline" })}>Aplicar</button>
         </div>
@@ -43,7 +43,6 @@ export function HistoryFilters({ filters, cards, categories, count }: { filters:
               <div className="flex flex-col gap-2 text-small"><label htmlFor="history-category">Categoría</label><SelectControl key={`category-${filters.categoria}`} id="history-category" name="categoria" defaultValue={filters.categoria ?? ""} options={[{ value: "", label: "Todas" }, ...categories.map((category) => ({ value: category.id, label: category.name }))]} /></div>
               <div className="flex flex-col gap-2 text-small"><label htmlFor="history-type">Tipo</label><SelectControl key={`type-${filters.tipo}`} id="history-type" name="tipo" defaultValue={filters.tipo ?? ""} options={[{ value: "", label: "Todos" }, ...Object.entries(historyTypeLabels).map(([value, label]) => ({ value, label }))]} /></div>
             </div>
-            <p className="text-small text-muted-foreground">Los gráficos usan los filtros de mes, tarjeta y categoría. El tipo y la búsqueda filtran la lista.</p>
           </DisclosureContent>
         </Disclosure>
       </form>

@@ -1,14 +1,15 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { WalletCards } from "lucide-react";
+import Decimal from "decimal.js";
 import { AppWordmark } from "@/components/app-wordmark";
 import { CardColorChip } from "@/components/card-color-chip";
-import { CardSummary } from "@/components/card-summary";
+import { MonthCardsStrip } from "@/components/month-cards-strip";
+import { MonthRow } from "@/components/month-row";
 import { DesignControlsPreview } from "@/components/design-controls-preview";
 import { DesignSheetPreview } from "@/components/design-sheet-preview";
 import { EmptyState } from "@/components/empty-state";
 import { Money } from "@/components/money";
-import { MonthlySpendingChart } from "@/components/monthly-spending-chart";
 import { PageHeader } from "@/components/page-header";
 import { StatusBadge } from "@/components/status-badge";
 import { ThemeToggle } from "@/components/theme-toggle";
@@ -16,6 +17,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { UtilizationBar } from "@/components/utilization-bar";
 import { CARD_COLORS, cardColorNames } from "@/lib/card-colors";
+import { buildMonths } from "@/lib/domain/months";
 
 export const metadata: Metadata = { title: "Sistema de diseño" };
 
@@ -25,10 +27,15 @@ const exampleCards = CARD_COLORS.map((color, index) => ({
   name: `Tarjeta de ejemplo ${index + 1}`,
   bank: cardColorNames[color],
   last4: `${index + 1}234`,
-  available: index % 3 === 0 ? "3750000" : index % 3 === 1 ? "1600000" : "500000",
-  utilization: index % 3 === 0 ? "0.25" : index % 3 === 1 ? "0.68" : "0.9",
-  payment: index === 5 ? null : { total: "1284500", dueDate: index % 3 === 0 ? "2026-12-02" : index % 3 === 1 ? "2026-11-15" : "2026-11-12" },
+  available: new Decimal(index % 3 === 0 ? "3750000" : index % 3 === 1 ? "1600000" : "500000"),
+  utilization: new Decimal(index % 3 === 0 ? "0.25" : index % 3 === 1 ? "0.68" : "0.9"),
+  used: new Decimal("100000"), handlingFee: new Decimal(0), cutoffDay: 15, paymentDay: 28, archived: false,
 }));
+
+const [exampleMonth] = buildMonths(exampleCards.map((card) => ({
+  cardId: card.id, origin: "real" as const, cutoffDate: "2026-11-15", dueDate: "2026-11-28",
+  paidAt: null, recordedTotal: new Decimal(100000), projectedTotal: new Decimal(0), unconvertedCharges: [],
+})), "2026-11-13");
 
 export default function DesignPage() {
   if (process.env.NODE_ENV === "production") notFound();
@@ -42,9 +49,9 @@ export default function DesignPage() {
     <Money value="1284500" currency="COP" size="lg" /><UtilizationBar percent={68} />
     <section aria-labelledby="design-card-identity" className="flex min-w-0 flex-col gap-4">
       <h2 id="design-card-identity" className="text-heading">Identidad de tarjetas</h2>
-      <p className="text-small text-muted-foreground">Datos de ejemplo. Cada tarjeta conserva su color en la franja, el chip y el gráfico; el estado depende del pago y la utilización.</p>
-      <div className="grid min-w-0 gap-4 sm:grid-cols-2">{exampleCards.map((card) => <CardSummary key={card.id} {...card} today="2026-11-13" />)}</div>
-      <MonthlySpendingChart cards={exampleCards} rows={[{ month: "2026-10", amounts: { "example-1": "320000", "example-2": "150000", "example-3": "80000", "example-4": "240000", "example-5": "180000", "example-6": "100000" } }, { month: "2026-11", amounts: { "example-1": "400000", "example-2": "200000", "example-3": "60000", "example-4": "160000", "example-5": "240000", "example-6": "80000" } }]} />
+      <p className="text-small text-muted-foreground">Datos de ejemplo. Cada tarjeta conserva su color junto al nombre y en la composición del mes.</p>
+      <MonthCardsStrip cards={exampleCards} />
+      {exampleMonth && <MonthRow month={exampleMonth} cards={exampleCards} subscriptionNames={{}} featured />}
     </section>
     <EmptyState icon={WalletCards} text="Aún no tienes tarjetas. Agrega la primera." />
     <DesignControlsPreview />

@@ -4,7 +4,7 @@ export async function fetchAllPages<T>(fetchPage: (from: number, to: number) => 
   const rows: T[] = [];
   for (let from = 0; ; from += PAGE_SIZE) {
     const { data, error } = await fetchPage(from, from + PAGE_SIZE - 1);
-    if (error || !data) throw new Error("No pudimos consultar el tablero.");
+    if (error || !data) throw new Error("No pudimos consultar los datos.");
     rows.push(...data);
     if (data.length < PAGE_SIZE) return rows;
   }

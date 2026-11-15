@@ -1,7 +1,7 @@
 "use server";
 
-import { revalidatePath } from "next/cache";
 import { z } from "zod";
+import { revalidateFinancialViews } from "@/lib/revalidate-views";
 import { buildTransactionPlan, type TransactionCard } from "@/lib/domain/transaction-plan";
 import { createClient } from "@/lib/supabase/server";
 import { transactionSchema } from "@/lib/validation/transaction";
@@ -26,9 +26,7 @@ export async function createTransaction(input: unknown) {
   }
   const { data: transactionId, error } = await supabase.rpc("create_transaction_with_installments", { p_payload: payload });
   if (error || !transactionId) return { ok: false as const, error: "No pudimos guardar el movimiento. Revisa la tarjeta y vuelve a intentarlo." };
-  revalidatePath("/");
-  revalidatePath("/movimientos");
-  revalidatePath(`/tarjetas/${card.id}`);
+  revalidateFinancialViews();
   return { ok: true as const, id: String(transactionId) };
 }
 
@@ -42,9 +40,7 @@ export async function deleteTransaction(id: unknown) {
   if (data.type === "advance_fee" && data.parent_id) return { ok: false as const, error: "Borra la comisión desde su avance." };
   const { data: deleted, error } = await supabase.from("transactions").delete().eq("id", id).eq("user_id", user.id).select("id").maybeSingle();
   if (error || !deleted) return { ok: false as const, error: "No pudimos borrar el movimiento. Intenta de nuevo." };
-  revalidatePath("/");
-  revalidatePath("/movimientos");
-  revalidatePath(`/movimientos/${id}`);
+  revalidateFinancialViews();
   return { ok: true as const };
 }
 
@@ -71,6 +67,6 @@ export async function updateTransaction(id: unknown, input: unknown) {
   } catch { return { ok: false as const, error: "No pudimos calcular las cuotas. Revisa el valor y la cantidad." }; }
   const { error } = await supabase.rpc("update_transaction_with_installments", { p_id: id, p_payload: payload });
   if (error) return { ok: false as const, error: "No pudimos actualizar el movimiento. Revisa los datos e intenta de nuevo." };
-  revalidatePath("/"); revalidatePath("/movimientos"); revalidatePath(`/movimientos/${id}`);
+  revalidateFinancialViews();
   return { ok: true as const, id };
 }

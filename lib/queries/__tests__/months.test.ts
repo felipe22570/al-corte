@@ -44,6 +44,40 @@ describe("loadMonthOverview", () => {
     expect(await loadMonthDetail(source, "2026-11-14", "2027-12")).toBeNull();
   });
 
+  it("updates only projections when the exchange rate changes", async () => {
+    const source: MonthReadSource = {
+      loadCards: async () => [{ id: "visa", cutoffDay: 25, paymentDay: 28, archived: false, handlingFee: new Decimal(0) }],
+      loadStatements: async () => [{ id: "s", cardId: "visa", periodStart: "2026-10-26", cutoffDate: "2026-11-25", dueDate: "2026-11-28", paidAt: null }],
+      loadSubscriptions: async () => [{ id: "sub", cardId: "visa", categoryId: null, amount: new Decimal(10), currency: "USD", frequency: "monthly", billingDay: 20, startDate: "2026-01-01", status: "active" }],
+      loadFxRate: async () => new Decimal(4000),
+      loadCharges: async () => ({ movements: [{ id: "real", statementId: "s", type: "purchase", amountCop: new Decimal(30000), categoryId: null, date: "2026-11-10" }], installments: [] }),
+      loadSubscriptionMovements: async () => [],
+    };
+    const before = await loadMonthDetail(source, "2026-11-14", "2026-11");
+    const after = await loadMonthDetail({ ...source, loadFxRate: async () => new Decimal(5000) }, "2026-11-14", "2026-11");
+    expect(before?.month.total.toString()).toBe("70000");
+    expect(after?.month.total.toString()).toBe("80000");
+    expect(after?.month.pendingConfirmation.toString()).toBe("30000");
+  });
+
+  it("keeps the same charge after cron records it and the Bogotá day changes", async () => {
+    const card = { id: "visa", cutoffDay: 25, paymentDay: 28, archived: false, handlingFee: new Decimal(0) };
+    const statement = { id: "s", cardId: "visa", periodStart: "2026-10-26", cutoffDate: "2026-11-25", dueDate: "2026-11-28", paidAt: null };
+    const subscription = { id: "sub", cardId: "visa", categoryId: null, amount: new Decimal(20000), currency: "COP" as const, frequency: "monthly" as const, billingDay: 20, startDate: "2026-01-01", status: "active" as const };
+    const movement = { id: "charge", statementId: "s", type: "purchase" as const, source: "subscription" as const, amountCop: new Decimal(20000), categoryId: null, subscriptionId: "sub", date: "2026-11-20" };
+    const source: MonthReadSource = {
+      loadCards: async () => [card], loadStatements: async () => [statement], loadSubscriptions: async () => [subscription],
+      loadFxRate: async () => null, loadCharges: async () => ({ movements: [], installments: [] }), loadSubscriptionMovements: async () => [],
+    };
+    const before = await loadMonthDetail(source, "2026-11-19", "2026-11");
+    const after = await loadMonthDetail({ ...source, loadCharges: async () => ({ movements: [movement], installments: [] }) }, "2026-11-21", "2026-11");
+    expect(before?.month.total.toString()).toBe("20000");
+    expect(before?.month.projected.toString()).toBe("20000");
+    expect(after?.month.total.toString()).toBe("20000");
+    expect(after?.month.projected.isZero()).toBe(true);
+    expect(after?.month.pendingConfirmation.toString()).toBe("20000");
+  });
+
   it("loads a direct historical detail independently of the first history page", async () => {
     const statements = [
       { id: "old", cardId: "visa", periodStart: "2020-01-01", cutoffDate: "2020-01-15", dueDate: "2020-02-05", paidAt: "paid" },

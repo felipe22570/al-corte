@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
 import { paymentMonth } from "@/lib/domain/months";
+import { revalidateFinancialViews } from "@/lib/revalidate-views";
 import { createClient } from "@/lib/supabase/server";
 import { realTotalSchema, statementPaymentDateSchema } from "@/lib/validation/statement";
 
@@ -17,6 +18,7 @@ async function updateStatement(id: unknown, values: { real_total?: string | null
   revalidatePath(`/tarjetas/${data.card_id}/extractos/${data.cutoff_date}`);
   revalidatePath(`/meses/${paymentMonth(data.due_date)}`);
   revalidatePath("/");
+  revalidateFinancialViews();
   return { ok: true as const };
 }
 

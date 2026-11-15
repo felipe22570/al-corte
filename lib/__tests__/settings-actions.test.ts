@@ -4,8 +4,8 @@ const mocks = vi.hoisted(() => ({ createClient: vi.fn(), revalidatePath: vi.fn()
 vi.mock("@/lib/supabase/server", () => ({ createClient: mocks.createClient }));
 vi.mock("next/cache", () => ({ revalidatePath: mocks.revalidatePath }));
 
-import { createCard } from "@/lib/actions/cards";
-import { createCategory } from "@/lib/actions/categories";
+import { archiveCard, createCard, updateCard } from "@/lib/actions/cards";
+import { archiveCategory, createCategory, updateCategory } from "@/lib/actions/categories";
 
 const validCard = { name: "Visa", bank: "Banco", network: "Visa", last4: "1234", creditLimit: "1.000.000", advanceFee: "0", handlingFee: "0", cutoffDay: "31", paymentDay: "15", purchaseRateEa: "28,5", advanceRateEa: "30", amortizationMethod: "fixed_principal", color: "card-3" };
 
@@ -39,4 +39,20 @@ it("traduce el error de categoría duplicada", async () => {
   const result = await createCategory({ name: "Mercado", icon: "shopping-cart" });
   expect(result.ok).toBe(false);
   expect(result).toMatchObject({ error: "Ya tienes una categoría con ese nombre." });
+});
+
+it("invalidates all financial routes after card and category updates or archiving", async () => {
+  const id = "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa";
+  const query = { update: vi.fn(), eq: vi.fn(), select: vi.fn(), maybeSingle: vi.fn().mockResolvedValue({ data: { id }, error: null }) };
+  query.update.mockReturnValue(query); query.eq.mockReturnValue(query); query.select.mockReturnValue(query);
+  mocks.createClient.mockResolvedValue({ auth: { getUser: vi.fn().mockResolvedValue({ data: { user: { id: "user-a" } } }) }, from: vi.fn().mockReturnValue(query) });
+  for (const action of [
+    () => updateCard(id, validCard), () => archiveCard(id),
+    () => updateCategory(id, { name: "Mercado", icon: "shopping-cart" }), () => archiveCategory(id),
+  ]) {
+    mocks.revalidatePath.mockClear();
+    expect((await action()).ok).toBe(true);
+    expect(mocks.revalidatePath).toHaveBeenCalledWith("/meses/[mes]", "page");
+    expect(mocks.revalidatePath).toHaveBeenCalledWith("/");
+  }
 });

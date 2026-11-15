@@ -1,10 +1,11 @@
 import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it } from "vitest";
-import { CardSummary } from "@/components/card-summary";
+import { MonthCardsStrip } from "@/components/month-cards-strip";
 import { CreditAvailability } from "@/components/credit-availability";
-import { DashboardTotals } from "@/components/dashboard-totals";
+import { MonthRow } from "@/components/month-row";
 import { Money } from "@/components/money";
 import Decimal from "decimal.js";
+import { buildMonths } from "@/lib/domain/months";
 
 const card = {
   id: "card-id",
@@ -12,34 +13,26 @@ const card = {
   bank: "Banco de prueba",
   last4: "1234",
   color: "card-1" as const,
-  available: "4500000",
-  utilization: "0.25",
-  today: "2026-11-10",
+  available: new Decimal("4500000"), used: new Decimal("1500000"), utilization: new Decimal("0.25"),
+  handlingFee: new Decimal(0), cutoffDay: 15, paymentDay: 28, archived: false,
 };
 
 describe("dashboard card presentation", () => {
-  it("groups a labeled large next payment with its deadline and status", () => {
-    const html = renderToStaticMarkup(<CardSummary {...card} payment={{ dueDate: "2026-11-15", total: "450000" }} />);
+  it("shows the card, available credit and utilization", () => {
+    const html = renderToStaticMarkup(<MonthCardsStrip cards={[card]} />);
     expect(html).toContain('href="/tarjetas/card-id"');
-    expect(html).toContain("Próximo pago");
-    expect(html).toMatch(/text-amount-lg[^>]*>\$450\.000/);
-    expect(html).toContain("Pago límite 15 nov");
-    expect(html).toContain("Vence en 5 días");
-    expect(html).toContain("bg-warning-soft text-warning");
     expect(html).toContain("Cupo disponible");
     expect(html).toContain("$4.500.000");
     expect(html).toContain('aria-valuenow="25"');
   });
 
   it("does not invent a payment or deadline when none is pending", () => {
-    const html = renderToStaticMarkup(<CardSummary {...card} payment={null} />);
-    expect(html).toContain("Sin pagos pendientes.");
+    const html = renderToStaticMarkup(<MonthCardsStrip cards={[card]} />);
     expect(html).not.toContain("Próximo pago");
-    expect(html).not.toContain("Pago límite");
     expect(html).toContain("Cupo disponible");
   });
   it("describes over-limit credit with a positive amount and danger styling", () => {
-    const html = renderToStaticMarkup(<CardSummary {...card} available="-1234567890" payment={null} />);
+    const html = renderToStaticMarkup(<MonthCardsStrip cards={[{ ...card, available: new Decimal("-1234567890") }]} />);
     expect(html).toContain("Sobrecupo de ");
     expect(html).toContain("$1.234.567.890");
     expect(html).not.toContain("-$");
@@ -70,13 +63,10 @@ describe("dashboard card presentation", () => {
     expect(html).not.toContain("danger");
     expect(html).not.toContain("Cupo disponible");
   });
-  it("renders qualitative monthly comparisons and preserves large totals", () => {
-    const html = renderToStaticMarkup(<DashboardTotals due={new Decimal("999999999999")} debt={new Decimal("1234567890")} spending={new Decimal("1234567890")} previousSpending={new Decimal(0)} previousMonth="2026-10" />);
-    expect(html).toContain("Más que octubre");
-    expect(html).not.toContain("Mucho");
-    expect(html).not.toContain("%");
+  it("preserves large monthly totals", () => {
+    const [month] = buildMonths([{ cardId: card.id, origin: "real", cutoffDate: "2026-11-15", dueDate: "2026-11-28", paidAt: null, recordedTotal: new Decimal("999999999999"), projectedTotal: new Decimal(0), unconvertedCharges: [] }], "2026-11-10");
+    const html = renderToStaticMarkup(<MonthRow month={month!} cards={[card]} subscriptionNames={{}} featured />);
     expect(html).toContain("$999.999.999.999");
-    expect(html).toContain("$1.234.567.890");
   });
   it("allows full large amounts to reflow rather than clipping or abbreviating them", () => {
     const html = renderToStaticMarkup(<Money value="999999999999" currency="COP" size="lg" />);

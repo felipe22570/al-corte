@@ -1,6 +1,7 @@
 import Decimal from "decimal.js";
 import Link from "next/link";
 import { CardColorChip } from "@/components/card-color-chip";
+import { CreditAvailability } from "@/components/credit-availability";
 import { Money } from "@/components/money";
 import { UtilizationBar } from "@/components/utilization-bar";
 import type { MonthCardDetails } from "@/lib/queries/supabase-months";
@@ -19,7 +20,7 @@ export function MonthCardsStrip({ cards }: { cards: MonthCardDetails[] }) {
           {active.map((card) => (
             <Link key={card.id} href={`/tarjetas/${card.id}`} className="grid w-64 shrink-0 gap-3 rounded-xl border border-border bg-card p-4 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring">
               <CardColorChip color={card.color} name={`${card.name} · •••• ${card.last4}`} />
-              <div><p className="text-small text-muted-foreground">Cupo disponible</p><Money value={card.available} currency="COP" /></div>
+              <CreditAvailability value={card.available} />
               <UtilizationBar percent={card.utilization.times(100).toNumber()} />
             </Link>
           ))}

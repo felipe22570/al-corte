@@ -3,7 +3,7 @@ import { beforeEach, expect, it, vi } from "vitest";
 const mocks = vi.hoisted(() => ({ createClient: vi.fn(), revalidatePath: vi.fn() }));
 vi.mock("@/lib/supabase/server", () => ({ createClient: mocks.createClient }));
 vi.mock("next/cache", () => ({ revalidatePath: mocks.revalidatePath }));
-import { createTransaction, deleteTransaction } from "@/lib/actions/transactions";
+import { createTransaction, deleteTransaction, updateTransaction } from "@/lib/actions/transactions";
 
 const input = { cardId: "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa", type: "purchase", date: "2026-01-20", amount: "100.000", currency: "COP", fxRate: "", installmentsCount: "2", interestFree: false, categoryId: "", merchant: "Tienda", note: "" };
 beforeEach(() => vi.clearAllMocks());
@@ -38,4 +38,22 @@ it("calcula el payload con los datos de la tarjeta del usuario", async () => {
   expect(query.eq).toHaveBeenCalledWith("user_id", "owner");
   expect(rpc).toHaveBeenCalledWith("create_transaction_with_installments", { p_payload: expect.objectContaining({ card_id: input.cardId, amount: "100000", amount_cop: "100000", rate_ea_applied: "0.28", installments_count: 2, installments: expect.arrayContaining([expect.objectContaining({ number: 1, cutoff_date: "2026-02-15" })]) }) });
   expect(mocks.revalidatePath).toHaveBeenCalledWith("/movimientos");
+  expect(mocks.revalidatePath).toHaveBeenCalledWith("/meses/[mes]", "page");
+});
+
+it("invalidates all old and new month and statement routes after editing", async () => {
+  const oldCard = "bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb";
+  const from = vi.fn((table: string) => {
+    const data = table === "transactions"
+      ? { card_id: oldCard, type: "purchase", rate_ea_applied: "0.28", parent_id: null }
+      : { id: input.cardId, cutoff_day: 15, payment_day: 5, purchase_rate_ea: "0.28", advance_rate_ea: "0.36", advance_fee: "15000", amortization_method: "fixed_principal" };
+    const query = { select: vi.fn(), eq: vi.fn(), is: vi.fn(), maybeSingle: vi.fn().mockResolvedValue({ data, error: null }) };
+    query.select.mockReturnValue(query); query.eq.mockReturnValue(query); query.is.mockReturnValue(query);
+    return query;
+  });
+  mocks.createClient.mockResolvedValue({ auth: { getUser: vi.fn().mockResolvedValue({ data: { user: { id: "owner" } } }) }, from, rpc: vi.fn().mockResolvedValue({ error: null }) });
+  expect((await updateTransaction("aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa", input)).ok).toBe(true);
+  expect(mocks.revalidatePath).toHaveBeenCalledWith("/meses/[mes]", "page");
+  expect(mocks.revalidatePath).toHaveBeenCalledWith("/tarjetas/[id]", "page");
+  expect(mocks.revalidatePath).toHaveBeenCalledWith("/tarjetas/[id]/extractos/[cutoff]", "page");
 });

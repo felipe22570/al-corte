@@ -1,7 +1,7 @@
 "use server";
 
-import { revalidatePath } from "next/cache";
 import { z } from "zod";
+import { revalidateFinancialViews } from "@/lib/revalidate-views";
 import { createClient } from "@/lib/supabase/server";
 import { categorySchema } from "@/lib/validation/category";
 
@@ -13,7 +13,7 @@ export async function createCategory(input: unknown) {
   if (!user) return { ok: false as const, error: "Inicia sesión para continuar." };
   const { error } = await supabase.from("categories").insert({ ...parsed.data, user_id: user.id });
   if (error) return { ok: false as const, error: error.code === "23505" ? "Ya tienes una categoría con ese nombre." : "No pudimos guardar la categoría." };
-  revalidatePath("/ajustes");
+  revalidateFinancialViews();
   return { ok: true as const };
 }
 
@@ -26,7 +26,7 @@ export async function updateCategory(id: string, input: unknown) {
   if (!user) return { ok: false as const, error: "Inicia sesión para continuar." };
   const { data, error } = await supabase.from("categories").update(parsed.data).eq("id", id).eq("user_id", user.id).select("id").maybeSingle();
   if (error || !data) return { ok: false as const, error: error?.code === "23505" ? "Ya tienes una categoría con ese nombre." : "No pudimos actualizar la categoría." };
-  revalidatePath("/ajustes");
+  revalidateFinancialViews();
   return { ok: true as const };
 }
 
@@ -37,6 +37,6 @@ export async function archiveCategory(id: string) {
   if (!user) return { ok: false as const, error: "Inicia sesión para continuar." };
   const { data, error } = await supabase.from("categories").update({ archived_at: new Date().toISOString() }).eq("id", id).eq("user_id", user.id).select("id").maybeSingle();
   if (error || !data) return { ok: false as const, error: "No pudimos archivar la categoría." };
-  revalidatePath("/ajustes");
+  revalidateFinancialViews();
   return { ok: true as const };
 }

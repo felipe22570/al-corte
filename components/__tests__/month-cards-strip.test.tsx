@@ -14,4 +14,14 @@ describe("MonthCardsStrip", () => {
     expect(html).toContain('href="/tarjetas/active"');
     expect(html).not.toContain("Archivada");
   });
+  it("identifies over-limit credit without presenting a negative available balance", () => {
+    const html = renderToStaticMarkup(<MonthCardsStrip cards={[{
+      id: "active", name: "Visa", bank: "Banco", last4: "1234", color: "card-1", archived: false,
+      cutoffDay: 15, paymentDay: 2, handlingFee: new Decimal(0), available: new Decimal(-20),
+      used: new Decimal(1020), utilization: new Decimal("1.02"),
+    }]} />);
+    expect(html).toContain("Sobrecupo de");
+    expect(html).toContain("bg-danger-soft");
+    expect(html).not.toContain("-$20");
+  });
 });

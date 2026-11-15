@@ -10,7 +10,7 @@ import { StatusBadge } from "@/components/status-badge";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { todayInBogota } from "@/lib/domain/dates";
 import { monthBreakdown, monthComparison, parsePaymentMonth, statementKnownTotal } from "@/lib/domain/months";
-import { formatCop, formatDateShort, formatMonth } from "@/lib/format";
+import { formatCop, formatDateShort, formatMonth, formatSpendingComparison } from "@/lib/format";
 import { loadMonthDetail } from "@/lib/queries/months";
 import { createSupabaseMonthSource } from "@/lib/queries/supabase-months";
 import { createClient } from "@/lib/supabase/server";
@@ -68,7 +68,7 @@ export default async function MonthDetailPage({ params }: { params: Promise<{ me
       <div><p className="text-small text-muted-foreground">{month.complete ? "Total del mes" : "Total conocido"}</p><Money value={month.total} currency="COP" size="lg" />{month.total.isNegative() && <p className="text-small">Saldo a favor</p>}</div>
       {month.statements.some((statement) => statement.origin === "real") && <div><p className="text-small">Pendiente de confirmar pago: <Money value={month.pendingConfirmation} currency="COP" /></p><p className="text-small text-muted-foreground">Suma de extractos sin marcar como pagados. No descuenta abonos registrados.</p></div>}
       {month.hasProjection && <p className="text-small">Cobros previstos{!month.complete && month.projected.isZero() ? ": pendientes de conversión" : <>: <Money value={month.projected} currency="COP" />{!month.complete && " conocidos"}</>}</p>}
-      <p className="text-small text-muted-foreground">{comparison.kind === "comparable" ? `Diferencia frente al mes anterior: ${formatCop(comparison.diff)}` : month.kind === "future" ? "Estimado" : month.hasOpenStatements ? "Mes en curso" : "Comparación no disponible"}</p>
+      <p className="text-small text-muted-foreground">{comparison.kind === "comparable" && previous ? `${formatSpendingComparison(month.total, previous.total, previous.month)} · Diferencia: ${formatCop(comparison.diff)}` : month.kind === "future" ? "Estimado" : month.hasOpenStatements ? "Mes en curso" : "Comparación no disponible"}</p>
       {month.kind === "future" && <p className="text-small">Se sumará lo que gastes antes de cada corte.</p>}
     </section>
     {!month.complete && <Alert variant="warning"><AlertTitle>Estimación incompleta</AlertTitle><AlertDescription><p>Hay cobros en USD sin convertir. <Link className="underline" href="/movimientos/nuevo">Revisa la TRM</Link>.</p>{month.unconvertedCharges.map((charge) => <p key={`${charge.subscriptionId}:${charge.date}`}>{subscriptionNames[charge.subscriptionId] ?? "Suscripción"} · {formatDateShort(charge.date, today)}: <Money value={charge.amountUsd} currency="USD" /></p>)}</AlertDescription></Alert>}

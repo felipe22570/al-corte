@@ -9,6 +9,6 @@ describe("fetchAllPages", () => {
     expect(fetchPage).toHaveBeenCalledTimes(2);
   });
   it("propagates query failures instead of returning partial totals", async () => {
-    await expect(fetchAllPages(async () => ({ data: null, error: new Error("error") }))).rejects.toThrow("No pudimos consultar el tablero.");
+    await expect(fetchAllPages(async () => ({ data: null, error: new Error("error") }))).rejects.toThrow("No pudimos consultar los datos.");
   });
 });
