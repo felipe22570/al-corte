@@ -1,9 +1,9 @@
 import Decimal from "decimal.js";
-import { addDays, addMonths, compareIsoDates, monthKey, type IsoDate } from "./dates";
+import { addDays, addMonths, compareIsoDates, daysInMonth, monthKey, parseIsoDate, type IsoDate } from "./dates";
 import { toCop, type Currency } from "./money";
 import { statementPeriod, shiftStatement } from "./statements";
 import { chargeDatesBetween, type Frequency, type SubscriptionStatus } from "./subscriptions";
-import { compareMonths, statementItemsFromMovements, statementTotals, type StatementConcept } from "./totals";
+import { compareMonths, monthlySpending, statementItemsFromMovements, statementTotals, type StatementConcept } from "./totals";
 
 export type ProjectableSubscription = {
   startDate: IsoDate;
@@ -16,6 +16,40 @@ export type ProjectableSubscription = {
 
 export function paymentMonth(dueDate: IsoDate): string {
   return monthKey(dueDate);
+}
+
+export function parsePaymentMonth(value: string): string | null {
+  if (!/^\d{4}-\d{2}$/.test(value)) return null;
+  try {
+    return monthKey(`${value}-01`);
+  } catch {
+    return null;
+  }
+}
+
+export function previousPaymentMonth(month: string): string | null {
+  if (month === "0001-01") return null;
+  return paymentMonth(addMonths(`${month}-01`, -1));
+}
+
+export function monthDateBounds(month: string): { first: IsoDate; last: IsoDate } {
+  const first = `${month}-01`;
+  const { year, month: number } = parseIsoDate(first);
+  return { first, last: `${month}-${daysInMonth(year, number)}` };
+}
+
+export function purchaseMonthSpending(transactions: Parameters<typeof monthlySpending>[0], month: string): Decimal {
+  return monthlySpending(transactions, month);
+}
+
+export function availablePaymentMonths(today: IsoDate, savedDueDates: IsoDate[], futureMonths: string[]): string[] {
+  const current = paymentMonth(today);
+  const end = paymentMonth(addMonths(`${current}-01`, 12));
+  return [...new Set([
+    current,
+    ...savedDueDates.map(paymentMonth).filter((month) => month < current),
+    ...futureMonths.filter((month) => month > current && month <= end && parsePaymentMonth(month) !== null),
+  ])].sort();
 }
 
 export function historyMonthCapacity(blocks: string | undefined): number {
@@ -87,6 +121,10 @@ export type MonthStatement = {
   unconvertedCharges: UnconvertedCharge[];
   charges?: MonthCharge[];
 };
+
+export function statementKnownTotal(statement: Pick<MonthStatement, "recordedTotal" | "projectedTotal">): Decimal {
+  return statement.recordedTotal.plus(statement.projectedTotal);
+}
 
 export type MonthCharge = {
   id: string;

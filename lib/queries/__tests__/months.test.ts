@@ -1,8 +1,72 @@
 import Decimal from "decimal.js";
 import { describe, expect, it, vi } from "vitest";
-import { loadMonthOverview, type MonthReadSource } from "../months";
+import { monthBreakdown } from "@/lib/domain/months";
+import { loadMonthDetail, loadMonthOverview, type MonthReadSource } from "../months";
 
 describe("loadMonthOverview", () => {
+  it("keeps payment-month installments, adjustments, refunds and payments on the same basis", async () => {
+    const source: MonthReadSource = {
+      loadCards: async () => [],
+      loadStatements: async () => [{ id: "s", cardId: "visa", periodStart: "2026-09-16", cutoffDate: "2026-10-15", dueDate: "2026-11-02", paidAt: null }],
+      loadSubscriptions: async () => [], loadFxRate: async () => null, loadSubscriptionMovements: async () => [],
+      loadCharges: async () => ({
+        movements: [
+          { id: "purchase", statementId: "s", type: "purchase", installmentsCount: 2, amountCop: new Decimal(200), categoryId: "food", date: "2026-10-01" },
+          { id: "adjustment", statementId: "s", type: "adjustment", amountCop: new Decimal(20), categoryId: null, date: "2026-10-01" },
+          { id: "refund", statementId: "s", type: "refund", amountCop: new Decimal(10), categoryId: "food", date: "2026-10-02" },
+          { id: "payment", statementId: "s", type: "payment", amountCop: new Decimal(50), categoryId: null, date: "2026-10-03" },
+        ],
+        installments: [{ id: "installment", statementId: "s", categoryId: "food", totalCop: new Decimal(110) }],
+      }),
+    };
+    const detail = await loadMonthDetail(source, "2026-11-14", "2026-11");
+    const breakdown = monthBreakdown(detail!.month.statements);
+    expect(detail!.month.total.toString()).toBe("120");
+    expect(detail!.month.pendingConfirmation.toString()).toBe("120");
+    expect(breakdown.concepts.installments.toString()).toBe("110");
+    expect(breakdown.concepts.adjustments.toString()).toBe("20");
+    expect(breakdown.concepts.refunds.toString()).toBe("-10");
+    expect(breakdown.payments.toString()).toBe("50");
+    expect(breakdown.categories.get("food")?.toString()).toBe("100");
+    expect(breakdown.categories.get(null)?.toString()).toBe("20");
+  });
+
+  it("estimates a future USD subscription using the resolved exchange rate", async () => {
+    const source: MonthReadSource = {
+      loadCards: async () => [{ id: "visa", cutoffDay: 25, paymentDay: 28, archived: false, handlingFee: new Decimal(0) }],
+      loadStatements: async () => [], loadSubscriptions: async () => [{ id: "sub", cardId: "visa", categoryId: null, amount: new Decimal("10"), currency: "USD", frequency: "monthly", billingDay: 20, startDate: "2026-01-01", status: "active" }],
+      loadFxRate: async () => new Decimal(4000), loadCharges: async () => ({ movements: [], installments: [] }), loadSubscriptionMovements: async () => [],
+    };
+    const detail = await loadMonthDetail(source, "2026-11-14", "2026-12");
+    expect(detail?.month.status).toBe("estimated");
+    expect(detail?.month.total.toString()).toBe("40000");
+    expect(detail?.month.complete).toBe(true);
+    expect(await loadMonthDetail(source, "2026-11-14", "2027-12")).toBeNull();
+  });
+
+  it("loads a direct historical detail independently of the first history page", async () => {
+    const statements = [
+      { id: "old", cardId: "visa", periodStart: "2020-01-01", cutoffDate: "2020-01-15", dueDate: "2020-02-05", paidAt: "paid" },
+      { id: "prior", cardId: "visa", periodStart: "2019-12-01", cutoffDate: "2019-12-15", dueDate: "2020-01-05", paidAt: "paid" },
+      { id: "recent", cardId: "visa", periodStart: "2026-09-01", cutoffDate: "2026-09-15", dueDate: "2026-10-05", paidAt: "paid" },
+    ];
+    const loadCharges = vi.fn(async (ids: string[]) => ({
+      movements: ids.map((id) => ({ id: `m-${id}`, statementId: id, type: "purchase" as const, amountCop: new Decimal(100), categoryId: null, date: "2020-01-01" })),
+      installments: [],
+    }));
+    const source: MonthReadSource = {
+      loadCards: async () => [], loadStatements: async () => statements, loadSubscriptions: async () => [],
+      loadFxRate: async () => null, loadCharges, loadSubscriptionMovements: async () => [],
+    };
+    const detail = await loadMonthDetail(source, "2026-11-14", "2020-02");
+    expect(detail?.month.total.toString()).toBe("100");
+    expect(detail?.previous?.total.toString()).toBe("100");
+    expect(detail?.neighbors).toEqual({ previous: "2020-01", next: "2026-10" });
+    expect(loadCharges.mock.calls[0]?.[0]).toContain("old");
+    expect(loadCharges.mock.calls[0]?.[0]).not.toContain("recent");
+    expect(await loadMonthDetail(source, "2026-11-14", "2020-03")).toBeNull();
+  });
+
   it("loads every charge in each historical month and preserves overdue months outside the page", async () => {
     const statements = [
       ["a", "2026-10-02", "paid"], ["b", "2026-10-20", "paid"],

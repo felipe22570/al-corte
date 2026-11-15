@@ -14,17 +14,17 @@ const categoryColor = (id: string) => {
   return `var(--chart-${hash % 5 + 1})`;
 };
 
-export function CategorySpendingChart({ rows }: { rows: CategoryChartRow[] }) {
+export function CategorySpendingChart({ rows, title = "Gasto por categoría" }: { rows: CategoryChartRow[]; title?: string }) {
   const data = rows.map((row) => ({ ...row, value: Number(row.amount), fill: categoryColor(row.id) }));
-  if (!rows.length) return <section className="flex min-w-0 flex-col gap-4 rounded-xl border border-border bg-card p-4"><h2 className="text-heading">Gasto por categoría</h2><EmptyState icon={Tags} text="No hay gasto en este mes." /></section>;
+  if (!rows.length) return <section className="flex min-w-0 flex-col gap-4 rounded-xl border border-border bg-card p-4"><h2 className="text-heading">{title}</h2><EmptyState icon={Tags} text="No hay gasto en este mes." /></section>;
   return (
     <section className="flex min-w-0 flex-col gap-4 rounded-xl border border-border bg-card p-4">
-      <h2 className="text-heading">Gasto por categoría</h2>
-      <div className="min-w-0" style={{ height: Math.max(180, rows.length * 44) }} role="img" aria-label="Gasto por categoría">
+      <h2 className="text-heading">{title}</h2>
+      <div className="min-w-0" style={{ height: Math.max(180, rows.length * 44) }} role="img" aria-label={title}>
         <ResponsiveContainer width="100%" height="100%">
           <BarChart data={data} layout="vertical" margin={{ left: 0, right: 12 }}>
             <CartesianGrid stroke="var(--border)" horizontal={false} />
-            <XAxis type="number" tick={{ fill: "var(--muted-foreground)", className: "chart-axis" }} tickFormatter={(value: number) => formatCopCompact(String(value))} interval="preserveStartEnd" minTickGap={20} height={40} />
+            <XAxis type="number" domain={[(minimum: number) => Math.min(0, minimum), (maximum: number) => Math.max(0, maximum)]} tick={{ fill: "var(--muted-foreground)", className: "chart-axis" }} tickFormatter={(value: number) => formatCopCompact(String(value))} interval="preserveStartEnd" minTickGap={20} height={40} />
             <YAxis dataKey="name" type="category" width={112} tick={{ fill: "var(--muted-foreground)", className: "chart-axis" }} tickFormatter={(value: string) => value.length > 16 ? `${value.slice(0, 15)}…` : value} />
             <Tooltip position={{ x: 0 }} wrapperStyle={{ maxWidth: "100%" }} content={({ active, label }) => {
               const row = rows.find((item) => item.name === String(label));

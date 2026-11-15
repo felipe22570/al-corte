@@ -1,8 +1,33 @@
 import { describe, expect, it } from "vitest";
 import Decimal from "decimal.js";
-import { buildMonths, cardCompositionPercentages, historyMonthCapacity, historyMonthNextBlock, historyMonthPage, monthBreakdown, monthComparison, overdueStatements, paymentMonth, projectStatements, projectSubscriptionCharges, selectMonthStatementScope, type MonthStatement } from "../months";
+import { availablePaymentMonths, buildMonths, cardCompositionPercentages, historyMonthCapacity, historyMonthNextBlock, historyMonthPage, monthBreakdown, monthComparison, monthDateBounds, parsePaymentMonth, overdueStatements, paymentMonth, previousPaymentMonth, projectStatements, projectSubscriptionCharges, purchaseMonthSpending, selectMonthStatementScope, statementKnownTotal, type MonthStatement } from "../months";
 import { statementPeriod } from "../statements";
 import { formatSpendingComparison } from "../../format";
+
+describe("detail month navigation", () => {
+  it("keeps purchase-month spending separate and provides inclusive calendar bounds", () => {
+    expect(monthDateBounds("2024-02")).toEqual({ first: "2024-02-01", last: "2024-02-29" });
+    expect(purchaseMonthSpending([
+      { date: "2024-02-10", type: "purchase", amountCop: new Decimal(600) },
+      { date: "2024-02-11", type: "refund", amountCop: new Decimal(50) },
+      { date: "2024-03-01", type: "purchase", amountCop: new Decimal(900) },
+    ], "2024-02").toString()).toBe("550");
+    expect(statementKnownTotal({ recordedTotal: new Decimal(100), projectedTotal: new Decimal(30) }).toString()).toBe("130");
+  });
+  it("accepts only valid calendar months", () => {
+    expect(parsePaymentMonth("2026-11")).toBe("2026-11");
+    expect(previousPaymentMonth("2026-01")).toBe("2025-12");
+    expect(previousPaymentMonth("0001-01")).toBeNull();
+    for (const value of ["2026-00", "2026-13", "0000-01", "2026-1", "2026-11-01", "x"]) {
+      expect(parsePaymentMonth(value)).toBeNull();
+    }
+  });
+
+  it("retains direct historical months, current month and only available future months within the horizon", () => {
+    expect(availablePaymentMonths("2026-11-14", ["2020-03-05", "2026-09-02", "2026-09-10", "2028-01-02"], ["2027-01", "2027-11", "2027-12"]))
+      .toEqual(["2020-03", "2026-09", "2026-11", "2027-01", "2027-11"]);
+  });
+});
 
 describe("paymentMonth", () => {
   it("uses the due date rather than the cutoff month", () => {

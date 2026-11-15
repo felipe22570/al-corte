@@ -1,10 +1,10 @@
 # Paso 24 — Detalle de un mes
 
 - **Hito PRD:** H9 (parte 4 de 6)
-- **Estado:** ⬜ Pendiente
-- **Inicio:**
-- **Fin:**
-- **Commit:**
+- **Estado:** ✅ Terminado y verificado
+- **Inicio:** 2026-11-14
+- **Fin:** 2026-11-14
+- **Commit:** Ver historial de git
 - **Depende de:** 21, 22, 23
 - **Decisiones aplicables (decididas, ver README):** D5, D10, D16–D29
 
@@ -26,18 +26,18 @@ Ruta `/meses/[mes]` (F9) siguiendo el brief del paso 22.
 
 ## Tareas
 
-- [ ] `app/(app)/meses/[mes]/page.tsx` con validación del parámetro `AAAA-MM`.
-- [ ] Componentes del detalle reutilizando los existentes.
-- [ ] Reutilizar la capa de consultas del paso 23; el agregado no se recalcula con reglas de UI ni trunca cargos por límites de la API.
-- [ ] Después de marcar/desmarcar desde aquí o desde el extracto, revalidar `/`, el mes afectado y las vistas de tarjeta/extracto; completar la matriz transversal en el paso 25.
+- [x] `app/(app)/meses/[mes]/page.tsx` con validación del parámetro `AAAA-MM`.
+- [x] Componentes del detalle reutilizando los existentes.
+- [x] Reutilizar la capa de consultas del paso 23; el agregado no se recalcula con reglas de UI ni trunca cargos por límites de la API.
+- [x] Después de marcar/desmarcar desde aquí o desde el extracto, revalidar `/`, el mes afectado y las vistas de tarjeta/extracto; completar la matriz transversal en el paso 25.
 
 ## Pruebas
 
-- [ ] Vitest del parser de `AAAA-MM` y de cualquier helper nuevo.
-- [ ] Renderizado con varias tarjetas: IDs únicos, cada etiqueta conectada a su control y botones de pago secundarios con contexto accesible. Sin edición de total bancario ni acción de pago en virtuales.
-- [ ] Navegación directa a un mes histórico no cargado en `/`, huecos entre meses, mes actual vacío y límites del horizonte.
-- [ ] Categorías del mes de pago (no de compra), cuotas con interés, ajustes, devoluciones, "Sin categoría" y total conocido incompleto por TRM.
-- [ ] Comparación segura de meses cerrados; no porcentaje ni afirmación de ahorro en mes abierto, futuro, sin datos o sin TRM.
+- [x] Vitest del parser de `AAAA-MM` y de cualquier helper nuevo.
+- [x] Renderizado con varias tarjetas: IDs únicos, cada etiqueta conectada a su control y botones de pago secundarios con contexto accesible. Sin edición de total bancario ni acción de pago en virtuales.
+- [x] Navegación directa a un mes histórico no cargado en `/`, huecos entre meses, mes actual vacío y límites del horizonte.
+- [x] Categorías del mes de pago (no de compra), cuotas con interés, ajustes, devoluciones, "Sin categoría" y total conocido incompleto por TRM.
+- [x] Comparación segura de meses cerrados; no porcentaje ni afirmación de ahorro en mes abierto, futuro, sin datos o sin TRM.
 
 ## Verificación
 
@@ -46,11 +46,11 @@ pnpm typecheck && pnpm lint && pnpm test && pnpm test:coverage
 pnpm build && pnpm start
 ```
 
-- [ ] El total conocido es igual a la suma de bloques por tarjeta, conceptos y categorías; registrados y previstos se pueden identificar por separado.
-- [ ] La parte real de cada bloque coincide con el extracto guardado; sus previstos se muestran aparte, sin exigir que ya existan en el detalle del extracto.
-- [ ] Un mes futuro con una suscripción en USD muestra el estimado con la TRM vigente.
-- [ ] Abono registrado sin marca mantiene el pendiente de confirmar; marcar/desmarcar actualiza mes/lista sin registrar abono ni liberar cupo. Un total bancario diferente no altera el agregado.
-- [ ] 360 px y modo oscuro.
+- [x] El total conocido es igual a la suma de bloques por tarjeta, conceptos y categorías; registrados y previstos se pueden identificar por separado.
+- [x] La parte real de cada bloque coincide con el extracto guardado; sus previstos se muestran aparte, sin exigir que ya existan en el detalle del extracto.
+- [x] Un mes futuro con una suscripción en USD muestra el estimado con la TRM vigente.
+- [x] Abono registrado sin marca mantiene el pendiente de confirmar; marcar/desmarcar actualiza mes/lista sin registrar abono ni liberar cupo. Un total bancario diferente no altera el agregado.
+- [x] 360 px y modo oscuro.
 
 ## Criterios de terminado
 
@@ -59,4 +59,6 @@ pnpm build && pnpm start
 
 ## Notas de progreso
 
-<!-- Fecha — nota -->
+- 2026-11-14 — Inicio en `feat/h9-month-views`. Pruebas primero para validar el parámetro y la navegación de meses con huecos, historial remoto y límite futuro; se añadieron los helpers puros en `lib/domain/months.ts`. La lectura directa en `lib/queries/months.ts` carga los cargos del mes y del calendario anterior independientemente de la paginación del inicio, además de vencidos cuando corresponde. La acción de extracto invalida el mes de pago, inicio, tarjeta y extracto. Pasan las pruebas focalizadas, `typecheck` y `lint`; la interfaz, el gasto D5, las pruebas completas y la verificación visual siguen pendientes.
+- 2026-11-14 — Ruta y componentes iniciales del detalle conectados; categorías R7, compras D5 separadas, control compacto y navegación. Integración local con datos sintéticos confirma consulta D5 y categorías. En Chromium hidratado a 360 px oscuro, marcar y deshacer una tarjeta cambió el pendiente sin cambiar el total; no hubo desbordamiento horizontal. Sigue pendiente la verificación de todos los estados, escritorio y la validación completa del paso. No se desplegó.
+- 2026-11-14 — Revisión hidratada con datos sintéticos en escritorio claro y 360 px oscuro; dos columnas solo con extractos y sin desbordamiento móvil. Pruebas cubren importes firmados, cuotas, ajustes, abonos y USD con TRM; integración local verifica abono y total bancario distinto sin alterar el total calculado ni el pendiente. Con autorización del dueño se reinició exclusivamente Supabase local: migraciones, 167 pruebas SQL y prueba de integración pasan. Sin despliegue; la matriz transversal sigue en el paso 25.

@@ -8,7 +8,7 @@ import { markStatementPaid, setStatementRealTotal, unmarkStatementPaid } from "@
 const id = "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa";
 beforeEach(() => vi.clearAllMocks());
 function mockClient() {
-  const query = { update: vi.fn(), eq: vi.fn(), select: vi.fn(), maybeSingle: vi.fn().mockResolvedValue({ data: { card_id: id, cutoff_date: "2026-11-15" }, error: null }) };
+  const query = { update: vi.fn(), eq: vi.fn(), select: vi.fn(), maybeSingle: vi.fn().mockResolvedValue({ data: { card_id: id, cutoff_date: "2026-11-15", due_date: "2026-12-02" }, error: null }) };
   query.update.mockReturnValue(query); query.eq.mockReturnValue(query); query.select.mockReturnValue(query);
   mocks.createClient.mockResolvedValue({ auth: { getUser: vi.fn().mockResolvedValue({ data: { user: { id: "owner" } } }) }, from: vi.fn().mockReturnValue(query) });
   return query;
@@ -28,6 +28,8 @@ it("stores the Bogotá business date and can undo payment", async () => {
   const query = mockClient();
   expect((await markStatementPaid(id, "2026-11-10")).ok).toBe(true);
   expect(query.update).toHaveBeenCalledWith({ paid_at: "2026-11-10T05:00:00.000Z" });
+  expect(mocks.revalidatePath).toHaveBeenCalledWith("/meses/2026-12");
+  expect(mocks.revalidatePath).toHaveBeenCalledWith("/");
   expect((await unmarkStatementPaid(id)).ok).toBe(true);
   expect(query.update).toHaveBeenCalledWith({ paid_at: null });
 });

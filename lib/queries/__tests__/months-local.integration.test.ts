@@ -2,7 +2,8 @@ import { createHmac, randomUUID } from "node:crypto";
 import { execFileSync } from "node:child_process";
 import { createClient } from "@supabase/supabase-js";
 import { describe, expect, it } from "vitest";
-import { loadMonthOverview } from "../months";
+import { monthBreakdown } from "@/lib/domain/months";
+import { loadMonthDetail, loadMonthOverview } from "../months";
 import { createSupabaseMonthSource } from "../supabase-months";
 
 const enabled = process.env.AL_CORTE_LOCAL_DB_TEST === "1";
@@ -40,10 +41,12 @@ describe.skipIf(!enabled)("month reads against local Supabase", () => {
         values ('${cardId}','${userId}','Visa sintética','Banco','Visa','1234',1000000,25,28,0,null),
                ('${archivedId}','${userId}','Archivada sintética','Banco','Visa','5678',1000000,25,28,0,now());
         insert into public.categories (id,user_id,name,icon) values ('${categoryId}','${userId}','Categoría sintética','tags');
-        insert into public.statements (id,user_id,card_id,period_start,cutoff_date,due_date)
-        values ('${statementId}','${userId}','${cardId}','2026-10-26','2026-11-25','2026-11-28');
+        insert into public.statements (id,user_id,card_id,period_start,cutoff_date,due_date,real_total)
+        values ('${statementId}','${userId}','${cardId}','2026-10-26','2026-11-25','2026-11-28',999999);
         insert into public.transactions (id,user_id,card_id,statement_id,category_id,type,date,amount,amount_cop,installments_count)
         values ('${purchaseId}','${userId}','${cardId}','${statementId}','${categoryId}','purchase','2026-11-10',200000,200000,2);
+        insert into public.transactions (user_id,card_id,statement_id,type,date,amount,amount_cop)
+        values ('${userId}','${cardId}','${statementId}','payment','2026-11-12',10000,10000);
         insert into public.installments (user_id,transaction_id,statement_id,number,principal,interest,total,balance_after,principal_cop,interest_cop,total_cop)
         values ('${userId}','${purchaseId}','${statementId}',1,100000,5000,105000,100000,100000,5000,105000);
         insert into public.subscriptions (id,user_id,card_id,category_id,name,amount,currency,frequency,billing_day,start_date,status)
@@ -60,6 +63,12 @@ describe.skipIf(!enabled)("month reads against local Supabase", () => {
       expect(overview.current.projected.toString()).toBe("20000");
       expect(overview.current.statements[0]?.charges?.find((charge) => charge.concept === "installments")?.categoryId).toBe(categoryId);
       expect(overview.subscriptionNames[subscriptionId]).toBe("Servicio sintético");
+      const detail = await loadMonthDetail(source, "2026-11-14", "2026-11");
+      expect(detail?.month.total.toString()).toBe("125000");
+      expect(detail?.month.pendingConfirmation.toString()).toBe("105000");
+      expect(monthBreakdown(detail!.month.statements).payments.toString()).toBe("10000");
+      expect((await source.loadCategories()).some((category) => category.id === categoryId)).toBe(true);
+      expect((await source.loadPurchaseMonthSpending("2026-11")).toString()).toBe("200000");
       const { error } = await client.from("statements").update({ paid_at: "2026-11-14T12:00:00Z" }).eq("id", statementId);
       expect(error).toBeNull();
       const refreshedSource = createSupabaseMonthSource(client as never, userId);
@@ -84,6 +93,7 @@ describe.skipIf(!enabled)("month reads against local Supabase", () => {
       const affected = withPurchase.future.filter((month) => month.month >= "2027-01" && month.month <= "2027-06");
       expect(affected.map((month) => month.month)).toEqual(["2027-01", "2027-02", "2027-03", "2027-04", "2027-05", "2027-06"]);
       expect(affected.every((month) => month.total.eq(120000))).toBe(true);
+      expect((await refreshedSource.loadPurchaseMonthSpending("2027-01")).toString()).toBe("600000");
     } finally {
       if (created) sql(`delete from auth.users where id = '${userId}';`);
     }

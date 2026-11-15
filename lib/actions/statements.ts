@@ -2,6 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
+import { paymentMonth } from "@/lib/domain/months";
 import { createClient } from "@/lib/supabase/server";
 import { realTotalSchema, statementPaymentDateSchema } from "@/lib/validation/statement";
 
@@ -10,10 +11,11 @@ async function updateStatement(id: unknown, values: { real_total?: string | null
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return { ok: false as const, error: "Inicia sesión para actualizar el extracto." };
-  const { data, error } = await supabase.from("statements").update(values).eq("id", id).eq("user_id", user.id).select("card_id,cutoff_date").maybeSingle();
+  const { data, error } = await supabase.from("statements").update(values).eq("id", id).eq("user_id", user.id).select("card_id,cutoff_date,due_date").maybeSingle();
   if (error || !data) return { ok: false as const, error: "No pudimos actualizar el extracto." };
   revalidatePath(`/tarjetas/${data.card_id}`);
   revalidatePath(`/tarjetas/${data.card_id}/extractos/${data.cutoff_date}`);
+  revalidatePath(`/meses/${paymentMonth(data.due_date)}`);
   revalidatePath("/");
   return { ok: true as const };
 }

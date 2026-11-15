@@ -1,6 +1,6 @@
 import Decimal from "decimal.js";
 import type { CardColor } from "@/lib/card-colors";
-import type { ProjectionInput } from "@/lib/domain/months";
+import { monthDateBounds, purchaseMonthSpending, type ProjectionInput } from "@/lib/domain/months";
 import { fetchAllPages } from "@/lib/paginate";
 import type { createClient } from "@/lib/supabase/server";
 import type { MonthReadSource } from "./months";
@@ -37,7 +37,11 @@ function batches<T>(items: T[], size = 100): T[][] {
 
 const movementFields = "id,statement_id,type,amount_cop::text,amount::text,currency,fx_rate::text,installments_count,source,category_id,subscription_id,date";
 
-export function createSupabaseMonthSource(client: Client, userId: string): MonthReadSource & { loadCardDetails(): Promise<MonthCardDetails[]> } {
+export function createSupabaseMonthSource(client: Client, userId: string): MonthReadSource & {
+  loadCardDetails(): Promise<MonthCardDetails[]>;
+  loadCategories(): Promise<Array<{ id: string; name: string; icon: string | null }>>;
+  loadPurchaseMonthSpending(month: string): Promise<Decimal>;
+} {
   let cardDetails: Promise<MonthCardDetails[]> | undefined;
   function loadCardDetails() {
     cardDetails ??= (async () => {
@@ -62,6 +66,14 @@ export function createSupabaseMonthSource(client: Client, userId: string): Month
 
   return {
     loadCardDetails,
+    async loadCategories() {
+      return fetchAllPages((from, to) => client.from("categories").select("id,name,icon").eq("user_id", userId).order("id").range(from, to));
+    },
+    async loadPurchaseMonthSpending(month) {
+      const { first, last } = monthDateBounds(month);
+      const rows = await fetchAllPages((from, to) => client.from("transactions").select("date,type,amount_cop::text").eq("user_id", userId).gte("date", first).lte("date", last).order("id").range(from, to));
+      return purchaseMonthSpending((rows as unknown as Array<{ date: string; type: string; amount_cop: string }>).map((row) => ({ date: row.date, type: row.type, amountCop: new Decimal(row.amount_cop) })), month);
+    },
     loadCards: loadCardDetails,
     async loadStatements() {
       const rows = await fetchAllPages((from, to) => client.from("statements").select("id,card_id,period_start,cutoff_date,due_date,paid_at").eq("user_id", userId).order("id").range(from, to));
