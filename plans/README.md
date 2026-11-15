@@ -50,7 +50,7 @@ Prompt sugerido para el agente al iniciar un paso:
 | 20 | [Validación final del MVP](20-validacion-mvp.md) | — | ✅ | `mvp` |
 | 21 | [Dominio: meses de pago y proyección (R7)](21-dominio-meses.md) | H9 | ✅ | Ver historial de git |
 | 22 | [Brief de diseño de la vista por meses](22-brief-meses.md) | H9 | ✅ | Ver historial de git |
-| 23 | [Inicio: lista de meses](23-lista-meses.md) | H9 | ⬜ | |
+| 23 | [Inicio: lista de meses](23-lista-meses.md) | H9 | ✅ | Ver historial de git |
 | 24 | [Detalle de un mes](24-detalle-mes.md) | H9 | ⬜ | |
 | 25 | [Ajuste de vistas relacionadas y retiro del tablero](25-ajuste-vistas.md) | H9 | ⬜ | |
 | 26 | [Pulido y validación de H9](26-validacion-meses.md) | H9 | ⬜ | |

@@ -3,7 +3,7 @@ import { join } from "node:path";
 import { renderToStaticMarkup } from "react-dom/server";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import AppLayout from "@/app/(app)/layout";
-import DashboardPage from "@/app/(app)/page";
+import DashboardPage from "@/app/(app)/(months)/page";
 import MovimientosPage from "@/app/(app)/movimientos/page";
 import TransactionDetailPage from "@/app/(app)/movimientos/[id]/page";
 import CardDetailPage from "@/app/(app)/tarjetas/[id]/page";
@@ -82,7 +82,7 @@ describe("mobile reflow contracts", () => {
     expect(html).toContain('id="main-content" tabindex="-1"');
     expect(html).toContain("grid-cols-4");
     expect(html.match(/aria-current="page"/g)).toHaveLength(2);
-    for (const label of ["Tablero", "Movimientos", "Suscripciones", "Ajustes"]) expect(html).toContain(label);
+    for (const label of ["Meses", "Movimientos", "Suscripciones", "Ajustes"]) expect(html).toContain(label);
   });
 
   it("preserves desktop density while providing touch targets and opaque focus", () => {

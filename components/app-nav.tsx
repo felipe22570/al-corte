@@ -10,7 +10,7 @@ import { isNavigationActive } from "@/lib/navigation";
 import { cn } from "@/lib/utils";
 
 const links = [
-  { href: "/", label: "Tablero", icon: LayoutDashboard },
+  { href: "/", label: "Meses", icon: LayoutDashboard },
   { href: "/movimientos", label: "Movimientos", icon: List },
   { href: "/suscripciones", label: "Suscripciones", icon: Repeat },
   { href: "/ajustes", label: "Ajustes", icon: Settings },
@@ -20,7 +20,7 @@ export function AppNav() {
   const pathname = usePathname();
   return <>
     <aside className="fixed inset-y-0 left-0 z-20 hidden w-64 flex-col border-r border-border bg-card p-4 md:flex">
-      <Link href="/" aria-label="Al Corte, ir al tablero" className="flex min-h-10 items-center rounded-md px-3 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring pointer-coarse:min-h-11"><AppWordmark compact /></Link>
+      <Link href="/" aria-label="Al Corte, ir a meses" className="flex min-h-10 items-center rounded-md px-3 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring pointer-coarse:min-h-11"><AppWordmark compact /></Link>
       <nav aria-label="Navegación principal" className="mt-6 flex flex-col gap-2">
         {links.map(({ href, label, icon: Icon }) => {
           const active = isNavigationActive(href, pathname);

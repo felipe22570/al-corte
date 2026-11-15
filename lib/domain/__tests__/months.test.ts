@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import Decimal from "decimal.js";
-import { buildMonths, monthBreakdown, monthComparison, overdueStatements, paymentMonth, projectStatements, projectSubscriptionCharges, type MonthStatement } from "../months";
+import { buildMonths, cardCompositionPercentages, historyMonthCapacity, historyMonthNextBlock, historyMonthPage, monthBreakdown, monthComparison, overdueStatements, paymentMonth, projectStatements, projectSubscriptionCharges, selectMonthStatementScope, type MonthStatement } from "../months";
 import { statementPeriod } from "../statements";
 import { formatSpendingComparison } from "../../format";
 
@@ -19,6 +19,47 @@ describe("paymentMonth", () => {
     expect(paymentMonth(statementPeriod({ cutoffDay: 31, paymentDay: 5 }, "2026-10-31").dueDate)).toBe("2026-11");
     expect(paymentMonth(statementPeriod({ cutoffDay: 15, paymentDay: 2 }, "2026-10-15").dueDate)).toBe("2026-11");
     expect(statementPeriod({ cutoffDay: 15, paymentDay: 30 }, "2026-11-15").dueDate).toBe("2026-11-30");
+  });
+});
+
+describe("historyMonthPage", () => {
+  it("uses twelve months per requested history block and rejects invalid requests", () => {
+    expect(historyMonthCapacity("2")).toBe(24);
+    expect(historyMonthCapacity(undefined)).toBe(12);
+    expect(historyMonthCapacity("0")).toBe(12);
+    expect(historyMonthCapacity("2.5")).toBe(12);
+    expect(historyMonthCapacity("99999999999999999999")).toBe(12);
+    expect(historyMonthNextBlock("2")).toBe("3");
+  });
+  it("paginates distinct months without counting multiple statements twice", () => {
+    const dueDates = ["2026-10-02", "2026-10-05", "2026-09-02", "2026-08-02", "2026-07-02", "2026-11-02"];
+    expect(historyMonthPage(dueDates, "2026-11-14", 2)).toEqual({ months: ["2026-10", "2026-09"], nextBefore: "2026-09" });
+    expect(historyMonthPage(dueDates, "2026-11-14", 2, "2026-09")).toEqual({ months: ["2026-08", "2026-07"], nextBefore: null });
+  });
+
+  it("returns an empty page without a cursor when there is no history", () => {
+    expect(historyMonthPage([], "2026-11-14", 12)).toEqual({ months: [], nextBefore: null });
+  });
+
+  it("rejects invalid page sizes and month cursors", () => {
+    expect(() => historyMonthPage([], "2026-11-14", 0)).toThrow();
+    expect(() => historyMonthPage([], "2026-11-14", 12, "2026-13")).toThrow();
+  });
+});
+
+describe("selectMonthStatementScope", () => {
+  it("keeps selected history, every older overdue statement and all future metadata", () => {
+    const make = (id: string, dueDate: string, paidAt: string | null = "paid") => ({
+      id, cardId: "a", periodStart: "2024-01-01", cutoffDate: "2024-01-15", dueDate, paidAt,
+    });
+    const result = selectMonthStatementScope([
+      make("selected", "2026-10-02"), make("other-paid", "2026-09-02"),
+      make("overdue", "2026-08-02", null), make("current", "2026-11-20", null),
+      make("future", "2028-02-02", null),
+    ], "2026-11-14", 1);
+    expect(result.history.months).toEqual(["2026-10"]);
+    expect(result.statements.map((item) => item.id)).toEqual(["selected", "overdue", "current", "future"]);
+    expect(result.history.nextBefore).toBe("2026-10");
   });
 });
 
@@ -106,6 +147,40 @@ describe("buildMonths", () => {
     expect(month?.cards.map((card) => [card.cardId, card.total.toString()])).toEqual([["visa", "100"], ["mastercard", "-20"]]);
     expect(month?.cards[1]?.statements[0]?.status).toBe("overdue");
     expect(month?.canUseProportionalBar).toBe(false);
+  });
+
+  it("rounds valid card composition to exactly 100 percent", () => {
+    const [month] = buildMonths([
+      { ...statement, cardId: "a", recordedTotal: new Decimal(1) },
+      { ...statement, cardId: "b", recordedTotal: new Decimal(1) },
+      { ...statement, cardId: "c", recordedTotal: new Decimal(1) },
+    ], "2026-11-13");
+    if (!month) throw new Error("Falta el mes");
+    expect(cardCompositionPercentages(month)?.map((item) => item.percent)).toEqual([34, 33, 33]);
+  });
+
+  it("preserves zero shares and allocates rounding to the largest remainder", () => {
+    const [month] = buildMonths([
+      { ...statement, cardId: "a", recordedTotal: new Decimal("999999999999.99") },
+      { ...statement, cardId: "b", recordedTotal: new Decimal("499999999999.99") },
+      { ...statement, cardId: "c", recordedTotal: new Decimal(0) },
+    ], "2026-11-13");
+    if (!month) throw new Error("Falta el mes");
+    expect(cardCompositionPercentages(month)).toEqual([
+      { cardId: "a", percent: 67 },
+      { cardId: "b", percent: 33 },
+      { cardId: "c", percent: 0 },
+    ]);
+  });
+
+  it("returns no proportional composition for zero or negative totals or negative cards", () => {
+    for (const amounts of [[0], [-1], [10, -1]]) {
+      const [month] = buildMonths(amounts.map((amount, index) => ({
+        ...statement, cardId: String(index), recordedTotal: new Decimal(amount),
+      })), "2026-11-13");
+      if (!month) throw new Error("Falta el mes");
+      expect(cardCompositionPercentages(month)).toBeNull();
+    }
   });
 });
 

@@ -18,6 +18,47 @@ export function paymentMonth(dueDate: IsoDate): string {
   return monthKey(dueDate);
 }
 
+export function historyMonthCapacity(blocks: string | undefined): number {
+  if (!blocks || !/^[1-9]\d*$/.test(blocks)) return 12;
+  const capacity = Number(blocks) * 12;
+  return Number.isSafeInteger(capacity) ? capacity : 12;
+}
+
+export function historyMonthNextBlock(blocks: string | undefined): string {
+  return String(historyMonthCapacity(blocks) / 12 + 1);
+}
+
+export function historyMonthPage(dueDates: IsoDate[], today: IsoDate, pageSize: number, before?: string): { months: string[]; nextBefore: string | null } {
+  if (!Number.isInteger(pageSize) || pageSize < 1) throw new Error("Tamaño de página inválido");
+  const currentMonth = monthKey(today);
+  if (before !== undefined) monthKey(`${before}-01`);
+  const months = [...new Set(dueDates.map(paymentMonth))]
+    .filter((month) => month < currentMonth && (before === undefined || month < before))
+    .sort((a, b) => b.localeCompare(a));
+  const page = months.slice(0, pageSize);
+  return { months: page, nextBefore: months.length > pageSize ? page[page.length - 1]! : null };
+}
+
+export function selectMonthStatementScope<T extends { dueDate: IsoDate; paidAt: string | null }>(
+  statements: T[], today: IsoDate, pageSize: number, before?: string,
+) {
+  const history = historyMonthPage(statements.map((statement) => statement.dueDate), today, pageSize, before);
+  const current = paymentMonth(today);
+  const selected = new Set(history.months);
+  return {
+    history,
+    statements: statements.filter((statement) =>
+      paymentMonth(statement.dueDate) >= current || selected.has(paymentMonth(statement.dueDate))
+      || (!statement.paidAt && compareIsoDates(statement.dueDate, today) < 0)),
+  };
+}
+
+export function isWithinMonthProjectionWindow(dueDate: IsoDate, today: IsoDate): boolean {
+  const current = paymentMonth(today);
+  const end = paymentMonth(addMonths(`${current}-01`, 12));
+  return paymentMonth(dueDate) <= end;
+}
+
 export function projectSubscriptionCharges(
   subscription: ProjectableSubscription,
   from: IsoDate,
@@ -191,6 +232,19 @@ export type MonthCardSummary = {
   complete: boolean;
   statements: Array<{ statement: MonthStatement; status: "virtual" | "paid" | "overdue" | "pending" }>;
 };
+
+export function cardCompositionPercentages(month: PaymentMonthSummary): Array<{ cardId: string; percent: number }> | null {
+  if (!month.canUseProportionalBar) return null;
+  const shares = month.cards.map((card, index) => {
+    const exact = card.total.div(month.total).times(100);
+    const rounded = exact.floor();
+    return { cardId: card.cardId, index, percent: rounded.toNumber(), remainder: exact.minus(rounded) };
+  });
+  const remaining = 100 - shares.reduce((sum, item) => sum + item.percent, 0);
+  const byRemainder = [...shares].sort((a, b) => b.remainder.comparedTo(a.remainder) || a.index - b.index);
+  for (const item of byRemainder.slice(0, remaining)) item.percent += 1;
+  return shares.map(({ cardId, percent }) => ({ cardId, percent }));
+}
 
 export function buildMonths(statements: MonthStatement[], today: IsoDate): PaymentMonthSummary[] {
   const currentMonth = monthKey(today);
