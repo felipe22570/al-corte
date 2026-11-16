@@ -35,8 +35,8 @@ pnpm build && pnpm start
 - [x] Barra apilada con importes positivos; fallback textual para cero/negativos; categorías con devoluciones negativas y leyendas accesibles. Ninguna comparación de ahorro entre mes abierto/estimado/incompleto y cerrado.
 - [x] Matriz del paso 25 completa: creación, edición, borrado, suscripciones, tarjetas, categorías, cron/TRM y cambio de día no dejan datos obsoletos al navegar.
 - [x] Enlaces históricos directos funcionan sin cargar antes la página correspondiente del inicio; huecos y límites sin enlaces rotos.
-- [ ] Rendimiento de `/` en 4G emulado dentro del objetivo del PRD (1,5 s).
-- [ ] 360 px y escritorio, claro y oscuro, revisados en producción.
+- [x] Rendimiento de `/` en 4G emulado dentro del objetivo del PRD (1,5 s).
+- [x] 360 px y escritorio, claro y oscuro, revisados en producción.
 - [x] Teclado, nombres accesibles contextualizados, IDs únicos, una sola acción primaria, foco tras pago y reflujo de etiquetas/importes largos; no confundir pruebas automatizadas con verificación manual en lector de pantalla.
 - [ ] Revisión del dueño en el celular.
 
@@ -61,4 +61,9 @@ pnpm build && pnpm start
   - Rendimiento local de `/` a 360 px: LCP 0,22 s (Fast 4G) y 0,64–0,98 s (Slow 4G); Supabase en la misma máquina, no representa producción.
   - Pasan `supabase db reset` (autorizado), 167 pruebas SQL, integración local, typecheck, lint, 349 pruebas, cobertura de dominio 100 %, build y detector. Sin cambios de esquema.
   - Pendiente para cerrar: revisión en producción a 360 px y escritorio con ambos temas, rendimiento de `/` en producción con 4G, revisión del dueño en el celular y prueba con lector de pantalla real. Requieren merge/despliegue autorizado. Contexto desactualizado sin corregir: el brief `.impeccable/surfaces/app-app-page-tsx.md` apunta a `app/(app)/page.tsx`.
-
+- 2026-11-15 — Revisión en producción tras fusionar el PR #1 en `main` con avance rápido (`3a2728b`), con autorización del dueño. Chrome DevTools en un contexto aislado con la cuenta de validación (datos QA, sin tocar la sesión del dueño); credenciales solo escritas en el formulario, nunca en archivos ni URLs.
+  - Inicio y `/meses/2026-10`, `2026-11` y `2026-12` a 360 px oscuro y 1440 px claro: sin desbordamiento horizontal, sin IDs duplicados, una sola acción primaria en el inicio y ninguna en el detalle, sin objetivos táctiles menores de 44 px en puntero grueso. Los tres meses cuadran (resumen = conceptos = categorías = tarjetas), incluido diciembre con $1.235.305.338. El vencido del mes en curso se muestra con la etiqueta, no con la alerta de meses anteriores (`overdueStatements`, intencional).
+  - Flujo de pago por teclado en el extracto vencido de «QA Visa Capital fijo»: foco al abrir, cancelar devuelve el foco, fecha futura rechazada, confirmar nombra el extracto y deja el mes Pagado sin cambiar total, abonos, cupo ni deuda; se deshizo la marca y la cuenta quedó como estaba.
+  - Rendimiento de `/` a 360 px: LCP 0,55–0,60 s en Fast 4G y 0,93 s en Slow 4G; el candidato final es contenido real (franja de tarjetas), no el skeleton. Dentro de 1,5 s.
+  - Defecto encontrado y corregido: con nombres de tarjeta largos el importe caía a una línea alineada a la izquierda en las filas compactas del inicio y en la cabecera del bloque de extractos; además quedaba un «·» colgante en «Ya facturado · Aún puede crecer». Commit `024a66e` en `main` con prueba de regresión, verificado en local con nombre largo y de nuevo en producción en ambos tamaños y temas.
+  - Pendiente para cerrar H9: revisión del dueño en su celular. La prueba con lector de pantalla real tampoco se hizo; los nombres y roles inspeccionados no la sustituyen.
