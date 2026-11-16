@@ -1,7 +1,6 @@
 import { describe, expect, it } from "vitest";
 import Decimal from "decimal.js";
 import { buildMonths, overdueStatements, type MonthStatement } from "../months";
-import { dueTone } from "@/lib/ui-status";
 
 describe("payment month regressions", () => {
   const statement = (dueDate: string, paidAt: string | null, total: string): MonthStatement => ({
@@ -20,8 +19,5 @@ describe("payment month regressions", () => {
   });
   it("adds unpaid statements in the calendar month exactly", () => {
     expect(buildMonths(statements, "2026-11-10").find((month) => month.month === "2026-11")?.pendingConfirmation.toString()).toBe("71");
-  });
-  it("assigns due tones", () => {
-    expect([6, 5, 0, -1].map((days) => dueTone(days, false))).toEqual(["neutral", "warning", "warning", "danger"]);
   });
 });

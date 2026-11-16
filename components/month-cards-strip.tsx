@@ -16,9 +16,9 @@ export function MonthCardsStrip({ cards }: { cards: MonthCardDetails[] }) {
         <p className="text-small text-muted-foreground">Deuda total registrada: <Money value={debt} currency="COP" /></p>
       </div>
       {active.length ? (
-        <div className="flex min-w-0 gap-3 overflow-x-auto pb-2">
+        <div className="flex min-w-0 gap-3 overflow-x-auto pb-2 md:grid md:grid-cols-[repeat(auto-fit,minmax(16rem,1fr))] md:overflow-visible md:pb-0">
           {active.map((card) => (
-            <Link key={card.id} href={`/tarjetas/${card.id}`} className="grid w-64 shrink-0 gap-3 rounded-xl border border-border bg-card p-4 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring">
+            <Link key={card.id} href={`/tarjetas/${card.id}`} className="grid w-64 shrink-0 gap-3 rounded-xl border border-border bg-card p-4 motion-safe:transition-colors hover:border-input md:w-auto focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring">
               <CardColorChip color={card.color} name={`${card.name} · •••• ${card.last4}`} />
               <CreditAvailability value={card.available} />
               <UtilizationBar percent={card.utilization.times(100).toNumber()} />

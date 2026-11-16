@@ -26,27 +26,29 @@ export default async function MonthsPage({ searchParams }: { searchParams: Promi
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) redirect("/login");
   const source = createSupabaseMonthSource(supabase, user.id);
+  const today = todayInBogota();
   const [overview, cards] = await Promise.all([
-    loadMonthOverview(source, todayInBogota(), { historySize: historyMonthCapacity(historial) }),
+    loadMonthOverview(source, today, { historySize: historyMonthCapacity(historial) }),
     source.loadCardDetails(),
   ]);
   const incomplete = [overview.current, ...overview.future, ...overview.history].some((month) => !month.complete);
-  const rowProps = { cards, subscriptionNames: overview.subscriptionNames };
+  const rowProps = { cards, subscriptionNames: overview.subscriptionNames, today };
+  const rowsGrid = (count: number) => count > 1 ? "grid min-w-0 gap-3 xl:grid-cols-2" : "grid min-w-0 gap-3";
   return (
     <>
       {saved === "1" && <SaveNotice />}
       <PageHeader title="Meses" subtitle="Tus tarjetas, claras antes de cada corte." action={<Link href="/movimientos/nuevo" className={buttonVariants({ className: "hidden md:inline-flex" })}><Plus aria-hidden="true" className="size-5" strokeWidth={1.75} />Nuevo gasto</Link>} />
       <div className="grid min-w-0 gap-6">
         {overview.overdue.months.size > 0 && (
-          <Alert variant="destructive">
+          <Alert variant="destructive" role="note">
             <AlertTitle>Extractos vencidos sin confirmar pago: <Money value={overview.overdue.total} currency="COP" /></AlertTitle>
-            <AlertDescription>
+            <AlertDescription className="text-foreground">
               <p>No descuenta abonos registrados. Los extractos siguen en su mes de pago.</p>
               <div className="flex flex-wrap gap-3">{[...overview.overdue.months.keys()].sort().map((month) => <Link key={month} className="underline" href={`/meses/${month}`}>{formatMonth(month, "long")}</Link>)}</div>
             </AlertDescription>
           </Alert>
         )}
-        {incomplete && <Alert variant="warning"><AlertTitle>Estimación incompleta</AlertTitle><AlertDescription>Hay cobros en USD sin convertir. <Link className="underline" href="/movimientos/nuevo">Revisa la TRM</Link>.</AlertDescription></Alert>}
+        {incomplete && <Alert variant="warning" role="note"><AlertTitle>Estimación incompleta</AlertTitle><AlertDescription className="text-foreground">Hay cobros en USD sin convertir porque no hay TRM. Para estimarlos, <Link className="underline" href="/movimientos/nuevo">registra un movimiento en USD con la TRM del día</Link>.</AlertDescription></Alert>}
         <section aria-labelledby="current-month-heading" className="grid gap-3">
           <h2 id="current-month-heading" className="text-heading">Este mes</h2>
           <MonthRow month={overview.current} {...rowProps} featured />
@@ -55,12 +57,12 @@ export default async function MonthsPage({ searchParams }: { searchParams: Promi
         {cards.length > 0 && <MonthCardsStrip cards={cards} />}
         {overview.future.length > 0 && <section aria-labelledby="future-months-heading" className="grid gap-3">
           <h2 id="future-months-heading" className="text-heading">Próximos meses</h2>
-          {overview.future.map((month) => <MonthRow key={month.month} month={month} {...rowProps} />)}
+          <div className={rowsGrid(overview.future.length)}>{overview.future.map((month) => <MonthRow key={month.month} month={month} {...rowProps} />)}</div>
         </section>}
-        {overview.hasLaterCommitments && <Alert><AlertDescription>Tienes compromisos posteriores a estos 12 meses.</AlertDescription></Alert>}
+        {overview.hasLaterCommitments && <Alert role="note"><AlertDescription>Tienes compromisos posteriores a estos 12 meses.</AlertDescription></Alert>}
         {overview.history.length > 0 && <section aria-labelledby="past-months-heading" className="grid gap-3">
           <h2 id="past-months-heading" className="text-heading">Meses anteriores</h2>
-          {overview.history.map((month) => <MonthRow key={month.month} month={month} {...rowProps} />)}
+          <div className={rowsGrid(overview.history.length)}>{overview.history.map((month) => <MonthRow key={month.month} month={month} {...rowProps} />)}</div>
           {overview.historyNextBefore && <Link className="w-fit rounded-md text-body underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring pointer-coarse:min-h-11" href={`/?historial=${historyMonthNextBlock(historial)}#past-months-heading`}>Cargar más meses</Link>}
         </section>}
       </div>

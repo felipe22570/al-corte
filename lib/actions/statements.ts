@@ -2,6 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
+import { todayInBogota } from "@/lib/domain/dates";
 import { paymentMonth } from "@/lib/domain/months";
 import { revalidateFinancialViews } from "@/lib/revalidate-views";
 import { createClient } from "@/lib/supabase/server";
@@ -31,6 +32,7 @@ export async function setStatementRealTotal(id: unknown, input: unknown) {
 export async function markStatementPaid(id: unknown, input: unknown) {
   const parsed = statementPaymentDateSchema.safeParse(input);
   if (!parsed.success) return { ok: false as const, error: "Ingresa una fecha válida." };
+  if (parsed.data > todayInBogota()) return { ok: false as const, error: "La fecha de pago no puede ser posterior a hoy." };
   return updateStatement(id, { paid_at: `${parsed.data}T05:00:00.000Z` });
 }
 

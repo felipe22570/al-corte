@@ -13,6 +13,7 @@ describe("MonthCardsStrip", () => {
     expect(html).toContain("$800");
     expect(html).toContain('href="/tarjetas/active"');
     expect(html).not.toContain("Archivada");
+    expect(html).toContain('aria-valuetext="50%"');
   });
   it("identifies over-limit credit without presenting a negative available balance", () => {
     const html = renderToStaticMarkup(<MonthCardsStrip cards={[{

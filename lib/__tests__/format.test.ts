@@ -1,5 +1,5 @@
 import { expect, it } from "vitest";
-import { formatCop, formatCopCompact, formatDateShort, formatDateWithWeekday, formatDueIn, formatMoney, formatMonth, formatPercent, formatRate, formatSignedMoney, formatSpendingComparison, formatUsd } from "@/lib/format";
+import { formatCop, formatCopCompact, formatDateShort, formatDateWithWeekday, formatMoney, formatMonth, formatPercent, formatRate, formatSignedMoney, formatSpendingComparison, formatUsd } from "@/lib/format";
 
 it("formatea dinero sin perder precisión", () => {
   expect(formatCop("1284500")).toBe("$1.284.500");
@@ -48,7 +48,7 @@ it.each([
 ])("keeps monthly comparisons meaningful for %s vs %s", (current, previous, expected) => {
   expect(formatSpendingComparison(current, previous, "2026-10")).toBe(expected);
 });
-it("formatea fechas, porcentajes y vencimientos", () => {
+it("formatea fechas y porcentajes", () => {
   expect(formatDateShort("2026-11-15", "2026-01-01")).toBe("15 nov");
   expect(formatDateShort("2025-11-15", "2026-01-01")).toBe("15 nov 2025");
   expect(formatDateWithWeekday("2024-11-15", "2024-01-01")).toBe("vie 15 nov");
@@ -57,5 +57,4 @@ it("formatea fechas, porcentajes y vencimientos", () => {
   expect(formatPercent("0")).toBe("0%");
   expect(formatPercent("1")).toBe("100%");
   expect(formatRate("0.2845")).toBe("28,45% E.A.");
-  expect([0, 1, 3, -2].map(formatDueIn)).toEqual(["hoy", "mañana", "en 3 días", "hace 2 días"]);
 });

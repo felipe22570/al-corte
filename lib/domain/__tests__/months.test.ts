@@ -1,8 +1,25 @@
 import { describe, expect, it } from "vitest";
 import Decimal from "decimal.js";
-import { availablePaymentMonths, buildMonths, cardCompositionPercentages, historyMonthCapacity, historyMonthNextBlock, historyMonthPage, monthBreakdown, monthComparison, monthDateBounds, parsePaymentMonth, overdueStatements, paymentMonth, previousPaymentMonth, projectStatements, projectSubscriptionCharges, purchaseMonthSpending, selectMonthStatementScope, statementKnownTotal, type MonthStatement } from "../months";
+import { availablePaymentMonths, buildMonths, cardCompositionPercentages, confirmedPaymentTotal, monthOpenGrowth, historyMonthCapacity, historyMonthNextBlock, historyMonthPage, monthBreakdown, monthComparison, monthDateBounds, parsePaymentMonth, overdueStatements, paymentMonth, previousPaymentMonth, projectStatements, projectSubscriptionCharges, purchaseMonthSpending, selectMonthStatementScope, statementKnownTotal, type MonthStatement } from "../months";
 import { statementPeriod } from "../statements";
 import { formatSpendingComparison } from "../../format";
+
+describe("confirmed payment total", () => {
+  it("adds only real statements marked as paid, so pending + confirmed + projected equals the month total", () => {
+    const base = { cutoffDate: "2026-10-15", dueDate: "2026-11-02", unconvertedCharges: [] };
+    const [month] = buildMonths([
+      { ...base, cardId: "a", origin: "real", paidAt: "2026-11-01", recordedTotal: new Decimal(410000), projectedTotal: new Decimal(0) },
+      { ...base, cardId: "b", origin: "real", paidAt: null, cutoffDate: "2026-11-25", dueDate: "2026-11-28", recordedTotal: new Decimal(397000), projectedTotal: new Decimal(45000) },
+      { ...base, cardId: "c", origin: "virtual", paidAt: null, recordedTotal: new Decimal(0), projectedTotal: new Decimal(18900) },
+    ], "2026-11-15");
+    const confirmed = confirmedPaymentTotal(month!);
+    expect(confirmed.toString()).toBe("410000");
+    expect(confirmed.plus(month!.pendingConfirmation).plus(month!.projected).eq(month!.total)).toBe(true);
+    expect(confirmedPaymentTotal(buildMonths([], "2026-11-15")[0]!).isZero()).toBe(true);
+    expect(monthOpenGrowth(month!).toString()).toBe("460900");
+    expect(month!.billed.plus(monthOpenGrowth(month!)).eq(month!.total)).toBe(true);
+  });
+});
 
 describe("detail month navigation", () => {
   it("keeps purchase-month spending separate and provides inclusive calendar bounds", () => {

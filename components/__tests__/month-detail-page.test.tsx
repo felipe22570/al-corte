@@ -22,7 +22,7 @@ describe("payment month detail", () => {
     state.detail = { month, previous: null, neighbors: { previous: null, next: null }, overdue: { months: new Map(), total: new Decimal(0) }, subscriptionNames: {} };
     const html = renderToStaticMarkup(await MonthDetailPage({ params: Promise.resolve({ mes: "2026-11" }) }));
     expect(html).toContain("Sin extractos");
-    expect(html).toContain("Compraste en este mes");
+    expect(html).toContain("Compraste en noviembre");
     expect(html).not.toContain(">Pagado<");
   });
 
@@ -38,10 +38,11 @@ describe("payment month detail", () => {
     expect(html.match(/Marcar como pagado ·/g)).toHaveLength(2);
     const ids = [...html.matchAll(/id="([^"]+)"/g)].map((match) => match[1]);
     expect(new Set(ids).size).toBe(ids.length);
-    const dateLabels = [...html.matchAll(/<label[^>]*for="([^"]+)"[^>]*>Fecha de pago/g)].map((match) => match[1]);
-    expect(dateLabels).toHaveLength(2);
-    for (const id of dateLabels) expect(html).toContain(`id="${id}"`);
-    expect(html.match(/>Ver extracto ·/g)).toHaveLength(2);
+    expect(html.match(/aria-expanded="false"/g)).toHaveLength(2);
+    expect(html).not.toContain("¿Cuándo lo pagaste?");
+    expect(html.match(/Aún puede recibir cargos hasta el/g)).toHaveLength(2);
+    expect(html).not.toContain("Marcado como pagado");
+    expect(html.match(/>Ver extracto<span class="sr-only"> · /g)).toHaveLength(2);
     expect(html).toContain("Aún puede crecer");
   });
 
@@ -64,7 +65,7 @@ describe("payment month detail", () => {
     expect(html).toContain("Estimación incompleta");
     expect(html).toContain("US$ 9,99");
     expect(html).toContain("Servicio");
-    expect(html).toContain("pendientes de conversión");
+    expect(html).toContain("Pendientes de conversión");
     expect(html).not.toContain("Marcar como pagado");
   });
 
@@ -81,7 +82,8 @@ describe("payment month detail", () => {
     const html = renderToStaticMarkup(await MonthDetailPage({ params: Promise.resolve({ mes: "2026-10" }) }));
     expect(html).toContain("Mercado: -20");
     expect(html).toContain("Saldo a favor");
-    expect(html).toContain("Menos que septiembre · Diferencia: -$220");
+    expect(html).toContain("Menos que septiembre · ");
+    expect(html).toContain("Diferencia: -$220");
     expect(html).not.toContain("%");
     expect(html).not.toContain("ahorraste");
   });
@@ -94,7 +96,8 @@ describe("payment month detail", () => {
     state.detail = { month, previous, neighbors: { previous: "2026-09", next: "2026-11" }, overdue: { months: new Map(), total: new Decimal(0) }, subscriptionNames: {} };
     state.cards = [{ id: "c", name: "Visa", last4: "1234", color: "card-1" }];
     const html = renderToStaticMarkup(await MonthDetailPage({ params: Promise.resolve({ mes: "2026-10" }) }));
-    expect(html).toContain("10% más que septiembre · Diferencia: $20.000");
+    expect(html).toContain("10% más que septiembre · ");
+    expect(html).toContain("Diferencia: +$20.000");
     expect(html).not.toMatch(/ahorr|gastaste/i);
   });
 });

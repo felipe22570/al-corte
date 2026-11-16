@@ -51,7 +51,7 @@ export default function DesignPage() {
       <h2 id="design-card-identity" className="text-heading">Identidad de tarjetas</h2>
       <p className="text-small text-muted-foreground">Datos de ejemplo. Cada tarjeta conserva su color junto al nombre y en la composición del mes.</p>
       <MonthCardsStrip cards={exampleCards} />
-      {exampleMonth && <MonthRow month={exampleMonth} cards={exampleCards} subscriptionNames={{}} featured />}
+      {exampleMonth && <MonthRow month={exampleMonth} cards={exampleCards} subscriptionNames={{}} today="2026-11-13" featured />}
     </section>
     <EmptyState icon={WalletCards} text="Aún no tienes tarjetas. Agrega la primera." />
     <DesignControlsPreview />

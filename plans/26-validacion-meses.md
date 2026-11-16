@@ -1,8 +1,8 @@
 # Paso 26 — Pulido y validación de H9
 
 - **Hito PRD:** H9 (parte 6 de 6)
-- **Estado:** ⬜ Pendiente
-- **Inicio:**
+- **Estado:** 🟡 En progreso
+- **Inicio:** 2026-11-15
 - **Fin:**
 - **Commit:**
 - **Depende de:** 25
@@ -14,10 +14,10 @@ Pulir las vistas nuevas con Impeccable y validar H9 completo con fixtures locale
 
 ## Tareas
 
-- [ ] `/impeccable critique` de `/` y `/meses/[mes]` contra sus briefs; corregir lo acordado con el dueño.
-- [ ] `/impeccable polish` y `/impeccable audit` de las dos vistas (accesibilidad, contraste, responsive).
-- [ ] `/impeccable document` para actualizar `DESIGN.md` con los componentes nuevos (fila de mes, franja, alerta, acción compacta de pago). Conservar las reglas y evidencias previas de accesibilidad/responsive; distinguir lo planeado de lo implementado y verificado.
-- [ ] Actualizar `PRODUCT.md` si algo del producto cambió durante la implementación.
+- [x] `/impeccable critique` de `/` y `/meses/[mes]` contra sus briefs; corregir lo acordado con el dueño.
+- [x] `/impeccable polish` y `/impeccable audit` de las dos vistas (accesibilidad, contraste, responsive).
+- [x] `/impeccable document` para actualizar `DESIGN.md` con los componentes nuevos (fila de mes, franja, alerta, acción compacta de pago). Conservar las reglas y evidencias previas de accesibilidad/responsive; distinguir lo planeado de lo implementado y verificado.
+- [x] Actualizar `PRODUCT.md` si algo del producto cambió durante la implementación.
 
 ## Verificación
 
@@ -27,17 +27,17 @@ supabase db reset && supabase test db
 pnpm build && pnpm start
 ```
 
-- [ ] Con las tarjetas QA, contrastar a mano tres meses: uno anterior, el actual y uno futuro.
-- [ ] En los tres, suma de conceptos = categorías = tarjetas = total conocido; parte real coincidente con extractos y previstos identificados aparte. Incluir ajustes, cuotas con interés, devoluciones y "Sin categoría".
-- [ ] Mes actual con cobro previsto antes del corte que se paga este mes, conversión a real por cron sin duplicación y USD sin TRM con aviso de total incompleto.
-- [ ] Confirmación independiente de abonos: ayuda visible, importe correcto, marcar/desmarcar no libera cupo ni registra pagos y `real_total` no sustituye al calculado.
-- [ ] Manejo sin compras ni suscripciones genera horizonte de 12 meses; cuotas/extractos reales posteriores muestran aviso. Actual vacío y todas las tarjetas archivadas conservan navegación e historial.
-- [ ] Barra apilada con importes positivos; fallback textual para cero/negativos; categorías con devoluciones negativas y leyendas accesibles. Ninguna comparación de ahorro entre mes abierto/estimado/incompleto y cerrado.
-- [ ] Matriz del paso 25 completa: creación, edición, borrado, suscripciones, tarjetas, categorías, cron/TRM y cambio de día no dejan datos obsoletos al navegar.
-- [ ] Enlaces históricos directos funcionan sin cargar antes la página correspondiente del inicio; huecos y límites sin enlaces rotos.
+- [x] Con las tarjetas QA, contrastar a mano tres meses: uno anterior, el actual y uno futuro.
+- [x] En los tres, suma de conceptos = categorías = tarjetas = total conocido; parte real coincidente con extractos y previstos identificados aparte. Incluir ajustes, cuotas con interés, devoluciones y "Sin categoría".
+- [x] Mes actual con cobro previsto antes del corte que se paga este mes, conversión a real por cron sin duplicación y USD sin TRM con aviso de total incompleto.
+- [x] Confirmación independiente de abonos: ayuda visible, importe correcto, marcar/desmarcar no libera cupo ni registra pagos y `real_total` no sustituye al calculado.
+- [x] Manejo sin compras ni suscripciones genera horizonte de 12 meses; cuotas/extractos reales posteriores muestran aviso. Actual vacío y todas las tarjetas archivadas conservan navegación e historial.
+- [x] Barra apilada con importes positivos; fallback textual para cero/negativos; categorías con devoluciones negativas y leyendas accesibles. Ninguna comparación de ahorro entre mes abierto/estimado/incompleto y cerrado.
+- [x] Matriz del paso 25 completa: creación, edición, borrado, suscripciones, tarjetas, categorías, cron/TRM y cambio de día no dejan datos obsoletos al navegar.
+- [x] Enlaces históricos directos funcionan sin cargar antes la página correspondiente del inicio; huecos y límites sin enlaces rotos.
 - [ ] Rendimiento de `/` en 4G emulado dentro del objetivo del PRD (1,5 s).
 - [ ] 360 px y escritorio, claro y oscuro, revisados en producción.
-- [ ] Teclado, nombres accesibles contextualizados, IDs únicos, una sola acción primaria, foco tras pago y reflujo de etiquetas/importes largos; no confundir pruebas automatizadas con verificación manual en lector de pantalla.
+- [x] Teclado, nombres accesibles contextualizados, IDs únicos, una sola acción primaria, foco tras pago y reflujo de etiquetas/importes largos; no confundir pruebas automatizadas con verificación manual en lector de pantalla.
 - [ ] Revisión del dueño en el celular.
 
 ## Criterios de terminado
@@ -50,3 +50,15 @@ pnpm build && pnpm start
 ## Notas de progreso
 
 <!-- Fecha — nota -->
+
+- 2026-11-15 — Pulido y validación local en `feat/h9-month-views`, sin commit ni despliegue. Todo con build de producción local, Supabase local y cuentas sintéticas borradas al terminar; no se leyeron ni escribieron datos de producción, así que «tarjetas QA» se sustituyó por fixtures sintéticos.
+  - Crítica dual (revisión de diseño A por vista + detector/navegador B): inicio 27/40 y detalle 26/40; detector sin hallazgos en código (`overused-font` y `cream-palette` son falsos positivos por DESIGN.md). Instantáneas en `.impeccable/critique/`. Auditoría 13/20. El dueño aprobó corregir todos los P1 y P2.
+  - Decisiones del dueño: marcar pagado sigue disponible en extractos abiertos o futuros, con aviso «Aún puede recibir cargos hasta…», la nota «Solo marca el extracto. No registra un abono ni libera cupo» y sin fechas posteriores a hoy en Bogotá (cliente y `markStatementPaid`; regla nueva no escrita en el PRD); gráfico por categoría con D17 asignado por posición y orden por importe absoluto; el inicio oculta «Pendiente de confirmar pago: $0» en meses Pagado.
+  - Cambios: `confirmedPaymentTotal` y `monthOpenGrowth` en el dominio con pruebas; `lib/month-status.ts` compartido; fila de mes con fecha de pago, «Vence en N días», facturado/puede crecer, filas compactas, barra solo con 2+ tarjetas y `aria-hidden`, «Total estimado» y dos columnas en `lg`/`xl`; franja en rejilla `auto-fit`; `MonthSummary` y `MonthStatementCard` nuevos; acción de pago compacta con foco restaurado y mensaje con el extracto; totales visibles en conceptos y categorías; avisos estáticos con `role="note"`; `aria-valuetext` en utilización; SVG de Recharts no enfocable; navegación de meses en una fila. Se retiraron `dueTone`, `trialTone`, `formatDueIn` y `DateLabel`, sin uso desde el paso 25.
+  - `DESIGN.md` combinado (no sobrescrito): componentes H9 implementados, evidencia del paso 26 separada de lo pendiente; `.impeccable/design.json` regenerado (alturas corregidas tras D-01, destino Meses, fila de mes y acción de pago). `PRODUCT.md` marca H9 implementado y la regla de fecha de pago.
+  - Verificado en Chromium: conciliación de octubre ($540.000), noviembre ($852.000) y diciembre ($311.960) entre conceptos, tarjetas y categorías, con ajuste, cuota con interés, devolución, abono aparte y «Sin categoría»; 360 px oscuro y 1440 px claro sin desbordamiento; flujo de pago por teclado (foco al abrir, cancelar, fecha futura rechazada, confirmar y deshacer actualizan el resumen sin tocar abonos). Segundo fixture: horizonte de 12 meses con solo cuota de manejo, aviso de compromisos posteriores, cron simulado dos veces = un cobro y diciembre sin doble conteo ($45.000 antes y después), enlace directo a un mes 13.º del historial con «Cargar más meses» sin cargar, huecos y último mes sin enlaces rotos, 404 en meses inválidos o fuera del horizonte, y todas las tarjetas archivadas conservan historial, deuda y navegación.
+  - Cubierto solo por pruebas automatizadas: USD sin TRM en pantalla (la TRM local es global y no se borró), fallback textual con totales cero/negativos, y edición/archivo de categorías de la matriz del paso 25 (el resto de la matriz se verificó hidratado en los pasos 24–25; tras este paso se volvió a probar el flujo de pago).
+  - Rendimiento local de `/` a 360 px: LCP 0,22 s (Fast 4G) y 0,64–0,98 s (Slow 4G); Supabase en la misma máquina, no representa producción.
+  - Pasan `supabase db reset` (autorizado), 167 pruebas SQL, integración local, typecheck, lint, 349 pruebas, cobertura de dominio 100 %, build y detector. Sin cambios de esquema.
+  - Pendiente para cerrar: revisión en producción a 360 px y escritorio con ambos temas, rendimiento de `/` en producción con 4G, revisión del dueño en el celular y prueba con lector de pantalla real. Requieren merge/despliegue autorizado. Contexto desactualizado sin corregir: el brief `.impeccable/surfaces/app-app-page-tsx.md` apunta a `app/(app)/page.tsx`.
+

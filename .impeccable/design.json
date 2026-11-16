@@ -1,44 +1,127 @@
 {
   "schemaVersion": 2,
-  "generatedAt": "2026-11-12T14:30:00Z",
+  "generatedAt": "2026-11-15T23:00:00Z",
   "title": "Design System: Al Corte",
   "extensions": {
     "colorMeta": {
-      "primary": { "role": "primary", "displayName": "Verde corte" },
-      "primary-soft": { "role": "primary", "displayName": "Verde suave de estado" },
-      "warning": { "role": "semantic", "displayName": "Ámbar de atención" },
-      "danger": { "role": "semantic", "displayName": "Rojo de problema" },
-      "surface": { "role": "neutral", "displayName": "Fondo cálido" },
-      "surface-raised": { "role": "neutral", "displayName": "Superficie de tarjeta" },
-      "ink": { "role": "neutral", "displayName": "Tinta principal" },
-      "ink-muted": { "role": "neutral", "displayName": "Tinta atenuada" },
-      "border": { "role": "neutral", "displayName": "Borde de superficie" },
-      "input": { "role": "neutral", "displayName": "Borde de campo" },
-      "card-1": { "role": "identity", "displayName": "Azul" },
-      "card-2": { "role": "identity", "displayName": "Violeta" },
-      "card-3": { "role": "identity", "displayName": "Petróleo" },
-      "card-4": { "role": "identity", "displayName": "Vino" },
-      "card-5": { "role": "identity", "displayName": "Mostaza" },
-      "card-6": { "role": "identity", "displayName": "Pizarra" }
+      "primary": {
+        "role": "primary",
+        "displayName": "Verde corte"
+      },
+      "primary-soft": {
+        "role": "primary",
+        "displayName": "Verde suave de estado"
+      },
+      "warning": {
+        "role": "semantic",
+        "displayName": "Ámbar de atención"
+      },
+      "danger": {
+        "role": "semantic",
+        "displayName": "Rojo de problema"
+      },
+      "surface": {
+        "role": "neutral",
+        "displayName": "Fondo cálido"
+      },
+      "surface-raised": {
+        "role": "neutral",
+        "displayName": "Superficie de tarjeta"
+      },
+      "ink": {
+        "role": "neutral",
+        "displayName": "Tinta principal"
+      },
+      "ink-muted": {
+        "role": "neutral",
+        "displayName": "Tinta atenuada"
+      },
+      "border": {
+        "role": "neutral",
+        "displayName": "Borde de superficie"
+      },
+      "input": {
+        "role": "neutral",
+        "displayName": "Borde de campo"
+      },
+      "card-1": {
+        "role": "identity",
+        "displayName": "Azul"
+      },
+      "card-2": {
+        "role": "identity",
+        "displayName": "Violeta"
+      },
+      "card-3": {
+        "role": "identity",
+        "displayName": "Petróleo"
+      },
+      "card-4": {
+        "role": "identity",
+        "displayName": "Vino"
+      },
+      "card-5": {
+        "role": "identity",
+        "displayName": "Mostaza"
+      },
+      "card-6": {
+        "role": "identity",
+        "displayName": "Pizarra"
+      }
     },
     "typographyMeta": {
-      "display": { "displayName": "Marca", "purpose": "Nombre Al Corte; no usar para montos." },
-      "title": { "displayName": "Título", "purpose": "Título principal de pantalla." },
-      "heading": { "displayName": "Encabezado", "purpose": "Encabezados de sección en Geist." },
-      "body": { "displayName": "Cuerpo", "purpose": "Texto general y botones." },
-      "input": { "displayName": "Campo", "purpose": "Texto de controles que evita zoom en iOS." },
-      "small": { "displayName": "Ayuda", "purpose": "Fechas, subtítulos y etiquetas." },
-      "amount-lg": { "displayName": "Monto protagonista", "purpose": "Importe principal con cifras tabulares." },
-      "amount": { "displayName": "Monto", "purpose": "Importes alineados a la derecha en listas y tablas; cifras tabulares." }
+      "display": {
+        "displayName": "Marca",
+        "purpose": "Nombre Al Corte; no usar para montos."
+      },
+      "title": {
+        "displayName": "Título",
+        "purpose": "Título principal de pantalla."
+      },
+      "heading": {
+        "displayName": "Encabezado",
+        "purpose": "Encabezados de sección en Geist."
+      },
+      "body": {
+        "displayName": "Cuerpo",
+        "purpose": "Texto general y botones."
+      },
+      "input": {
+        "displayName": "Campo",
+        "purpose": "Texto de controles que evita zoom en iOS."
+      },
+      "small": {
+        "displayName": "Ayuda",
+        "purpose": "Fechas, subtítulos y etiquetas."
+      },
+      "amount-lg": {
+        "displayName": "Monto protagonista",
+        "purpose": "Importe principal con cifras tabulares."
+      },
+      "amount": {
+        "displayName": "Monto",
+        "purpose": "Importes alineados a la derecha en listas y tablas; cifras tabulares."
+      }
     },
     "shadows": [
-      { "name": "sheet-observed", "value": "var(--shadow-lg)", "purpose": "Sombra Tailwind observada en Sheet; no es una escala propia de Al Corte ni se permite en tarjetas." }
+      {
+        "name": "sheet-observed",
+        "value": "var(--shadow-lg)",
+        "purpose": "Sombra Tailwind observada en Sheet; no es una escala propia de Al Corte ni se permite en tarjetas."
+      }
     ],
     "motion": [
-      { "name": "reduced-chart-tooltip", "value": "none", "purpose": "Transición del tooltip Recharts al solicitar prefers-reduced-motion: reduce." }
+      {
+        "name": "reduced-chart-tooltip",
+        "value": "none",
+        "purpose": "Transición del tooltip Recharts al solicitar prefers-reduced-motion: reduce."
+      }
     ],
     "breakpoints": [
-      { "name": "md", "value": "768px" }
+      {
+        "name": "md",
+        "value": "768px"
+      }
     ]
   },
   "components": [
@@ -46,59 +129,59 @@
       "name": "Botón primario",
       "kind": "button",
       "refersTo": "button-primary",
-      "description": "Variante default observada. La altura uniforme actual de 44 px es la desviación D-01, no el contrato de escritorio.",
+      "description": "Variante default: única acción principal por pantalla. 40 px en escritorio y 44 px en puntero grueso.",
       "html": "<button class=\"ds-button-primary\">Guardar</button>",
-      "css": ".ds-button-primary{display:inline-flex;align-items:center;justify-content:center;gap:8px;height:44px;padding:0 16px;border:1px solid transparent;border-radius:var(--radius-md);background:var(--primary);color:var(--primary-foreground);font-family:var(--font-sans);font-size:15px;line-height:22px;font-weight:500;white-space:nowrap;outline:none}.ds-button-primary:hover{background:color-mix(in oklab,var(--primary) 80%,transparent)}.ds-button-primary:focus-visible{border-color:var(--ring);outline:2px solid color-mix(in oklab,var(--ring) 50%,transparent);outline-offset:0}.ds-button-primary:disabled{pointer-events:none;opacity:.5}"
+      "css": ".ds-button-primary{display:inline-flex;align-items:center;justify-content:center;gap:8px;height:40px;padding:0 16px;border:1px solid transparent;border-radius:var(--radius-md);background:var(--primary);color:var(--primary-foreground);font-family:var(--font-sans);font-size:15px;line-height:22px;font-weight:500;white-space:nowrap;outline:none}.ds-button-primary:hover{background:color-mix(in oklab,var(--primary) 80%,transparent)}.ds-button-primary:focus-visible{border-color:var(--ring);outline:2px solid color-mix(in oklab,var(--ring) 50%,transparent);outline-offset:0}.ds-button-primary:disabled{pointer-events:none;opacity:.5}@media (pointer:coarse){.ds-button-primary{height:44px}}"
     },
     {
       "name": "Botón outline",
       "kind": "button",
       "refersTo": "button-outline",
-      "description": "Variante outline clara y oscura; altura actual registrada como D-01.",
+      "description": "Variante outline clara y oscura; acción secundaria, también usada por la acción compacta de pago.",
       "html": "<button class=\"ds-button-outline\">Cancelar</button>",
-      "css": ".ds-button-outline{display:inline-flex;align-items:center;justify-content:center;height:44px;padding:0 16px;border:1px solid var(--border);border-radius:var(--radius-md);background:var(--background);color:var(--foreground);font-family:var(--font-sans);font-size:15px;line-height:22px;font-weight:500;outline:none}.ds-button-outline:hover,.ds-button-outline[aria-expanded=true]{background:var(--muted);color:var(--foreground)}:host-context(.dark) .ds-button-outline{border-color:var(--input);background:color-mix(in oklab,var(--input) 30%,transparent)}:host-context(.dark) .ds-button-outline:hover{background:color-mix(in oklab,var(--input) 50%,transparent)}.ds-button-outline:focus-visible{border-color:var(--ring);outline:2px solid color-mix(in oklab,var(--ring) 50%,transparent)}.ds-button-outline:disabled{pointer-events:none;opacity:.5}"
+      "css": ".ds-button-outline{display:inline-flex;align-items:center;justify-content:center;height:40px;padding:0 16px;border:1px solid var(--border);border-radius:var(--radius-md);background:var(--background);color:var(--foreground);font-family:var(--font-sans);font-size:15px;line-height:22px;font-weight:500;outline:none}.ds-button-outline:hover,.ds-button-outline[aria-expanded=true]{background:var(--muted);color:var(--foreground)}:host-context(.dark) .ds-button-outline{border-color:var(--input);background:color-mix(in oklab,var(--input) 30%,transparent)}:host-context(.dark) .ds-button-outline:hover{background:color-mix(in oklab,var(--input) 50%,transparent)}.ds-button-outline:focus-visible{border-color:var(--ring);outline:2px solid color-mix(in oklab,var(--ring) 50%,transparent)}.ds-button-outline:disabled{pointer-events:none;opacity:.5}@media (pointer:coarse){.ds-button-outline{height:44px}}"
     },
     {
       "name": "Botón secundario",
       "kind": "button",
-      "description": "Variante secondary observada; no constituye un segundo primario. Altura actual D-01.",
+      "description": "Variante secondary; no constituye un segundo primario.",
       "html": "<button class=\"ds-button-secondary\">Ver detalle</button>",
-      "css": ".ds-button-secondary{display:inline-flex;align-items:center;justify-content:center;height:44px;padding:0 16px;border:1px solid transparent;border-radius:var(--radius-md);background:var(--secondary);color:var(--secondary-foreground);font-family:var(--font-sans);font-size:15px;line-height:22px;font-weight:500;outline:none}.ds-button-secondary:hover{background:var(--muted)}.ds-button-secondary[aria-expanded=true]{background:var(--secondary);color:var(--secondary-foreground)}.ds-button-secondary:focus-visible{border-color:var(--ring);outline:2px solid color-mix(in oklab,var(--ring) 50%,transparent)}.ds-button-secondary:disabled{pointer-events:none;opacity:.5}"
+      "css": ".ds-button-secondary{display:inline-flex;align-items:center;justify-content:center;height:40px;padding:0 16px;border:1px solid transparent;border-radius:var(--radius-md);background:var(--secondary);color:var(--secondary-foreground);font-family:var(--font-sans);font-size:15px;line-height:22px;font-weight:500;outline:none}.ds-button-secondary:hover{background:var(--muted)}.ds-button-secondary[aria-expanded=true]{background:var(--secondary);color:var(--secondary-foreground)}.ds-button-secondary:focus-visible{border-color:var(--ring);outline:2px solid color-mix(in oklab,var(--ring) 50%,transparent)}.ds-button-secondary:disabled{pointer-events:none;opacity:.5}@media (pointer:coarse){.ds-button-secondary{height:44px}}"
     },
     {
       "name": "Botón ghost",
       "kind": "button",
-      "description": "Acción de menor jerarquía, sin fondo en reposo. Altura actual D-01.",
+      "description": "Acción de menor jerarquía, sin fondo en reposo (por ejemplo, Cancelar).",
       "html": "<button class=\"ds-button-ghost\">Editar</button>",
-      "css": ".ds-button-ghost{display:inline-flex;align-items:center;justify-content:center;height:44px;padding:0 16px;border:1px solid transparent;border-radius:var(--radius-md);background:transparent;color:var(--foreground);font-family:var(--font-sans);font-size:15px;line-height:22px;font-weight:500;outline:none}.ds-button-ghost:hover,.ds-button-ghost[aria-expanded=true]{background:var(--muted);color:var(--foreground)}:host-context(.dark) .ds-button-ghost:hover{background:color-mix(in oklab,var(--muted) 50%,transparent)}.ds-button-ghost:focus-visible{border-color:var(--ring);outline:2px solid color-mix(in oklab,var(--ring) 50%,transparent)}.ds-button-ghost:disabled{pointer-events:none;opacity:.5}"
+      "css": ".ds-button-ghost{display:inline-flex;align-items:center;justify-content:center;height:40px;padding:0 16px;border:1px solid transparent;border-radius:var(--radius-md);background:transparent;color:var(--foreground);font-family:var(--font-sans);font-size:15px;line-height:22px;font-weight:500;outline:none}.ds-button-ghost:hover,.ds-button-ghost[aria-expanded=true]{background:var(--muted);color:var(--foreground)}:host-context(.dark) .ds-button-ghost:hover{background:color-mix(in oklab,var(--muted) 50%,transparent)}.ds-button-ghost:focus-visible{border-color:var(--ring);outline:2px solid color-mix(in oklab,var(--ring) 50%,transparent)}.ds-button-ghost:disabled{pointer-events:none;opacity:.5}@media (pointer:coarse){.ds-button-ghost{height:44px}}"
     },
     {
       "name": "Botón destructivo",
       "kind": "button",
-      "description": "Acción destructiva con tinta y fondo suave de peligro. Altura actual D-01.",
+      "description": "Acción destructiva con tinta y fondo suave de peligro, nunca un segundo primario.",
       "html": "<button class=\"ds-button-destructive\">Eliminar</button>",
-      "css": ".ds-button-destructive{display:inline-flex;align-items:center;justify-content:center;height:44px;padding:0 16px;border:1px solid transparent;border-radius:var(--radius-md);background:color-mix(in oklab,var(--destructive) 10%,transparent);color:var(--destructive);font-family:var(--font-sans);font-size:15px;line-height:22px;font-weight:500;outline:none}.ds-button-destructive:hover{background:color-mix(in oklab,var(--destructive) 20%,transparent)}.ds-button-destructive:focus-visible{border-color:color-mix(in oklab,var(--destructive) 40%,transparent);outline:2px solid color-mix(in oklab,var(--destructive) 20%,transparent)}:host-context(.dark) .ds-button-destructive{background:color-mix(in oklab,var(--destructive) 20%,transparent)}:host-context(.dark) .ds-button-destructive:hover{background:color-mix(in oklab,var(--destructive) 30%,transparent)}:host-context(.dark) .ds-button-destructive:focus-visible{outline-color:color-mix(in oklab,var(--destructive) 40%,transparent)}.ds-button-destructive:disabled{pointer-events:none;opacity:.5}"
+      "css": ".ds-button-destructive{display:inline-flex;align-items:center;justify-content:center;height:40px;padding:0 16px;border:1px solid transparent;border-radius:var(--radius-md);background:color-mix(in oklab,var(--destructive) 10%,transparent);color:var(--destructive);font-family:var(--font-sans);font-size:15px;line-height:22px;font-weight:500;outline:none}.ds-button-destructive:hover{background:color-mix(in oklab,var(--destructive) 20%,transparent)}.ds-button-destructive:focus-visible{border-color:color-mix(in oklab,var(--destructive) 40%,transparent);outline:2px solid color-mix(in oklab,var(--destructive) 20%,transparent)}:host-context(.dark) .ds-button-destructive{background:color-mix(in oklab,var(--destructive) 20%,transparent)}:host-context(.dark) .ds-button-destructive:hover{background:color-mix(in oklab,var(--destructive) 30%,transparent)}:host-context(.dark) .ds-button-destructive:focus-visible{outline-color:color-mix(in oklab,var(--destructive) 40%,transparent)}.ds-button-destructive:disabled{pointer-events:none;opacity:.5}@media (pointer:coarse){.ds-button-destructive{height:44px}}"
     },
     {
       "name": "Botón link",
       "kind": "button",
-      "description": "Variante link del botón, no un enlace de navegación. Altura actual D-01.",
+      "description": "Variante link del botón, no un enlace de navegación.",
       "html": "<button class=\"ds-button-link\">Más opciones</button>",
-      "css": ".ds-button-link{display:inline-flex;align-items:center;justify-content:center;height:44px;padding:0 16px;border:1px solid transparent;border-radius:var(--radius-md);background:transparent;color:var(--primary);font-family:var(--font-sans);font-size:15px;line-height:22px;font-weight:500;text-underline-offset:4px;outline:none}.ds-button-link:hover{text-decoration:underline}.ds-button-link:focus-visible{border-color:var(--ring);outline:2px solid color-mix(in oklab,var(--ring) 50%,transparent)}.ds-button-link:disabled{pointer-events:none;opacity:.5}"
+      "css": ".ds-button-link{display:inline-flex;align-items:center;justify-content:center;height:40px;padding:0 16px;border:1px solid transparent;border-radius:var(--radius-md);background:transparent;color:var(--primary);font-family:var(--font-sans);font-size:15px;line-height:22px;font-weight:500;text-underline-offset:4px;outline:none}.ds-button-link:hover{text-decoration:underline}.ds-button-link:focus-visible{border-color:var(--ring);outline:2px solid color-mix(in oklab,var(--ring) 50%,transparent)}.ds-button-link:disabled{pointer-events:none;opacity:.5}@media (pointer:coarse){.ds-button-link{height:44px}}"
     },
     {
       "name": "Campo de texto",
       "kind": "input",
       "refersTo": "field",
-      "description": "Input observado con borde de campo y texto de 16 px. Altura actual D-01; no representa un Select inexistente.",
+      "description": "Input con borde de campo y texto de 16 px; 40 px en escritorio y 44 px en puntero grueso.",
       "html": "<label class=\"ds-field-label\">Comercio<input class=\"ds-input\" placeholder=\"Nombre del comercio\"></label>",
-      "css": ".ds-field-label{display:flex;flex-direction:column;gap:8px;color:var(--foreground);font-family:var(--font-sans);font-size:13px;line-height:18px}.ds-input{height:44px;width:100%;min-width:0;border:1px solid var(--input);border-radius:var(--radius-md);background:var(--card);padding:0 12px;color:var(--foreground);font-family:var(--font-sans);font-size:16px;line-height:24px;outline:none}.ds-input::placeholder{color:var(--muted-foreground)}.ds-input:focus-visible{border-color:var(--ring);outline:2px solid color-mix(in oklab,var(--ring) 50%,transparent)}.ds-input[aria-invalid=true]{border-color:var(--destructive)}.ds-input:disabled{cursor:not-allowed;opacity:.5}"
+      "css": ".ds-field-label{display:flex;flex-direction:column;gap:8px;color:var(--foreground);font-family:var(--font-sans);font-size:13px;line-height:18px}.ds-input{height:40px;width:100%;min-width:0;border:1px solid var(--input);border-radius:var(--radius-md);background:var(--card);padding:0 12px;color:var(--foreground);font-family:var(--font-sans);font-size:16px;line-height:24px;outline:none}.ds-input::placeholder{color:var(--muted-foreground)}.ds-input:focus-visible{border-color:var(--ring);outline:2px solid color-mix(in oklab,var(--ring) 50%,transparent)}.ds-input[aria-invalid=true]{border-color:var(--destructive)}.ds-input:disabled{cursor:not-allowed;opacity:.5}@media (pointer:coarse){.ds-input{height:44px}}"
     },
     {
       "name": "Navegación lateral",
       "kind": "nav",
-      "description": "Muestra de la selección neutra en AppNav; no representa la composición completa del lateral ni de la navegación móvil.",
-      "html": "<nav class=\"ds-nav\" aria-label=\"Navegación de muestra\"><a class=\"ds-nav-item\" href=\"/\" aria-current=\"page\"><svg width=\"20\" height=\"20\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.75\" aria-hidden=\"true\"><rect x=\"3\" y=\"3\" width=\"7\" height=\"9\" rx=\"1\"/><rect x=\"14\" y=\"3\" width=\"7\" height=\"5\" rx=\"1\"/><rect x=\"14\" y=\"12\" width=\"7\" height=\"9\" rx=\"1\"/><rect x=\"3\" y=\"16\" width=\"7\" height=\"5\" rx=\"1\"/></svg>Tablero</a><a class=\"ds-nav-item\" href=\"/movimientos\">Movimientos</a></nav>",
+      "description": "Muestra de la selección neutra en AppNav con el destino Meses activo; no representa la composición completa del lateral ni de la navegación móvil.",
+      "html": "<nav class=\"ds-nav\" aria-label=\"Navegación de muestra\"><a class=\"ds-nav-item\" href=\"/\" aria-current=\"page\"><svg width=\"20\" height=\"20\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.75\" aria-hidden=\"true\"><rect x=\"3\" y=\"3\" width=\"7\" height=\"9\" rx=\"1\"/><rect x=\"14\" y=\"3\" width=\"7\" height=\"5\" rx=\"1\"/><rect x=\"14\" y=\"12\" width=\"7\" height=\"9\" rx=\"1\"/><rect x=\"3\" y=\"16\" width=\"7\" height=\"5\" rx=\"1\"/></svg>Meses</a><a class=\"ds-nav-item\" href=\"/movimientos\">Movimientos</a></nav>",
       "css": ".ds-nav{display:flex;flex-direction:column;gap:8px;background:var(--card);font-family:var(--font-sans)}.ds-nav-item{display:flex;align-items:center;gap:12px;min-height:44px;padding:0 12px;border-radius:var(--radius-md);font-size:15px;line-height:22px;text-decoration:none;color:var(--muted-foreground);outline:none}.ds-nav-item[aria-current=page]{background:var(--secondary);font-weight:600;color:var(--foreground)}.ds-nav-item:not([aria-current=page]):hover{background:var(--muted);color:var(--foreground)}.ds-nav-item:focus-visible{outline:2px solid var(--ring)}"
     },
     {
@@ -116,6 +199,21 @@
       "description": "Superficie plana con borde, monto tabular y sin sombra; patrón presente en los resúmenes y el extracto.",
       "html": "<section class=\"ds-card\"><h2 class=\"ds-card-title\">Total calculado</h2><p class=\"ds-card-amount\">$1.284.500</p><p class=\"ds-card-description\">Corte del extracto</p></section>",
       "css": ".ds-card{display:flex;flex-direction:column;gap:16px;padding:16px;border:1px solid var(--border);border-radius:var(--radius-xl);background:var(--card);color:var(--foreground);font-family:var(--font-sans)}.ds-card-title{margin:0;font-size:17px;line-height:24px;font-weight:600}.ds-card-amount{margin:0;font-size:30px;line-height:36px;font-weight:600;letter-spacing:-.01em;font-variant-numeric:tabular-nums}.ds-card-description{margin:0;font-size:13px;line-height:18px;color:var(--muted-foreground)}"
+    },
+    {
+      "name": "Fila de mes",
+      "kind": "card",
+      "refersTo": "card",
+      "description": "Mes de pago enlazado al detalle: estado con texto, total a la derecha, pendiente con ayuda D26 y composición por tarjeta con chip, fecha de pago e importe. Sin sombra; hover solo cambia el borde.",
+      "html": "<a class=\"ds-month\" href=\"#\"><div class=\"ds-month-head\"><div><h3 class=\"ds-month-name\">Noviembre 2026</h3><span class=\"ds-month-status\">Pendiente</span></div><div class=\"ds-month-total\"><p class=\"ds-month-label\">Total del mes</p><p class=\"ds-month-amount\">$852.000</p></div></div><p class=\"ds-month-line\">Pendiente de confirmar pago: <span class=\"ds-month-num\">$397.000</span></p><p class=\"ds-month-help\">Suma de extractos sin marcar como pagados. No descuenta abonos registrados.</p><div class=\"ds-month-bar\" aria-hidden=\"true\"><span style=\"width:52%;background:var(--card-1)\"></span><span style=\"width:48%;background:var(--card-4)\"></span></div><div class=\"ds-month-card\"><span class=\"ds-month-chip\"><i style=\"background:var(--card-1)\"></i>Visa Oro · •••• 4821</span><span class=\"ds-month-help\">pago 18 nov</span><span class=\"ds-month-soon\">Vence en 3 días</span><span class=\"ds-month-num\">$442.000</span></div></a>",
+      "css": ".ds-month{display:grid;gap:12px;padding:16px;border:1px solid var(--border);border-radius:var(--radius-xl);background:var(--card);color:var(--foreground);font-family:var(--font-sans);text-decoration:none;transition:border-color .15s}.ds-month:hover{border-color:var(--input)}.ds-month:focus-visible{outline:2px solid var(--ring);outline-offset:2px}.ds-month-head{display:flex;flex-wrap:wrap;justify-content:space-between;gap:16px}.ds-month-name{margin:0 0 4px;font-size:17px;line-height:24px;font-weight:600}.ds-month-status{display:inline-flex;border-radius:var(--radius-sm);padding:4px 8px;background:var(--secondary);color:var(--foreground);font-size:13px;line-height:18px}.ds-month-total{text-align:right}.ds-month-label,.ds-month-help{margin:0;font-size:13px;line-height:18px;color:var(--muted-foreground)}.ds-month-amount{margin:0;font-size:30px;line-height:36px;font-weight:600;letter-spacing:-.01em;font-variant-numeric:tabular-nums}.ds-month-line{margin:0;font-size:13px;line-height:18px}.ds-month-num{font-size:15px;line-height:22px;font-weight:500;font-variant-numeric:tabular-nums}.ds-month-bar{display:flex;height:8px;overflow:hidden;border-radius:9999px;background:var(--secondary)}.ds-month-card{display:flex;flex-wrap:wrap;align-items:center;gap:4px 8px}.ds-month-card .ds-month-num{margin-left:auto}.ds-month-chip{display:inline-flex;align-items:center;gap:8px;font-size:13px;line-height:18px}.ds-month-chip i{width:8px;height:8px;border-radius:9999px}.ds-month-soon{display:inline-flex;border-radius:var(--radius-sm);padding:4px 8px;background:var(--warning-soft);color:var(--warning);font-size:13px;line-height:18px}@media (prefers-reduced-motion:reduce){.ds-month{transition:none}}"
+    },
+    {
+      "name": "Acción compacta de pago",
+      "kind": "custom",
+      "description": "Marca un extracto real como pagado sin registrar un abono: botón outline que despliega fecha, nota aclaratoria, Confirmar y Cancelar. Sin fechas posteriores a hoy.",
+      "html": "<div class=\"ds-pay\"><p class=\"ds-pay-help\">Aún puede recibir cargos hasta el 25 nov.</p><div class=\"ds-pay-panel\"><label class=\"ds-pay-label\" for=\"ds-pay-date\">¿Cuándo lo pagaste?</label><input class=\"ds-pay-input\" id=\"ds-pay-date\" inputmode=\"numeric\" value=\"15/11/2026\"><p class=\"ds-pay-help\">Solo marca el extracto. No registra un abono ni libera cupo.</p><div class=\"ds-pay-actions\"><button class=\"ds-pay-btn\">Confirmar</button><button class=\"ds-pay-btn ds-pay-ghost\">Cancelar</button></div></div></div>",
+      "css": ".ds-pay{display:grid;gap:8px;font-family:var(--font-sans);color:var(--foreground)}.ds-pay-panel{display:grid;gap:12px;padding:12px;border:1px solid var(--border);border-radius:var(--radius-md)}.ds-pay-label{font-size:15px;line-height:22px;font-weight:500}.ds-pay-input{height:40px;padding:0 12px;border:1px solid var(--input);border-radius:var(--radius-md);background:var(--card);color:var(--foreground);font-family:inherit;font-size:16px;line-height:24px}.ds-pay-input:focus-visible{border-color:var(--ring);outline:2px solid color-mix(in oklab,var(--ring) 50%,transparent)}.ds-pay-help{margin:0;font-size:13px;line-height:18px;color:var(--muted-foreground)}.ds-pay-actions{display:flex;flex-wrap:wrap;gap:8px}.ds-pay-btn{height:40px;padding:0 16px;border:1px solid var(--border);border-radius:var(--radius-md);background:var(--background);color:var(--foreground);font-family:inherit;font-size:15px;line-height:22px;font-weight:500}.ds-pay-btn:hover{background:var(--muted)}.ds-pay-ghost{border-color:transparent;background:transparent}.ds-pay-btn:focus-visible{border-color:var(--ring);outline:2px solid color-mix(in oklab,var(--ring) 50%,transparent)}@media (pointer:coarse){.ds-pay-btn,.ds-pay-input{height:44px}}"
     }
   ],
   "narrative": {
@@ -129,9 +227,21 @@
       "Mismo vocabulario de tokens en claro y oscuro."
     ],
     "rules": [
-      { "name": "The Semantic Color Rule", "body": "Ningún color de estado es decorativo. Si no existe un token adecuado, resolverlo en la fuente de verdad antes de usarlo; no inventar un literal en el componente.", "section": "colors" },
-      { "name": "The Number First Rule", "body": "Cada pantalla de consulta debe dejar claro su monto protagonista con `text-amount-lg`; no competir con varios importes del mismo énfasis.", "section": "typography" },
-      { "name": "The Borders, Not Shadows Rule", "body": "Las superficies se separan con bordes de un píxel y los tokens `background` / `card`, no con sombras. No añadir sombra a tarjetas, botones, barras de navegación, gráficos ni tooltips ad hoc.", "section": "elevation" }
+      {
+        "name": "The Semantic Color Rule",
+        "body": "Ningún color de estado es decorativo. Si no existe un token adecuado, resolverlo en la fuente de verdad antes de usarlo; no inventar un literal en el componente.",
+        "section": "colors"
+      },
+      {
+        "name": "The Number First Rule",
+        "body": "Cada pantalla de consulta debe dejar claro su monto protagonista con `text-amount-lg`; no competir con varios importes del mismo énfasis.",
+        "section": "typography"
+      },
+      {
+        "name": "The Borders, Not Shadows Rule",
+        "body": "Las superficies se separan con bordes de un píxel y los tokens `background` / `card`, no con sombras. No añadir sombra a tarjetas, botones, barras de navegación, gráficos ni tooltips ad hoc.",
+        "section": "elevation"
+      }
     ],
     "dos": [
       "**Do** reutilizar los tokens de `app/globals.css`, las utilidades de texto y los componentes existentes cuando respeten las reglas anteriores.",

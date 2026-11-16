@@ -16,6 +16,7 @@ function mockClient() {
 it("validates amounts and dates before touching the database", async () => {
   expect((await setStatementRealTotal(id, "-1")).ok).toBe(false);
   expect((await markStatementPaid(id, "2026-02-30")).ok).toBe(false);
+  expect(await markStatementPaid(id, "2099-01-01")).toEqual({ ok: false, error: "La fecha de pago no puede ser posterior a hoy." });
   expect(mocks.createClient).not.toHaveBeenCalled();
 });
 it("stores the real amount for the authenticated owner", async () => {

@@ -16,7 +16,7 @@ describe("functional color roles", () => {
   it.each(CARD_COLORS)("keeps %s on the month composition and chip, not the amount or status", (color) => {
     const card = { id: "card", color, name: "Visa principal", last4: "1234", bank: "Banco de ejemplo", archived: false, cutoffDay: 15, paymentDay: 28, handlingFee: new Decimal(0), available: new Decimal(3750000), used: new Decimal(1250000), utilization: new Decimal("0.25") };
     const [month] = buildMonths([{ cardId: "card", origin: "real", cutoffDate: "2026-11-15", dueDate: "2026-11-28", paidAt: null, recordedTotal: new Decimal(1250000), projectedTotal: new Decimal(0), unconvertedCharges: [] }], "2026-11-13");
-    const html = renderToStaticMarkup(<><MonthCardsStrip cards={[card]} /><MonthRow month={month!} cards={[card]} subscriptionNames={{}} featured /></>);
+    const html = renderToStaticMarkup(<><MonthCardsStrip cards={[card]} /><MonthRow month={month!} cards={[card]} subscriptionNames={{}} today="2026-11-13" featured /></>);
     expect(html).toContain(`bg-${color}`);
     expect(html).toMatch(new RegExp(`aria-hidden="true" class="[^"]*size-2 shrink-0[^"]*bg-${color}`));
     expect(html).toContain("Visa principal · •••• 1234");

@@ -53,7 +53,7 @@ Prompt sugerido para el agente al iniciar un paso:
 | 23 | [Inicio: lista de meses](23-lista-meses.md) | H9 | ✅ | Ver historial de git |
 | 24 | [Detalle de un mes](24-detalle-mes.md) | H9 | ✅ | Ver historial de git |
 | 25 | [Ajuste de vistas relacionadas y retiro del tablero](25-ajuste-vistas.md) | H9 | ✅ | Ver historial de git |
-| 26 | [Pulido y validación de H9](26-validacion-meses.md) | H9 | ⬜ | |
+| 26 | [Pulido y validación de H9](26-validacion-meses.md) | H9 | 🟡 | |
 
 **MVP cerrado el 12 de noviembre de 2026 por aprobación explícita del dueño con las limitaciones del paso 20.** Los veinte pasos están en ✅. Pasan 117 pruebas de Vitest, 167 pruebas SQL, cobertura de dominio 100 %, build y lint. La revisión adicional con la extensión real axe DevTools cubrió 52 combinaciones sin fallas confirmadas; los casos de contraste y foco se revisaron aparte. El cron remoto se ejecutó a las 05:00 de Bogotá y generó un solo cobro de 25.000 COP para la suscripción de prueba. La etiqueta `mvp` identifica el commit de cierre.
 

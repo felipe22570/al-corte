@@ -185,7 +185,7 @@ Los casos de presupuesto de `AGENTS.md` describen el lenguaje de estado, no auto
 - `card-1` azul, `card-2` violeta, `card-3` petróleo, `card-4` vino, `card-5` mostaza y `card-6` pizarra.
 - Guardar la clave (`card-3`), no un color literal. Usarla únicamente en el chip junto al nombre, la franja de la tarjeta y su serie en gráficos, acompañada del nombre o los últimos cuatro dígitos.
 - Recharts consume `var(--card-N)` o `var(--chart-N)`; los seis `chart-N` son alias de las tarjetas. Rejillas con `var(--border)` y etiquetas con `var(--muted-foreground)`.
-- Categorías sin color propio en los datos, formularios y lista: icono Lucide y nombre (D11). Por D17, el gráfico por categoría usa `chart-1` a `chart-5`, con asignación determinista por ID y los mismos colores en sus iconos de leyenda; cada categoría conserva nombre y valor. No utiliza el token gris ni modifica `categories.color`.
+- Categorías sin color propio en los datos, formularios y lista: icono Lucide y nombre (D11). Por D17, el gráfico por categoría usa `chart-1` a `chart-5` y los mismos colores en sus iconos de leyenda; cada categoría conserva nombre y valor. Desde el paso 26, las filas se ordenan por importe absoluto (conservando el signo) y el color se asigna por posición dentro del gráfico, así que hasta cinco categorías nunca comparten tono. El color de una categoría puede cambiar entre meses; no tiene identidad propia. No utiliza el token gris ni modifica `categories.color`.
 - El tema usa `.dark` en `<html>` mediante next-themes; respetar la preferencia Sistema. No crear paletas locales por componente.
 
 **The Semantic Color Rule.** Ningún color de estado es decorativo. Si no existe un token adecuado, resolverlo en la fuente de verdad antes de usarlo; no inventar un literal en el componente.
@@ -221,7 +221,7 @@ Todo formato pasa por `lib/format.ts`: COP sin decimales ni espacio después de 
 - Retícula de 4 px. Padding de tarjetas y margen lateral móvil de 16 px (`p-4` / `px-4`); separación de secciones de 24 px (`gap-6`); 8 px para relaciones próximas y 12–16 px dentro de grupos.
 - Contenido centrado en el área disponible **a la derecha** de la barra lateral. Encabezado y contenido comparten un mismo ancho máximo. Las pantallas de consulta pueden usar dos columnas cuando haya espacio; no imponerlas en 360 px.
 - El layout protegido desplaza el contenedor exterior desde `md` y centra un `main` común de hasta 1024 px (`max-w-5xl`); no limitar solo el cuerpo de cada página a un ancho distinto del encabezado. `PageHeader` permite envolver títulos largos y agrupa las acciones por separado.
-- Navegación inferior en celular, lateral desde `md` (768 px en Tailwind actual). La implementación tiene barra lateral de 256 px y cuatro destinos. Actualmente el primero es Tablero; H9, todavía pendiente, lo sustituirá por Meses junto a Movimientos, Suscripciones y Ajustes (D25).
+- Navegación inferior en celular, lateral desde `md` (768 px en Tailwind actual). La implementación tiene barra lateral de 256 px y cuatro destinos: Meses (`/`), Movimientos, Suscripciones y Ajustes (D25). La marca de la barra lateral también lleva a `/` con el nombre accesible «Al Corte, ir a meses».
 - Reservar espacio para la navegación fija, «Nuevo gasto» y `env(safe-area-inset-bottom)`. No ocultar la última fila o acción detrás de elementos fijos.
 - Objetivos táctiles de al menos 44 × 44 px con `pointer-coarse:`. En escritorio, botones y campos de 36–40 px (`h-9` / `h-10`). El requisito táctil no autoriza convertir todos los tamaños de escritorio en 44 px.
 - Las hojas se presentan abajo en móvil y a la derecha en escritorio; contenido desplazable dentro del alto disponible. La hoja actual limita su alto móvil a `90dvh` y su ancho de escritorio a `max-w-lg`.
@@ -286,7 +286,7 @@ Superficies planas con fondo `card`, borde fino, radio amplio y padding de 16 px
 
 `StatusBadge` usa etiqueta textual, radio pequeño y padding de 8 × 4 px; elegir `ok`, `warning`, `danger` o `neutral` según el estado real. Su ancho se ajusta al texto (`w-fit`) sin estirarse en columnas; `max-w-full` y `wrap-anywhere` permiten envolver nombres largos sin desbordar. `CardColorChip` combina un punto de 8 px con nombre o últimos cuatro dígitos. No intercambiar color de tarjeta y color de estado.
 
-`UtilizationBar` muestra el porcentaje en `StatusBadge` con el par suave correspondiente: menos del 30 % positivo, entre 30 % y 70 % atención, más del 70 % problema. La barra de 8 px usa pista secundaria y relleno neutro en utilización baja, ámbar o rojo cuando hay atención o problema; no compite con el verde sólido de la acción principal. Conserva `role="progressbar"` y límites accesibles. No esconder valores fuera de rango en el texto aunque la longitud visual se limite.
+`UtilizationBar` muestra el porcentaje en `StatusBadge` con el par suave correspondiente: menos del 30 % positivo, entre 30 % y 70 % atención, más del 70 % problema. La barra de 8 px usa pista secundaria y relleno neutro en utilización baja, ámbar o rojo cuando hay atención o problema; no compite con el verde sólido de la acción principal. Conserva `role="progressbar"`, límites accesibles y `aria-valuetext` con el porcentaje redondeado, para que el lector no anuncie el valor bruto con decimales. No esconder valores fuera de rango en el texto aunque la longitud visual se limite.
 
 ### Navigation
 
@@ -298,7 +298,7 @@ Mismos cuatro destinos en lateral e inferior. El destino activo utiliza tinta fu
 
 `Disclosure`, `DisclosureSummary` y `DisclosureContent` comparten el patrón nativo `<details>/<summary>`: disparador de 40 px (44 px táctil), foco visible, indicador Lucide y espaciado del contenido que desaparece al colapsar. No agregar cajas o bordes anidados. En desgloses financieros, una lista puede sustituir `DisclosureContent` cuando necesita su semántica y espaciado propios.
 
-`Alert` tiene variantes neutra, success, warning y destructive usando los pares semánticos, con título y descripción en tamaño pequeño. `EmptyState` combina icono neutro, texto corto y una acción cuando corresponde; no usa ilustraciones, emojis ni mensajes de venta.
+`Alert` tiene variantes neutra, success, warning y destructive usando los pares semánticos, con título y descripción en tamaño pequeño. Su rol por defecto es `alert`, reservado a errores que aparecen tras una acción. Los avisos estáticos que existen al cargar la página (vencidos, TRM faltante, compromisos posteriores al horizonte) pasan `role="note"` para no anunciarse como urgentes en cada visita, y su descripción usa `text-foreground`: solo el título lleva el color del estado, para mantener el tono sin alarmismo. `EmptyState` combina icono neutro, texto corto y una acción cuando corresponde; no usa ilustraciones, emojis ni mensajes de venta.
 
 ### Iconos, gráficos y movimiento
 
@@ -306,18 +306,44 @@ Lucide de 20 px (`size-5`), `strokeWidth={1.75}`, tinta atenuada salvo estados. 
 
 Las barras de Recharts tienen animación desactivada; el CSS elimina la transición de sus tooltips cuando se solicita movimiento reducido. Los estados de carga usan `motion-safe:animate-pulse`. No se define una nueva escala de animación o duración.
 
-### Contratos de H9 — aprobados, pendientes de implementación
+### Vistas por mes de pago (H9) — implementadas
 
-Los pasos 22–24 definirán y construirán las superficies; esta sección no afirma que existan ni que hayan pasado verificación visual.
+Los pasos 22–25 construyeron estas superficies y el paso 26 las pulió tras una crítica y una auditoría. Las cifras salen solo de `lib/domain/months.ts`; los componentes no recalculan reglas. Las etiquetas de estado de mes y de extracto se comparten desde `lib/month-status.ts`, siempre con texto.
 
-- En el inicio, el mes actual tiene el único monto protagonista; en el detalle lo tiene el mes seleccionado. Franja de tarjetas y deuda total registrada son secundarios. La alerta de vencidos prevalece si existe y permite acceder a todos los meses afectados.
-- «Pendiente de confirmar pago» es control por extracto, no saldo tras abonos. La ayuda de D26 es visible; «Cobros previstos» va aparte. Actual vacío no se presenta como Pagado. El total bancario se edita en el extracto y no sustituye al calculado.
-- «Ya facturado» y «Aún puede crecer» distinguen cargos reales cerrados, registrados en abiertos y previstos. Mes futuro lleva Estimado; USD sin TRM lleva «Total conocido» y aviso de incompletitud visible también en la lista.
-- La barra apilada de la fila usa `card-N` junto a nombres/últimos cuatro dígitos y representa composición, no magnitud comparativa. Si el total no es positivo o una tarjeta tiene subtotal negativo, usar desglose textual firmado; no ocultar devoluciones ni dividir por cero.
-- El gráfico «Cargos del mes de pago por categoría» usa D17 con datos R7/D28, no el cálculo por fecha de compra del historial. Conserva texto con nombres, importes y signos, «Sin categoría» y eje apto para negativos. Un total negativo se acompaña de «Saldo a favor», no de una instrucción de pago.
-- Solo se comparan porcentajes entre meses cerrados comparables. Actual abierto, futuro e incompleto muestran su condición sin afirmar ahorro; comparaciones siempre neutras (D29).
-- Los controles compactos de marcar/deshacer pago son acciones secundarias con IDs únicos y nombres accesibles contextualizados. No repetir `StatementControls` completo ni ofrecer pago/enlace de extracto para virtuales.
-- Archivar todas las tarjetas no oculta historial ni deuda registrada. La navegación histórica no depende de haber cargado ese bloque de meses en el inicio. El límite futuro de 12 meses no se presenta como final de la deuda.
+**Reglas que se mantienen en todas las vistas**
+
+- En el inicio, el mes actual tiene el único monto protagonista (`text-amount-lg`); en el detalle lo tiene el mes seleccionado. La franja de tarjetas y la deuda total registrada son secundarias.
+- «Pendiente de confirmar pago» es un control por extracto, no un saldo después de abonos. La ayuda de D26 («Suma de extractos sin marcar como pagados. No descuenta abonos registrados.») es visible donde aparece la cifra; «Cobros previstos» va aparte. Un mes actual vacío no se presenta como Pagado. El total bancario se edita en el extracto y no sustituye al calculado.
+- Mes futuro: «Total estimado» y estado Estimado. USD sin TRM: «Total conocido» y aviso de incompletitud visible también en la lista, con un enlace que dice qué hacer («registra un movimiento en USD con la TRM del día»).
+- Solo se comparan meses cerrados comparables, con el texto neutro de `formatSpendingComparison` y una diferencia con signo (`+$20.000`, `-$220`). Mes actual abierto: «Mes en curso». Futuro: ninguna comparación (D29).
+- Archivar todas las tarjetas no oculta historial ni deuda registrada. La navegación histórica no depende de haber cargado ese bloque en el inicio. El límite de 12 meses futuros no se presenta como final de la deuda.
+
+**Fila de mes** (`components/month-row.tsx`). Enlace completo a `/meses/AAAA-MM` sobre una superficie `card` con borde; hover cambia el borde a `border-input` con `motion-safe:transition-colors` y el foco usa el anillo de dos píxeles.
+
+- Cabecera: nombre del mes en `text-heading`, `StatusBadge` y, a la derecha, etiqueta del total («Total del mes», «Total estimado» o «Total conocido») con el importe. «Saldo a favor» acompaña un total negativo.
+- «Pendiente de confirmar pago» con su ayuda solo cuando hay extractos reales, difiere del total y el mes no está Pagado. Un $0 bajo «Pagado» no se muestra.
+- Variante destacada (`featured`, solo el mes actual): importe `lg`; «Ya facturado · Aún puede crecer» en una línea que envuelve por grupos; por tarjeta, chip, fecha límite del próximo extracto sin pagar («pago 28 nov») y la etiqueta de atención «Vence en N días» cuando faltan cinco días o menos. Desde `lg` se divide en dos columnas: resumen a la izquierda y composición a la derecha.
+- Variante compacta (meses futuros e historial): composición como chips con importe en una línea que envuelve. Las listas pasan a dos columnas desde `xl` cuando tienen más de un mes.
+- Barra apilada de composición con `card-N`: solo con dos tarjetas o más, `aria-hidden` porque la leyenda textual ya da nombres e importes. Representa composición, no magnitud. Con total no positivo o algún subtotal negativo se usa el desglose textual firmado; no se ocultan devoluciones ni se divide por cero.
+
+**Franja de tarjetas** (`components/month-cards-strip.tsx`). Encabezado «Tus tarjetas» con «Deuda total registrada» secundaria (incluye archivadas). Cada tarjeta activa es un enlace con chip, cupo disponible y `UtilizationBar`. En celular es una fila con scroll horizontal y tarjetas de 256 px; desde `md` es una rejilla `auto-fit` con mínimo de 16 rem que llena el ancho, sin columnas vacías.
+
+**Aviso de vencidos.** `Alert` destructive con `role="note"`, total en el título y un enlace por cada mes afectado. Precede al mes actual en el inicio y aparece también en el detalle del mes actual. No suma los vencidos al mes actual.
+
+**Resumen del mes** (`components/month-summary.tsx`). Superficie con estado, etiqueta del total e importe protagonista, y filas etiqueta–valor alineadas a la derecha: «Pendiente de confirmar pago», «Marcado como pagado» (si no es cero) y «Cobros previstos», de modo que las tres cuadran con el total. En el mes actual con extractos abiertos, desde `lg`, una segunda columna «Así se compone este mes» separada por un borde: «Ya facturado», «Aún puede crecer», cada extracto abierto con tarjeta y fecha de corte («corta 25 nov», con lo registrado y lo previsto) y una fila de total con borde superior.
+
+**Bloque de extractos por tarjeta** (`components/month-statement-card.tsx`). Una superficie por tarjeta con chip e importe. Cada extracto se separa con borde superior: `StatusBadge` (Vencido, Pendiente, Pagado o Previsto), periodo de compras, fecha límite de pago y filas Registrado/Previsto alineadas a la derecha. El total del extracto solo aparece si la tarjeta tiene más de uno en el mes. «Ver extracto» es visible en forma corta; el contexto de tarjeta y corte va en texto `sr-only`. Los extractos virtuales no tienen enlace ni acción de pago.
+
+**Acción compacta de pago** (`components/statement-payment-control.tsx`). Botón `outline` «Marcar como pagado» (o «Deshacer pago»), nunca primario, con nombre accesible que incluye tarjeta y corte e IDs únicos por extracto. No se repite `StatementControls` completo.
+
+- Al activarlo se despliega un panel con borde: «¿Cuándo lo pagaste?», `DateInput` con foco inicial, la nota «Solo marca el extracto. No registra un abono ni libera cupo.», y Confirmar (`outline`) y Cancelar (`ghost`).
+- En extractos cuyo corte es hoy o posterior se muestra «Aún puede recibir cargos hasta el 25 nov.». La acción sigue disponible.
+- No se aceptan fechas posteriores a hoy en Bogotá: el cliente y `markStatementPaid` las rechazan con «La fecha de pago no puede ser posterior a hoy.».
+- Cancelar, confirmar o deshacer devuelven el foco al botón que reemplaza al panel. El resultado se anuncia con `role="status"` nombrando el extracto («Marcaste como pagado: Visa Oro · •••• 4821 · corte 25 nov.»); los errores usan `role="alert"`, y los genéricos sugieren intentar de nuevo o revisar la conexión.
+
+**Desgloses del detalle.** «Cargos por concepto» conserva las filas en cero (D28) en `text-muted-foreground` y termina con una fila de total con borde superior; los abonos van debajo, aparte, con «no restan del total». El gráfico «Cargos del mes de pago por categoría» usa datos R7/D28 (no fecha de compra), conserva nombres, importes, signos, «Sin categoría» y eje apto para negativos, añade una fila de total y desactiva la capa accesible de Recharts (`accessibilityLayer={false}`) para que el SVG dentro de `role="img"` no reciba foco; el cursor del tooltip usa `var(--secondary)`. «Compraste en {mes}» va al final con peso menor, la nota de D5 y «Sin compras con fecha en {mes}.» cuando es cero.
+
+**Navegación entre meses.** Una sola fila con «‹ Octubre 2026» y «Diciembre 2026 ›» (iconos Lucide), nombres accesibles «Mes anterior: …» / «Mes siguiente: …» y 44 px en puntero grueso.
 
 ### Desviaciones de la captura inicial — corregidas
 
@@ -353,13 +379,13 @@ La tabla describe correcciones comprobables en el código, no una certificación
 
 **Verificación obligatoria:** `scripts/check-design.mjs` recorre los archivos TS/TSX/JS/JSX de `app/` y `components/`; comprueba colores literales y de paleta, radios y tamaños de texto fuera de escala, emojis y sombras no permitidas. `pnpm lint` incluye esta comprobación. Una excepción `design-allow:` en la línea anterior puede omitir técnicamente una línea, pero no autoriza saltarse el sistema: requiere justificación explícita y revisión, nunca usarla para normalizar una desviación.
 
-**Procedencia y límites:** captura basada en `app/globals.css`, `AGENTS.md`, D11–D14 del PRD, componentes UI, navegación, gráficos y layouts existentes. Catálogo `/diseno` disponible solo en desarrollo; la comprobación visual del catálogo acredita sus muestras, no todo el producto ni estados privados con datos reales. El sidecar `.impeccable/design.json` conserva muestras estáticas de la captura inicial, anterior al pulido; no sustituye este contrato actualizado ni el catálogo interactivo.
+**Procedencia y límites:** captura basada en `app/globals.css`, `AGENTS.md`, D11–D14 del PRD, componentes UI, navegación, gráficos y layouts existentes. Catálogo `/diseno` disponible solo en desarrollo; la comprobación visual del catálogo acredita sus muestras, no todo el producto ni estados privados con datos reales. El sidecar `.impeccable/design.json` se regeneró en el paso 26 con muestras estáticas de los primitivos y de la fila de mes; no sustituye este contrato ni el catálogo interactivo.
 
 ## Catálogo y verificación de componentes
 
 `app/diseno/page.tsx` conserva el catálogo solo en desarrollo. Incluye estados en columna para comprobar `StatusBadge`, selectores con etiquetas largas (también sin espacios), opción deshabilitada, error asociado y corrección interactiva, fecha y mes, Disclosure y un Sheet con acciones fijas. `DesignControlsPreview` y `DesignSheetPreview` solo mantienen estado local; guardar el ejemplo no llama a acciones de negocio.
 
-La muestra «Identidad de tarjetas» añade seis tarjetas con datos explícitamente de ejemplo y un gráfico mensual para comparar franja, chip, series y estados. Las pantallas de detalle de tarjeta y extracto, y el filtro de tarjeta del historial, conservan la misma identidad junto al nombre o los últimos cuatro dígitos. No se agregan colores de categoría fuera del gráfico autorizado por D17. Al retirar componentes en H9 se adaptará la muestra si corresponde, sin perder cobertura de identidad.
+La muestra «Identidad de tarjetas» añade seis tarjetas con datos explícitamente de ejemplo y un gráfico mensual para comparar franja, chip, series y estados. Las pantallas de detalle de tarjeta y extracto, y el filtro de tarjeta del historial, conservan la misma identidad junto al nombre o los últimos cuatro dígitos. No se agregan colores de categoría fuera del gráfico autorizado por D17. Tras retirar el tablero en H9, la muestra usa la franja de tarjetas y una fila de mes destacada con las mismas seis tarjetas de ejemplo, sin perder cobertura de identidad.
 
 La navegación del calendario tiene 18 regresiones automatizadas, incluyendo cambios de mes, año y febrero bisiesto, y su integración en Popover y Sheet. La comprobación en Chromium sobre build de producción local cubrió 48 combinaciones de teclado, 360/1440 px y ambos temas; no equivale a una prueba en un dispositivo físico.
 
@@ -371,4 +397,16 @@ Zoom nativo, Safari/iOS, VoiceOver y otros lectores de pantalla reales siguen pe
 
 La adaptación de noviembre de 2026 incluye regresiones en `mobile-responsive.test.tsx`. Su opción `AL_CORTE_UI_FIXTURES` exporta fuera del repositorio el markup actual de las páginas con Supabase simulado: nombres sin espacios, importes máximos, estados vacíos y error. Ese markup se revisó en Chromium a 360, 720, 768 y 1440 px, en ambos temas, sin desbordamiento horizontal. Los formularios, selectores, calendario y hojas se comprobaron además hidratados con datos sintéticos, sin escribir movimientos. Son pruebas de interfaz, no evidencia de funcionamiento bancario, rendimiento en 4G ni compatibilidad con dispositivos físicos.
 
-Las evidencias anteriores pertenecen al trabajo ya registrado, no son nuevas verificaciones de H9. La revisión documental del 13 de noviembre conserva esas reglas y evidencias; la validación de las vistas por meses queda en el paso 26.
+Las evidencias anteriores pertenecen al trabajo ya registrado, no son nuevas verificaciones de H9. La revisión documental del 13 de noviembre conserva esas reglas y evidencias.
+
+**Validación de las vistas por meses (paso 26, 15 de noviembre de 2026).** Todo lo siguiente se hizo sobre un build de producción local con Supabase local y una cuenta sintética que se borró al terminar; no se usaron datos de producción.
+
+- Crítica de Impeccable con revisión de diseño y detector independientes: inicio 27/40 y detalle 26/40 antes del pulido. Se corrigieron los problemas P1 y P2 acordados con el dueño. El detector no encontró hallazgos en el código; en el navegador marcó `overused-font` y `cream-palette`, falsos positivos porque Geist y el fondo `surface` son reglas de este sistema.
+- Auditoría técnica 13/20 antes del pulido. Se corrigieron `role="alert"` en avisos estáticos, `aria-label` en un `div` sin rol, `aria-valuetext` ausente, el SVG enfocable de Recharts y las fechas de pago futuras.
+- Conciliación manual de octubre, noviembre y diciembre: conceptos, tarjetas y categorías suman el total del mes.
+- Chromium a 360 px en oscuro y 1440 px en claro: sin desbordamiento horizontal, sin IDs duplicados, una sola acción primaria en el inicio y ninguna en el detalle, objetivos táctiles de 44 px. La acción de pago se recorrió por teclado: abrir enfoca la fecha, cancelar devuelve el foco, una fecha futura se rechaza, y confirmar y deshacer conservan el foco y actualizan el resumen.
+- Rendimiento local de `/` a 360 px con red emulada: LCP de 0,22 s en Fast 4G y de 0,64–0,98 s en Slow 4G. Supabase corría en la misma máquina, así que no representa producción.
+
+**Pendiente de verificar:** revisión en producción a 360 px y en escritorio con ambos temas, rendimiento de `/` en producción con 4G, revisión del dueño en su celular, y lectores de pantalla reales. Los nombres y roles inspeccionados no sustituyen una prueba con lector de pantalla.
+
+**Límites aceptados:** los meses futuros idénticos se siguen mostrando uno por uno porque el brief exige todas las filas; la rejilla de meses anteriores puede dejar una celda vacía; los tonos del gráfico por categoría coinciden con los de tarjeta (D17, decisión del dueño).

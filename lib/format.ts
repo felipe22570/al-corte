@@ -67,9 +67,3 @@ export function formatSpendingComparison(current: Amount, previous: Amount, prev
   return `${formatPercent(change.abs())} ${direction} que ${month}`;
 }
 export function formatRate(value: string | Decimal) { return `${toDecimal(value).times(100).toFixed(2, Decimal.ROUND_HALF_UP).replace(".", ",")}% E.A.`; }
-export function formatDueIn(days: number) {
-  if (days === 0) return "hoy";
-  if (days === 1) return "mañana";
-  if (days < 0) return `hace ${-days} ${days === -1 ? "día" : "días"}`;
-  return `en ${days} días`;
-}

@@ -38,8 +38,19 @@ describe("category spending chart", () => {
     expect(chart.xAxis.mock.calls[0]![0].tickFormatter(350000000)).toBe("$350 M");
     expect(chart.tooltip.mock.calls[0]![0].position).toEqual({ x: 0 });
     expect(chart.tooltip.mock.calls[0]![0].wrapperStyle).toEqual({ maxWidth: "100%" });
+    expect(chart.tooltip.mock.calls[0]![0].cursor).toEqual({ fill: "var(--secondary)" });
     chart.cell.mockClear();
     renderToStaticMarkup(<CategorySpendingChart rows={[...rows].reverse()} />);
-    expect(chart.cell.mock.calls.map(([props]) => props.fill)).toEqual(colors.reverse());
+    expect(chart.cell.mock.calls.map(([props]) => props.fill)).toEqual(colors);
+  });
+
+  it("orders by absolute amount, keeps signs and never repeats a hue within five categories", () => {
+    const rows = ["a", "b", "c", "d", "e"].map((id, index) => ({ id, name: `Categoría ${id}`, icon: null, amount: String((index + 1) * 1000) }));
+    const html = renderToStaticMarkup(<CategorySpendingChart rows={[...rows, { id: "r", name: "Devoluciones", icon: null, amount: "-9000" }].slice(1)} total={{ label: "Total del mes", amount: "5000" }} />);
+    const fills = chart.cell.mock.calls.map(([props]) => props.fill);
+    expect(new Set(fills).size).toBe(fills.length);
+    expect(html.indexOf("Devoluciones")).toBeLessThan(html.indexOf("Categoría e"));
+    expect(html).toContain("-$9.000");
+    expect(html).toContain("Total del mes");
   });
 });

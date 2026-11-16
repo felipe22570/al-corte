@@ -65,7 +65,7 @@ describe("dashboard card presentation", () => {
   });
   it("preserves large monthly totals", () => {
     const [month] = buildMonths([{ cardId: card.id, origin: "real", cutoffDate: "2026-11-15", dueDate: "2026-11-28", paidAt: null, recordedTotal: new Decimal("999999999999"), projectedTotal: new Decimal(0), unconvertedCharges: [] }], "2026-11-10");
-    const html = renderToStaticMarkup(<MonthRow month={month!} cards={[card]} subscriptionNames={{}} featured />);
+    const html = renderToStaticMarkup(<MonthRow month={month!} cards={[card]} subscriptionNames={{}} today="2026-11-13" featured />);
     expect(html).toContain("$999.999.999.999");
   });
   it("allows full large amounts to reflow rather than clipping or abbreviating them", () => {

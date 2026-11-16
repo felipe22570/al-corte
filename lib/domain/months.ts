@@ -271,6 +271,17 @@ export type MonthCardSummary = {
   statements: Array<{ statement: MonthStatement; status: "virtual" | "paid" | "overdue" | "pending" }>;
 };
 
+/** Calculated total of real statements already marked as paid (D26); not a payment balance. */
+export function confirmedPaymentTotal(month: PaymentMonthSummary): Decimal {
+  return month.statements.reduce((sum, statement) =>
+    statement.origin === "real" && statement.paidAt ? sum.plus(statement.recordedTotal) : sum, new Decimal(0));
+}
+
+/** "Aún puede crecer" (D19): recorded in open statements plus known projected charges. */
+export function monthOpenGrowth(month: PaymentMonthSummary): Decimal {
+  return month.openRecorded.plus(month.projected);
+}
+
 export function cardCompositionPercentages(month: PaymentMonthSummary): Array<{ cardId: string; percent: number }> | null {
   if (!month.canUseProportionalBar) return null;
   const shares = month.cards.map((card, index) => {
