@@ -35,6 +35,8 @@ describe("MonthRow", () => {
     const summaries = buildMonths([real({ cutoffDate: "2026-12-10", dueDate: "2026-12-20" })], "2026-11-15");
     const html = renderToStaticMarkup(<MonthRow month={summaries.find((item) => item.month === "2026-12")!} cards={[visa]} subscriptionNames={{}} today="2026-11-15" />);
     expect(html).toContain("Total estimado");
+    // Compact legend keeps each amount in its own right-aligned column, even with long card names.
+    expect(html).toMatch(/grid-cols-\[minmax\(0,1fr\)_auto\][^>]*>.*Visa · •••• 1234.*<span class="text-right">/);
   });
 
   it("matches the six card colors with labeled composition", () => {

@@ -55,9 +55,8 @@ export function MonthRow({ month, cards, subscriptionNames, today, featured = fa
         ? ": pendientes de conversión"
         : <>: <Money value={month.projected} currency="COP" />{!month.complete && " conocidos"}</>}
     </p>}
-    {featured && month.hasOpenStatements && hasReal && <p className="flex flex-wrap gap-x-2 text-small text-muted-foreground">
+    {featured && month.hasOpenStatements && hasReal && <p className="flex flex-wrap gap-x-4 text-small text-muted-foreground">
       <span className="whitespace-nowrap">Ya facturado <Money value={month.billed} currency="COP" /></span>
-      <span aria-hidden="true">·</span>
       <span className="whitespace-nowrap">Aún puede crecer <Money value={monthOpenGrowth(month)} currency="COP" /></span>
     </p>}
     {!month.complete && <div className="text-small">
@@ -87,13 +86,14 @@ export function MonthRow({ month, cards, subscriptionNames, today, featured = fa
           <Money value={subtotal.total} currency="COP" />
         </div>;
       })}
-    </div> : <div className="flex min-w-0 flex-wrap gap-x-4 gap-y-1">
+    </div> : <div className="grid min-w-0 gap-1">
       {month.cards.map((subtotal) => {
         const card = identities.get(subtotal.cardId);
-        return <span key={subtotal.cardId} className="inline-flex min-w-0 flex-wrap items-center gap-2">
+        // Name wraps in its own column so long card names never push the amount off the right edge.
+        return <div key={subtotal.cardId} className="grid min-w-0 grid-cols-[minmax(0,1fr)_auto] items-center gap-x-3">
           {card ? <CardColorChip color={card.color} name={`${card.name} · •••• ${card.last4}`} /> : <span className="text-small">Tarjeta</span>}
-          <Money value={subtotal.total} currency="COP" />
-        </span>;
+          <span className="text-right"><Money value={subtotal.total} currency="COP" /></span>
+        </div>;
       })}
     </div>}
   </div>;

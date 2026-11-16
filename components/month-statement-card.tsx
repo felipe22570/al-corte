@@ -24,9 +24,9 @@ export function MonthStatementCard({ group, card, today }: { group: MonthCardSum
   const name = card ? `${card.name} · •••• ${card.last4}` : "Tarjeta";
   const several = group.statements.length > 1;
   return <section aria-label={name} className="grid gap-4 rounded-xl border border-border bg-card p-4">
-    <div className="flex min-w-0 flex-wrap items-center justify-between gap-2">
+    <div className="grid min-w-0 grid-cols-[minmax(0,1fr)_auto] items-center gap-x-3">
       {card ? <CardColorChip color={card.color} name={name} /> : <span className="text-small">{name}</span>}
-      <Money value={group.total} currency="COP" />
+      <span className="text-right"><Money value={group.total} currency="COP" /></span>
     </div>
     {group.statements.map(({ statement, status }) => {
       const cutoff = formatDateShort(statement.cutoffDate, today);
