@@ -101,7 +101,7 @@ export default async function CardDetailPage({ params }: { params: Promise<{ id:
           <h2 className="text-heading">Compras a cuotas activas</h2>
           {activePurchases.length ? <div className="divide-y divide-border border-y border-border">{activePurchases.map(({ purchase, progress, currentInstallment }) => (
             <Link key={purchase.id} href={`/movimientos/${purchase.id}`} className="flex flex-wrap items-center justify-between gap-3 rounded-md py-3 underline-offset-4 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring">
-              <span className="min-w-0 flex-1 basis-40"><span className="block text-body break-words">{purchase.merchant || "Compra"}</span><span className="text-small text-muted-foreground">Cuota {progress.current}/{progress.count}</span></span>
+              <span className="min-w-0 flex-1 basis-40"><span className="block text-body break-words">{purchase.merchant || "Compra"}</span><span className="text-small text-muted-foreground">Cuota {progress.current} de {progress.count}</span></span>
               <span className="ml-auto flex min-w-0 max-w-full flex-col gap-1 text-right"><span className="text-small">Cuota: <Money value={currentInstallment.total} currency={purchase.currency} /></span>{purchase.currency === "USD" && <span className="text-small text-muted-foreground">Estimado: <Money value={currentInstallment.totalCop} currency="COP" /></span>}<span className="text-small text-muted-foreground">Capital pendiente: <Money value={progress.pendingPrincipal} currency={purchase.currency} /></span></span>
             </Link>
           ))}</div> : <p className="text-small text-muted-foreground">No tienes compras a cuotas activas.</p>}

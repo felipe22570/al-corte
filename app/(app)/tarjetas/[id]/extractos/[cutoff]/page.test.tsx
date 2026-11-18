@@ -56,7 +56,7 @@ describe("statement page", () => {
     expect(html).toContain("Visa de prueba · •••• 1234");
     expect(html).toContain("5 conceptos sin movimientos");
     expect(html).toContain("Música · 12 nov");
-    expect(html).toContain("Compra en dólares · cuota 2");
+    expect(html).toContain("Compra en dólares · Cuota 2 de 6");
     expect(html).toContain("US$ 6,25");
     expect(html).toContain('href="/movimientos/parent"');
     expect(html).toContain('href="/movimientos/Pago"');

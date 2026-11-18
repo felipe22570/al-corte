@@ -57,3 +57,13 @@ it("invalidates all old and new month and statement routes after editing", async
   expect(mocks.revalidatePath).toHaveBeenCalledWith("/tarjetas/[id]", "page");
   expect(mocks.revalidatePath).toHaveBeenCalledWith("/tarjetas/[id]/extractos/[cutoff]", "page");
 });
+it("envía al RPC una compra en curso con sus cuotas previas", async () => {
+  const maybeSingle = vi.fn().mockResolvedValue({ data: { id: input.cardId, cutoff_day: 15, payment_day: 2, purchase_rate_ea: "0", advance_rate_ea: "0", advance_fee: "0", amortization_method: "fixed_principal" }, error: null });
+  const query = { select: vi.fn(), eq: vi.fn(), is: vi.fn(), maybeSingle };
+  query.select.mockReturnValue(query); query.eq.mockReturnValue(query); query.is.mockReturnValue(query);
+  const rpc = vi.fn().mockResolvedValue({ data: "transaction-id", error: null });
+  mocks.createClient.mockResolvedValue({ auth: { getUser: vi.fn().mockResolvedValue({ data: { user: { id: "owner" } } }) }, from: vi.fn().mockReturnValue(query), rpc });
+  const result = await createTransaction({ ...input, date: "2026-09-10", amount: "451.860", installmentsCount: "4", inProgress: true, currentInstallment: "3", balanceAfter: "112.965", trackedFromCutoff: "2026-11-15" });
+  expect(result).toEqual({ ok: true, id: "transaction-id" });
+  expect(rpc).toHaveBeenCalledWith("create_transaction_with_installments", { p_payload: expect.objectContaining({ installments_count: 4, prior_installments: 2, prior_principal_paid: "225930", original_installments_count: null, tracked_from_cutoff: "2026-11-15" }) });
+});

@@ -14,3 +14,30 @@ it("rechaza datos inconsistentes", () => {
     expect(transactionSchema.safeParse({ ...valid, ...values }).success).toBe(false);
   }
 });
+it("arma los datos de una compra en curso copiados del extracto (D49)", () => {
+  const result = transactionSchema.parse({ ...valid, installmentsCount: "24", inProgress: true, currentInstallment: "7", balanceAfter: "269.998,46", trackedFromCutoff: "2026-11-15" });
+  expect(result.inProgress).toEqual({ currentInstallment: 7, balanceAfter: "269998.46", trackedFromCutoff: "2026-11-15" });
+  expect(transactionSchema.parse({ ...valid, inProgress: true, currentInstallment: "3", balanceAfter: "", trackedFromCutoff: "2026-11-15" }).inProgress).toEqual({ currentInstallment: 3, balanceAfter: null, trackedFromCutoff: "2026-11-15" });
+  expect(transactionSchema.parse({ ...valid, inProgress: true, currentInstallment: "6", balanceAfter: "0", trackedFromCutoff: "2026-11-15" }).inProgress?.balanceAfter).toBe("0");
+  expect(transactionSchema.parse({ ...valid, inProgress: false, currentInstallment: "abc" }).inProgress).toBeNull();
+  expect(transactionSchema.parse(valid).inProgress).toBeNull();
+});
+it("rechaza una compra en curso incompleta o imposible", () => {
+  const inProgress = { inProgress: true, currentInstallment: "3", balanceAfter: "", trackedFromCutoff: "2026-11-15" };
+  const cases: Array<[Record<string, unknown>, string]> = [
+    [{ currentInstallment: "1" }, "currentInstallment"],
+    [{ currentInstallment: "7" }, "currentInstallment"],
+    [{ currentInstallment: "2,5" }, "currentInstallment"],
+    [{ currentInstallment: "73", balanceAfter: "100" }, "currentInstallment"],
+    [{ balanceAfter: "-1" }, "balanceAfter"],
+    [{ trackedFromCutoff: "" }, "trackedFromCutoff"],
+    [{ installmentsCount: "1" }, "inProgress"],
+    [{ type: "refund", installmentsCount: "1" }, "inProgress"],
+  ];
+  for (const [values, path] of cases) {
+    const result = transactionSchema.safeParse({ ...valid, ...inProgress, ...values });
+    expect(result.success, JSON.stringify(values)).toBe(false);
+    expect(result.error?.issues.some((issue) => issue.path[0] === path), JSON.stringify(values)).toBe(true);
+  }
+  expect(transactionSchema.safeParse({ ...valid, ...inProgress, currentInstallment: "9", balanceAfter: "100" }).success).toBe(true);
+});

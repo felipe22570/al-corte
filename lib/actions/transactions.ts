@@ -4,7 +4,7 @@ import { z } from "zod";
 import { revalidateFinancialViews } from "@/lib/revalidate-views";
 import { buildTransactionPlan, type TransactionCard } from "@/lib/domain/transaction-plan";
 import { createClient } from "@/lib/supabase/server";
-import { transactionSchema } from "@/lib/validation/transaction";
+import { transactionSchema, transactionTypeSchema } from "@/lib/validation/transaction";
 
 type RawCard = { id: string; cutoff_day: number; payment_day: number; purchase_rate_ea: string; advance_rate_ea: string; advance_fee: string; amortization_method: "fixed_principal" | "french" };
 
@@ -62,7 +62,7 @@ export async function updateTransaction(id: unknown, input: unknown) {
   const card: TransactionCard = { id: raw.id, cutoffDay: raw.cutoff_day, paymentDay: raw.payment_day, purchaseRateEa: raw.purchase_rate_ea, advanceRateEa: raw.advance_rate_ea, advanceFee: raw.advance_fee, amortizationMethod: raw.amortization_method };
   let payload;
   try {
-    const originalType = transactionSchema.shape.type.safeParse(original.type);
+    const originalType = transactionTypeSchema.safeParse(original.type);
     payload = buildTransactionPlan(parsed.data, card, originalType.success ? { cardId: original.card_id, type: originalType.data, rateEaApplied: original.rate_ea_applied } : undefined).payload;
   } catch { return { ok: false as const, error: "No pudimos calcular las cuotas. Revisa el valor y la cantidad." }; }
   const { error } = await supabase.rpc("update_transaction_with_installments", { p_id: id, p_payload: payload });

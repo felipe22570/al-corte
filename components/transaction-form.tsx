@@ -17,20 +17,21 @@ import { createTransaction, updateTransaction } from "@/lib/actions/transactions
 import { storageKey } from "@/lib/brand";
 import { cardColorClasses } from "@/lib/card-colors";
 import { categoryIcons, type CategoryIcon } from "@/lib/category-icons";
+import { lastClosedCutoff, statementCutoffFor } from "@/lib/domain/statements";
 import { buildTransactionPlan, type TransactionPlanInput } from "@/lib/domain/transaction-plan";
 import { formatDateShort, formatRate } from "@/lib/format";
 import type { TransactionCardOption, TransactionCategoryOption } from "@/lib/transaction-options";
 import { decodeTransactionDraft, encodeTransactionDraft, transactionDraftKey } from "@/lib/transaction-draft";
 import { transactionSchema, type TransactionInput } from "@/lib/validation/transaction";
 
-export function TransactionForm({ userId, cards, categories, today, latestRate, edit }: { userId: string; cards: TransactionCardOption[]; categories: TransactionCategoryOption[]; today: string; latestRate: string | null; edit?: { id: string; initial: TransactionInput; original: { cardId: string; type: TransactionPlanInput["type"]; rateEaApplied: string | null }; hasPaidInstallments: boolean } }) {
+export function TransactionForm({ userId, cards, categories, today, latestRate, existingCutoffs = {}, edit }: { userId: string; cards: TransactionCardOption[]; categories: TransactionCategoryOption[]; today: string; latestRate: string | null; existingCutoffs?: Record<string, string[]>; edit?: { id: string; initial: TransactionInput; original: { cardId: string; type: TransactionPlanInput["type"]; rateEaApplied: string | null }; hasPaidInstallments: boolean } }) {
   const router = useRouter();
   const [serverError, setServerError] = useState("");
   const [draftNotice, setDraftNotice] = useState<"" | "saved" | "restored" | "unavailable">("");
   const [ready, setReady] = useState(false);
   const skipDraft = useRef(false);
   const options = useRef<HTMLDetailsElement>(null);
-  const defaults = useMemo<TransactionInput>(() => edit?.initial ?? { cardId: cards[0]?.id ?? "", type: "purchase", date: today, amount: "", currency: "COP", fxRate: "", installmentsCount: "1", interestFree: false, categoryId: "", merchant: "", note: "" }, [edit, cards, today]);
+  const defaults = useMemo<TransactionInput>(() => edit?.initial ?? { cardId: cards[0]?.id ?? "", type: "purchase", date: today, amount: "", currency: "COP", fxRate: "", installmentsCount: "1", interestFree: false, categoryId: "", merchant: "", note: "", inProgress: false, currentInstallment: "", balanceAfter: "", trackedFromCutoff: "" }, [edit, cards, today]);
   const pristine = useRef(JSON.stringify(defaults));
   const baseline = edit ? JSON.stringify({ initial: edit.initial, original: edit.original }) : "new";
   const draftKey = transactionDraftKey(userId, edit?.id);
@@ -78,13 +79,29 @@ export function TransactionForm({ userId, cards, categories, today, latestRate, 
   const CategoryIcon = selectedCategory && Object.hasOwn(categoryIcons, selectedCategory.icon) ? categoryIcons[selectedCategory.icon as CategoryIcon] : null;
   const allowsInstallments = values.type === "purchase" || values.type === "cash_advance";
   const count = Number(values.installmentsCount) || 1;
+  // In-progress purchases (F10): installment k sits by default on the last closed statement, or on the open one (D49).
+  const canTrackPrior = allowsInstallments && count > 1;
+  const closedCutoff = selectedCard ? lastClosedCutoff(selectedCard.cutoffDay, today) : "";
+  const trackedOptions = useMemo(() => {
+    if (!selectedCard) return [];
+    const open = statementCutoffFor(selectedCard.cutoffDay, today);
+    const options = [{ value: closedCutoff, label: `Corte del ${formatDateShort(closedCutoff, today)} · último cerrado` }, { value: open, label: `Corte del ${formatDateShort(open, today)} · abierto` }];
+    const original = edit?.initial.trackedFromCutoff;
+    if (original && edit.initial.cardId === selectedCard.id && original !== closedCutoff && original !== open) options.unshift({ value: original, label: `Corte del ${formatDateShort(original, today)}` });
+    return options;
+  }, [selectedCard, closedCutoff, today, edit]);
+  const fixedPayment = selectedCard?.amortizationMethod === "french";
   const parsed = transactionSchema.safeParse(values);
   let preview: ReturnType<typeof buildTransactionPlan> | null = null;
   let previewError = "";
   if (parsed.success && selectedCard) {
     try { preview = buildTransactionPlan(parsed.data, selectedCard, edit?.original); }
-    catch { previewError = "No pudimos calcular las cuotas. Revisa el valor y la cantidad."; }
+    catch (error) { previewError = parsed.data.inProgress && error instanceof Error ? `${error.message}${error.message.endsWith(".") ? "" : "."}` : "No pudimos calcular las cuotas. Revisa el valor y la cantidad."; }
   }
+  const tracking = preview && parsed.success && parsed.data.inProgress ? {
+    current: parsed.data.inProgress.currentInstallment, count: preview.payload.installments_count, original: preview.payload.original_installments_count,
+    alone: !!selectedCard && !(existingCutoffs[selectedCard.id] ?? []).includes(preview.firstCutoff),
+  } : null;
 
   useEffect(() => {
     if (!ready) return;
@@ -101,6 +118,14 @@ export function TransactionForm({ userId, cards, categories, today, latestRate, 
       } catch { setDraftNotice("unavailable"); }
     } });
   }, [ready, subscribe, draftKey, baseline]);
+
+  useEffect(() => {
+    if (!ready || !values.inProgress) return;
+    if (!canTrackPrior) form.setValue("inProgress", false, { shouldDirty: true });
+    else if (trackedOptions.length && !trackedOptions.some((option) => option.value === values.trackedFromCutoff)) form.setValue("trackedFromCutoff", closedCutoff, { shouldDirty: true });
+    // R8 defines the bank balance with the fixed principal P/N; fixed-payment cards only use k.
+    if (fixedPayment && values.balanceAfter) form.setValue("balanceAfter", "", { shouldDirty: true });
+  }, [ready, form, canTrackPrior, trackedOptions, closedCutoff, fixedPayment, values.inProgress, values.trackedFromCutoff, values.balanceAfter]);
 
   useEffect(() => {
     if (ready && document.activeElement === document.body) document.getElementById("transaction-amount")?.focus();
@@ -171,13 +196,25 @@ export function TransactionForm({ userId, cards, categories, today, latestRate, 
     <div className="flex flex-col gap-2"><Label htmlFor="transaction-category">Categoría</Label><div className="flex items-center gap-3">{CategoryIcon && <CategoryIcon className="size-5 shrink-0 text-muted-foreground" strokeWidth={1.75} aria-hidden="true" />}<Controller control={form.control} name="categoryId" render={({ field: { onChange, ...field } }) => <SelectControl {...field} id="transaction-category" {...errorProps("categoryId")} onValueChange={onChange} options={[{ value: "", label: "Sin categoría" }, ...categories.map((category) => ({ value: category.id, label: category.name }))]} />} /></div>{errorFor("categoryId")}</div>
     <div className="flex flex-col gap-2"><Label htmlFor="transaction-merchant">Comercio</Label><Input id="transaction-merchant" autoComplete="off" {...errorProps("merchant")} {...form.register("merchant")} />{errorFor("merchant")}</div>
     {allowsInstallments && <div className="flex flex-col gap-2"><Label htmlFor="transaction-count">Cuotas</Label><div className="flex items-center gap-2"><Button type="button" variant="outline" size="icon" aria-label="Reducir cuotas" disabled={count <= 1} onClick={() => form.setValue("installmentsCount", String(Math.max(1, count - 1)), { shouldValidate: true, shouldDirty: true })}><Minus className="size-5" strokeWidth={1.75} /></Button><Input id="transaction-count" type="number" min={1} max={36} inputMode="numeric" className="w-20 text-center" {...errorProps("installmentsCount")} {...form.register("installmentsCount")} /><Button type="button" variant="outline" size="icon" aria-label="Aumentar cuotas" disabled={count >= 36} onClick={() => form.setValue("installmentsCount", String(Math.min(36, count + 1)), { shouldValidate: true, shouldDirty: true })}><Plus className="size-5" strokeWidth={1.75} /></Button></div>{errorFor("installmentsCount")}</div>}
+    {canTrackPrior && <div className="flex flex-col gap-4">
+      <label className="flex min-h-11 items-center gap-3 text-body"><input type="checkbox" className="size-5 accent-foreground" {...errorProps("inProgress")} {...form.register("inProgress")} />{values.type === "cash_advance" ? "Ya pagué cuotas de este avance" : "Ya pagué cuotas de esta compra"}</label>{errorFor("inProgress")}
+      {values.inProgress && <fieldset className="flex min-w-0 flex-col gap-4 rounded-xl border border-border p-4">
+        <legend className="sr-only">Cuotas ya pagadas</legend>
+        <p className="text-small text-muted-foreground">{fixedPayment ? "Copia la cuota como aparece en tu último extracto." : "Copia la cuota y el saldo como aparecen en tu último extracto."}</p>
+        <div className="flex flex-wrap items-start gap-4">
+          <div className="flex flex-col gap-2"><Label htmlFor="transaction-currentInstallment">Cuota</Label><div className="flex items-center gap-2"><Input id="transaction-currentInstallment" inputMode="numeric" autoComplete="off" className="w-20 text-center" {...errorProps("currentInstallment")} {...form.register("currentInstallment")} /><span className="text-body text-muted-foreground">de {count}</span></div>{errorFor("currentInstallment")}</div>
+          {!fixedPayment && <div className="flex min-w-0 flex-1 basis-40 flex-col gap-2"><Label htmlFor="transaction-balanceAfter">Saldo pendiente (opcional)</Label><Input id="transaction-balanceAfter" inputMode="decimal" autoComplete="off" placeholder="0" {...errorProps("balanceAfter")} {...form.register("balanceAfter")} />{errorFor("balanceAfter")}</div>}
+        </div>
+        <div className="flex flex-col gap-2"><Label htmlFor="transaction-trackedFromCutoff">Extracto de esa cuota</Label><Controller control={form.control} name="trackedFromCutoff" render={({ field: { onChange, ...field } }) => <SelectControl {...field} value={field.value ?? ""} id="transaction-trackedFromCutoff" {...errorProps("trackedFromCutoff")} onValueChange={onChange} options={trackedOptions} />} />{errorFor("trackedFromCutoff")}</div>
+      </fieldset>}
+    </div>}
     <div className="flex flex-col gap-2"><Label htmlFor="transaction-date">Fecha</Label><Controller control={form.control} name="date" render={({ field: { onChange, value, ...field } }) => <DateInput {...field} id="transaction-date" calendarLabel="Fecha del movimiento" value={value ?? ""} onValueChange={onChange} {...errorProps("date")} />} />{errorFor("date")}</div>
     <Disclosure ref={options}><DisclosureSummary><span>Más opciones</span><ChevronDown aria-hidden="true" className="size-5" strokeWidth={1.75} /></DisclosureSummary><DisclosureContent className="flex flex-col gap-4">
       <div className="flex flex-col gap-2"><Label htmlFor="transaction-type">Tipo</Label><Controller control={form.control} name="type" render={({ field: { onChange, ...field } }) => <SelectControl {...field} id="transaction-type" {...errorProps("type")} onValueChange={(value) => { onChange(value); if (value !== "purchase" && value !== "cash_advance") form.setValue("installmentsCount", "1"); if (value !== "purchase") form.setValue("interestFree", false); }} options={[{ value: "purchase", label: "Compra" }, { value: "cash_advance", label: "Avance" }, { value: "payment", label: "Pago" }, { value: "handling_fee", label: "Cuota de manejo" }, { value: "interest", label: "Interés" }, { value: "insurance", label: "Seguro" }, { value: "refund", label: "Devolución" }, { value: "adjustment", label: "Ajuste" }]} />} />{errorFor("type")}</div>
       {values.type === "purchase" && <label className="flex min-h-11 items-center gap-3 text-body"><input type="checkbox" className="size-5 accent-foreground" {...form.register("interestFree")} />Compra sin intereses</label>}
       <div className="flex flex-col gap-2"><Label htmlFor="transaction-note">Nota</Label><textarea id="transaction-note" rows={3} className="w-full rounded-md border border-input bg-card p-3 text-input text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring" {...errorProps("note")} {...form.register("note")} />{errorFor("note")}</div>
     </DisclosureContent></Disclosure>
-    {preview && allowsInstallments && <section aria-label="Vista previa de cuotas" className="flex flex-col gap-3 rounded-xl border border-border bg-card p-4"><h2 className="text-heading">Vista previa</h2><div className="flex flex-wrap items-center justify-between gap-2"><span className="text-body">Primera cuota</span><Money value={preview.firstInstallment} currency={parsed.success ? parsed.data.currency : "COP"} /></div>{values.currency === "USD" && <p className="text-small text-muted-foreground">Estimado en pesos: <Money value={preview.firstInstallmentCop} currency="COP" /></p>}<p className="text-small text-muted-foreground">Corte del {formatDateShort(preview.firstCutoff, today)} · pagas el {formatDateShort(preview.dueDate, today)}</p><p className="text-small text-muted-foreground">{preview.totalInterest === "0" ? "Sin intereses" : <>Intereses totales: <Money value={preview.totalInterest} currency={parsed.success ? parsed.data.currency : "COP"} /></>}</p>{values.type === "cash_advance" && selectedCard && <p className="text-small text-muted-foreground">Tasa de avances: {formatRate(selectedCard.advanceRateEa)} · comisión: <Money value={preview.advanceFee} currency="COP" /></p>}</section>}
+    {preview && allowsInstallments && <section aria-label="Vista previa de cuotas" className="flex flex-col gap-3 rounded-xl border border-border bg-card p-4"><h2 className="text-heading">Vista previa</h2><div className="flex flex-wrap items-center justify-between gap-2"><span className="text-body">{tracking ? `Cuota ${tracking.current} de ${tracking.count}` : "Primera cuota"}</span><Money value={preview.firstInstallment} currency={parsed.success ? parsed.data.currency : "COP"} /></div>{values.currency === "USD" && <p className="text-small text-muted-foreground">Estimado en pesos: <Money value={preview.firstInstallmentCop} currency="COP" /></p>}<p className="text-small text-muted-foreground">Corte del {formatDateShort(preview.firstCutoff, today)} · pagas el {formatDateShort(preview.dueDate, today)}</p>{tracking && <p className="text-small text-muted-foreground">{tracking.count > tracking.current ? tracking.count - tracking.current === 1 ? "Te falta 1 cuota después de esta." : `Te faltan ${tracking.count - tracking.current} cuotas después de esta.` : "Es la última cuota."}</p>}{tracking?.original && <p className="text-small text-muted-foreground">Según tu saldo, el plan queda en {tracking.count} cuotas en lugar de {tracking.original}.</p>}{tracking?.alone && <p className="text-small text-muted-foreground">Aún no tienes movimientos en el extracto del {formatDateShort(preview.firstCutoff, today)}. Solo tendrá esta cuota.</p>}<p className="text-small text-muted-foreground">{preview.totalInterest === "0" ? "Sin intereses" : <>{tracking ? "Intereses restantes" : "Intereses totales"}: <Money value={preview.totalInterest} currency={parsed.success ? parsed.data.currency : "COP"} /></>}</p>{values.type === "cash_advance" && selectedCard && <p className="text-small text-muted-foreground">Tasa de avances: {formatRate(selectedCard.advanceRateEa)} · {tracking ? "sin comisión nueva" : <>comisión: <Money value={preview.advanceFee} currency="COP" /></>}</p>}</section>}
     {previewError && <p role="alert" className="text-small text-danger">{previewError}</p>}
     {draftNotice && <div className="flex flex-wrap items-center justify-between gap-3"><p role="status" className={`text-small ${draftNotice === "unavailable" ? "text-warning" : "text-muted-foreground"}`}>{draftNotice === "unavailable" ? "No pudimos conservar el borrador. No cierres esta pestaña sin guardar." : "Tu borrador se conserva en esta pestaña por hasta 24 horas, también al cancelar."}</p>{draftNotice !== "unavailable" && <Button type="button" variant="outline" size="sm" onClick={discardDraft}>Descartar borrador</Button>}</div>}
     <div className="flex flex-wrap gap-3"><Button type="submit" disabled={form.formState.isSubmitting || !!previewError}>{form.formState.isSubmitting ? "Guardando…" : "Guardar"}</Button><Button type="button" variant="outline" onClick={cancel}>Cancelar</Button></div>

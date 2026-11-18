@@ -99,7 +99,7 @@ export default async function StatementDetailPage({ params }: { params: Promise<
           return {
             id: `${item.transaction_id}-${item.number}`,
             href: `/movimientos/${item.transaction_id}`,
-            description: `${parent?.merchant || "Compra"} · cuota ${item.number}`,
+            description: `${parent?.merchant || "Compra"} · Cuota ${item.number}${parent ? ` de ${parent.installments_count}` : ""}`,
             amountCop: item.total_cop,
             amountUsd: parent?.currency === "USD" ? item.total : undefined,
           };

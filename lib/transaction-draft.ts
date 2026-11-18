@@ -1,6 +1,6 @@
 import { z } from "zod";
 import { storageKey } from "@/lib/brand";
-import { transactionSchema, type TransactionInput } from "@/lib/validation/transaction";
+import { currencySchema, transactionTypeSchema, type TransactionInput } from "@/lib/validation/transaction";
 
 const draftSchema = z.strictObject({
   version: z.literal(1),
@@ -8,16 +8,20 @@ const draftSchema = z.strictObject({
   savedAt: z.number().finite(),
   values: z.strictObject({
     cardId: z.string().max(36),
-    type: transactionSchema.shape.type,
+    type: transactionTypeSchema,
     date: z.string().max(10),
     amount: z.string().max(100),
-    currency: transactionSchema.shape.currency,
+    currency: currencySchema,
     fxRate: z.string().max(100),
     installmentsCount: z.union([z.string().max(10), z.number().finite()]),
     interestFree: z.boolean(),
     categoryId: z.string().max(36),
     merchant: z.string().max(200),
     note: z.string().max(1000),
+    inProgress: z.boolean().optional(),
+    currentInstallment: z.string().max(10).optional(),
+    balanceAfter: z.string().max(100).optional(),
+    trackedFromCutoff: z.string().max(10).optional(),
   }),
 });
 
