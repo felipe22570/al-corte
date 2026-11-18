@@ -1,6 +1,6 @@
 # PRD — App de control de tarjetas de crédito
 
-Versión 1.1 · 13 de noviembre de 2026 · H9 aprobado, pendiente de implementación
+Versión 1.2 · 17 de noviembre de 2026 · H10 y H12 aprobados, pendientes de implementación
 
 ## 1. Resumen y objetivos
 
@@ -123,7 +123,62 @@ El MVP cubre registrar movimientos y ver el extracto proyectado de cada tarjeta;
 - Mes futuro: extractos reales más suscripciones y manejo previstos, con la nota "Se sumará lo que gastes antes de cada corte". Las suscripciones en USD se estiman con la última TRM (D4); si falta, se muestra "Total conocido" y una advertencia con los cobros sin convertir. Los extractos virtuales no tienen enlace ni acción de pago.
 - Navegación al mes disponible anterior y siguiente. URL `/meses/AAAA-MM`; cargar más historial en la lista no es requisito para acceder directamente a un mes histórico.
 
+### MVP 1.2 — fidelidad con el extracto bancario (H10)
+
+Sale de comparar la app con extractos reales de Bancolombia (noviembre de 2026). El objetivo es que cada extracto de Al Corte cuadre al peso con el del banco: cuotas en curso, intereses, pago mínimo, deuda total y saldo en dólares.
+
+**F10. Compras en curso.** Como dueño, quiero registrar una compra que ya tiene cuotas pagadas antes de usar Al Corte, para ver siempre en qué cuota voy y cuántas faltan.
+
+- El formulario permite indicar "Ya pagué cuotas de esta compra": la cuota (k de N) y, opcionalmente, el saldo pendiente, copiados tal como aparecen en el último extracto del banco. La cuota k es la ya facturada en ese extracto y el saldo es el que queda después de ella (D49).
+- La compra conserva su fecha, valor, número de cuotas y tasa originales. Las cuotas anteriores se muestran en su tabla como "Pagada antes de Al Corte", sin extracto, y no cuentan en extractos, meses ni cupo.
+- Si el saldo del banco no coincide con el plan (por un abono a capital o un ajuste), se respeta el saldo del banco: misma cuota y menos cuotas restantes (D31).
+- En listas y detalles se lee "Cuota 4 de 12".
+
+**F11. Intereses sobre saldo.** Como dueño, quiero que los intereses se calculen como los cobra mi banco, para que el extracto cuadre.
+
+- Cada tarjeta tiene un modo de intereses: por cuota (el actual de R2) o sobre saldo (como Bancolombia, Davivienda y BBVA).
+- En modo sobre saldo, las cuotas son solo capital y cada extracto lleva una línea de intereses: la real, si se registró desde el extracto del banco, o una estimada mientras tanto.
+- Los meses futuros usan la estimación y la etiquetan como tal.
+
+**F12. Pago mínimo, deuda total y saldos por moneda.** Como dueño, quiero ver cuánto debo pagar este mes y cuánto debo en total, en pesos y en dólares por separado.
+
+- Cada extracto muestra, por moneda: pago mínimo (lo que se paga este mes) y deuda total (todo lo pendiente a la fecha de corte), con los valores reales del banco como referencia.
+- El saldo en dólares se paga y se marca como pagado por separado; su equivalente en pesos es solo referencia.
+- El mes de pago muestra el pago mínimo como monto principal y la deuda total como dato secundario.
+
+**F13. Suscripciones diferidas y cuotas por defecto en USD.** Como dueño, quiero registrar suscripciones que el banco difiere a cuotas, como las cobradas en dólares.
+
+- Cada tarjeta define a cuántas cuotas difiere por defecto las compras en USD (36 en Bancolombia).
+- Una suscripción puede tener número de cuotas; cada cobro automático se registra como compra a esas cuotas.
+- La proyección de meses suma la cuota de cada cobro anterior y de cada cobro previsto, no el valor completo.
+
+**F14. Pagos y abonos a capital.** Como dueño, quiero registrar cuánto pagué y ver cómo un abono cambia mis compras, como lo aplica el banco.
+
+- Registrar pago por extracto y moneda: mínimo, total u otro valor. El pago total liquida las cuotas futuras; el excedente sobre el mínimo es un abono a capital.
+- Cada tarjeta define cómo se aplican los abonos (prioridad publicada por Bancolombia, compra más antigua o compra elegida) y si reducen el plazo o la cuota.
+- Antes de guardar, la app muestra la distribución del abono por compra y permite ajustarla.
+
+**F15. Cierre mensual del extracto.** Como dueño, quiero ingresar en un par de minutos lo que dice el extracto del banco y ver si la app cuadra.
+
+- Pago mínimo, pago total, intereses y tasa vigente por moneda; saldo por compra opcional para corregir cómo aplicó el banco un abono.
+- Diferencias visibles solo si superan el redondeo del banco. El extracto queda "Conciliado".
+
+**F16. Cambio de cuotas de una compra.** Como dueño, quiero reflejar cuando cambio en el banco el número de cuotas de una compra.
+
+- Se indica el nuevo número de cuotas restantes (1 a 36) sobre el saldo pendiente, desde la próxima cuota sin facturar. Las cuotas facturadas y las previas se conservan (D40, D50).
+
+**F17. Comisión de avance por movimiento.** La comisión de la tarjeta es solo el valor por defecto; cada avance guarda la suya.
+
 ### v2 — planeación y alertas
+
+Las cuatro primeras funcionalidades tienen prioridad sobre el resto de v2 (pedido del dueño, 16 de noviembre de 2026).
+
+- **Cuotas y categoría sugeridas por comercio (prioridad 1):** al escribir el comercio, la app propone la categoría y el número de cuotas usados la última vez con ese comercio, y lo indica.
+- **Costo de diferir (prioridad 2):** cada compra a cuotas muestra cuánto terminará costando en intereses. Alerta para compras pequeñas diferidas a muchas cuotas (por ejemplo, $9.000 a 36 cuotas cuesta unos $12.500 con 2,1003 % M.V.). Incluye el ahorro de pagar el total este mes.
+- **Importación mensual de extractos (prioridad 3):** cargar un archivo `al-corte-import` v1 desde Ajustes, con vista previa, detección de duplicados y verificación contra los totales del extracto. Es el paso intermedio antes de la lectura de PDF con IA de v3.
+- **Pagar el saldo en dólares con pesos (prioridad 4):** registrar el pago en COP y la tasa que usó el banco, para conocer el costo real en pesos frente al estimado con la TRM de cada compra.
+
+Después de esas cuatro (la conciliación y los cobros en USD quedan en parte cubiertos por H10):
 
 - **Cobros en USD:** el movimiento guarda el valor en USD, la TRM usada y el valor en COP. Las suscripciones en USD se estiman con la TRM del día y luego se corrigen con el valor real del extracto.
 - **Recordatorios por email:** 3 días antes de la fecha límite de pago, 2 días antes de que termine una prueba gratis y 7 días antes de una renovación anual.
@@ -136,10 +191,28 @@ El MVP cubre registrar movimientos y ver el extracto proyectado de cada tarjeta;
 - **PWA:** instalable en el celular con un formulario de registro rápido.
 - **Exportar a CSV** cualquier vista filtrada del historial.
 
+### v2 · H12 — Capa de IA y captura por correo (prioridad 5)
+
+Se implementa después de las cuatro prioridades de v2 (H11) y reutiliza su revisión de importaciones. Sustituye a la "captura desde email" que estaba en v3.
+
+**F18. Captura de movimientos desde el correo.** Como dueño, quiero que las alertas de compra de Bancolombia que llegan a mi correo aparezcan en la app como movimientos por confirmar, para registrar casi sin escribir.
+
+- Un script de Google Apps Script en la cuenta del dueño revisa las alertas cada 5 minutos y envía a la app solo la frase del movimiento, firmada.
+- Solo se procesan alertas de tarjetas de crédito ("T.Cred *NNNN"). Los movimientos de cuenta de ahorros o tarjeta débito se descartan en el propio script y nunca salen de Google.
+- Cada alerta crea un borrador en la bandeja "Por confirmar" con la tarjeta según sus últimos 4 dígitos, y las sugerencias de la IA marcadas como tales. Al confirmar se completan cuotas, categoría y lo que falte.
+- Un borrador no afecta extractos, meses, totales ni cupo hasta confirmarse. Si ya existe un movimiento manual igual (tarjeta, valor y fecha), se propone unirlos.
+- La captura se puede apagar desde Ajustes. El secreto de firma se puede rotar con un procedimiento documentado: nuevo valor en las variables de entorno de Vercel, nuevo despliegue y actualización en el script (D51).
+
+**F19. Capa de IA.** Base común para funciones de IA (esta captura, la lectura de PDF de v3 y sugerencias para comercios sin historial).
+
+- Tareas con nombre, cada una con esquema de entrada y salida, prompt versionado y modelo configurado. Salidas estructuradas validadas otra vez con Zod y con las reglas de dominio.
+- Solo en el servidor. La IA no tiene herramientas, trata el contenido externo como datos y nunca confirma nada por sí misma.
+- Tope de gasto mensual, registro por tarea sin contenido sensible y pruebas de calidad (evals) con alertas reales anonimizadas.
+
 ### v3 — captura automática
 
-- **Importar extracto en PDF:** se sube el PDF del banco, un modelo de lenguaje (API de Claude) extrae los movimientos y el usuario confirma o corrige cada uno antes de guardarlos. Se detectan duplicados por fecha, valor y comercio.
-- **Captura desde email:** el usuario reenvía la notificación de compra del banco a una dirección de entrada y la app crea un movimiento en estado "por confirmar".
+- **Importar extracto en PDF:** se sube el PDF del banco, la capa de IA (F19) extrae los movimientos y el usuario confirma o corrige cada uno antes de guardarlos. Se detectan duplicados por fecha, valor y comercio.
+- **Captura desde email:** pasó a v2 como F18 (H12). En v3 queda la variante en tiempo real: reenvío automático a un dominio propio con Cloudflare Email Workers, usando el mismo endpoint.
 - **Gastos compartidos:** marcar qué parte de un gasto le corresponde a otra persona y llevar el saldo que le deben.
 - **Estrategia de pago:** recomendación de qué tarjeta pagar primero con un monto disponible (método avalancha o bola de nieve).
 
@@ -175,7 +248,7 @@ Cuota fija:    C   = P · i / (1 − (1 + i)^(−N))
 Donde P es el valor de la compra, N el número de cuotas y S el saldo de capital antes de la cuota k.
 
 - La cuota k se asigna al extracto de la compra más k − 1 meses.
-- Los valores en COP se redondean a pesos enteros; la última cuota absorbe la diferencia de redondeo para que el capital sume exactamente P.
+- Los valores en COP se calculan y guardan con centavos (2 decimales), como los factura el banco, y se muestran en pesos enteros. La última cuota absorbe la diferencia de redondeo para que el capital sume exactamente P (D48). Los datos guardados antes en pesos enteros siguen siendo válidos.
 - Una compra a 1 cuota no genera intereses. Una compra marcada "sin intereses" usa i = 0.
 - La tasa queda congelada en la compra. Si el banco cobra otro valor, la diferencia se registra con un movimiento de tipo "ajuste" durante la conciliación.
 
@@ -224,6 +297,41 @@ Un avance genera dos movimientos: el avance (con cuotas, usando la tasa de avanc
 - **Deuda total registrada:** dato secundario en el inicio a partir de `card_balances.used` (D2), incluyendo tarjetas archivadas con saldo. No incluye proyecciones ni se limita al horizonte de 12 meses. Marcar extractos pagados no reduce esta cifra; los movimientos de abono sí participan en D2.
 - La lógica vive en funciones puras de `lib/domain/months.ts`, con pruebas, igual que el resto de reglas.
 
+### R8. Compras en curso, intereses sobre saldo, pago mínimo y deuda total
+
+- **Compras en curso (D31, D49):** el dueño copia del último extracto del banco la cuota k (ya facturada en ese extracto) y, opcionalmente, el saldo pendiente después de ella. Entonces p = k − 1 y, con saldo, c = P − saldo − P/N; sin saldo, c = p × P/N. La compra tiene p cuotas previas guardadas con `before_tracking = true`, sin extracto y con interés 0; c se reparte por igual entre ellas y la última absorbe el redondeo (dato informativo). La cuota k cae en el extracto indicado al registrarla (por defecto, el último extracto cerrado de la tarjeta) y las siguientes en los consecutivos; el movimiento queda en el extracto de la cuota k. No se crean extractos anteriores, ni cuota de manejo en ellos, ni la comisión de un avance en curso. Capital pendiente = valor − c. Si c es igual a p × P/N (con tolerancia de redondeo), se mantiene el plan de N cuotas. Si no, se conserva la cuota P/N y el plan efectivo pasa a p + ⌈pendiente ÷ cuota⌉ cuotas, con la última por el resto; el N original se conserva en su propio campo. El cupo (D2) cuenta solo el capital pendiente de estas compras.
+- **Intereses sobre saldo (D32):** en tarjetas con `interest_mode = on_balance`, todas las cuotas son de capital (interés 0) y cada extracto lleva un único cargo `interest`. Si no se ha registrado el real, se muestra una estimación no guardada: Σ (capital pendiente de cada compra o avance con interés al inicio del periodo × tasa mensual de su `rate_ea_applied`). Se excluyen compras a una cuota y sin intereses. La estimación aproxima el saldo promedio diario que usan los bancos y se etiqueta "Intereses estimados".
+- **Pago mínimo y deuda total (D33), por extracto y moneda:** pago mínimo = total del extracto según R5 en esa moneda. Deuda total = pago mínimo + capital pendiente, después de ese extracto, de todas las compras y avances de la tarjeta en esa moneda. Los valores reales del banco (`real_minimum`, `real_total`) son referencia y no sustituyen al cálculo (D27). La diferencia se muestra solo si supera el redondeo del banco (hasta 1 peso o 1 dólar hacia arriba).
+- **Monedas en los meses (D33):** los cargos en USD se suman en dólares y se muestran aparte ("y US$ 9"); no se convierten para sumarlos al total en pesos. Su equivalente en COP se muestra como referencia. Esto sustituye, para los totales mensuales, el uso de `total_cop` de cuotas en USD. En consecuencia, la falta de TRM ya no deja incompleto el total en pesos ni el total en dólares: solo falta el equivalente COP de referencia, con su aviso. El "Total conocido" de R7 y la condición de TRM faltante de D29 se aplican desde H10 solo a ese equivalente; las comparaciones entre meses usan el total en pesos y, aparte, el de dólares.
+- **Suscripciones diferidas (D35):** cada cobro previsto con `installments_count = N` aporta solo su cuota a cada extracto proyectado (P/N de capital más el interés según el modo de la tarjeta). Los cobros previstos sucesivos se acumulan dentro del horizonte de 12 meses.
+
+### R9. Pagos y abonos a capital
+
+Basado en lo que publica Bancolombia para tarjetas de crédito (centro de ayuda, consultado el 16 de noviembre de 2026) y en su reglamento de productos.
+
+- **Orden del pago:** todo pago cubre primero el pago mínimo facturado (y la mora, si existe); lo restante es un abono extraordinario a capital. Dentro del pago mínimo, el reglamento aplica: intereses de mora, intereses corrientes, comisiones y cuota de manejo, y por último capital.
+- **Sin abonos dirigidos:** Bancolombia no permite elegir la compra; aplica el abono por tipo de saldo en este orden publicado.
+    - Pesos: mora; comisiones; saldo a favor; comisiones diferidas; compras a una cuota; ajustes de una cuota; segundo plan de compras; compras a cuotas diferidas; impuestos; ofertas; impuesto de oficina; compras internacionales; avances; avances internacionales; compra de cartera; ofertas 2; compras con tasa 0 %; ampliación de plazo; cash retail.
+    - Dólares: mora; comisiones; saldo a favor; comisiones diferidas; compras de cuotas diferidas; ajustes a una cuota; avances; compras con tasa 0 %; ampliación de plazo; cash retail.
+- **No publicado:** el orden entre compras del mismo nivel. La app usa la más antigua como supuesto explícito, y el cierre mensual (F15) lo corrige con el saldo por compra del extracto, que sí lo muestra.
+- **Efecto en la compra:** Bancolombia indica que el pago mínimo no baja tras un abono; es decir, se mantiene la cuota y se reduce el plazo. Los saldos irregulares de los extractos de noviembre de 2026 lo confirman. La app usa `reduce_term` por defecto: misma cuota, cuotas restantes = ⌈saldo ÷ cuota⌉, última por el resto. `reduce_installment` (mismo plazo, nueva cuota = saldo ÷ cuotas restantes) existe porque la Ley 1555 de 2012 da al deudor el derecho a elegir; en el banco hay que pedirlo expresamente.
+- **Otros bancos:** Davivienda y Falabella aplican el excedente a la utilización más antigua (`oldest_first`). Para bancos que permitan abonos dirigidos, `directed`.
+- **Intereses:** en `on_balance`, el abono reduce el capital desde su fecha; la estimación del periodo prorratea por días. El valor real llega con el cierre mensual.
+- **Pago total:** liquida todo el capital pendiente de esa moneda; ninguna cuota futura de esas compras se proyecta.
+- **Monedas:** un pago se aplica solo a la moneda en que se registra (D33).
+
+### R10. Captura por correo e IA
+
+- **Origen:** solo correos de `alertasynotificaciones@notificacionesbancolombia.com` con firma DKIM válida del dominio `notificacionesbancolombia.com` (encabezado `Authentication-Results`). El resto se ignora.
+- **Filtro de tarjeta de crédito:** la frase debe mencionar `T.Cred *` seguido de 4 dígitos. Es condición necesaria, no suficiente: el tipo de movimiento se decide por el verbo ("Compraste" es compra; avances, pagos y otros formatos pasan al respaldo con IA). Un pago a la tarjeta hecho desde la cuenta de ahorros menciona ambas cosas y se clasifica como pago.
+- **Asignación de tarjeta:** por los 4 dígitos contra `last4` y alias de la tarjeta (`card_aliases`, para tarjetas virtuales o reexpedidas). Si no coinciden con ninguna tarjeta activa, el borrador queda como "Tarjeta no registrada" para asignarla o descartarlo; nunca se asigna por aproximación.
+- **Reglas primero:** para el formato de compra, las reglas extraen tipo, monto, moneda, comercio tal como viene, fecha, hora y últimos 4 dígitos. Estos campos nunca los define la IA.
+- **IA para interpretar:** con el comercio y un resumen breve del historial de ese comercio, sugiere nombre limpio, categoría, suscripción relacionada y cambio de monto, moneda probable de facturación, cuotas sugeridas, si es internacional y un nivel de confianza. Ejemplo: "GOOGLE *ChatGPT" por COP 81.000 puede facturarse en USD a 36 cuotas, como los cobros de Google del extracto de noviembre de 2026.
+- **IA como respaldo:** si la frase no coincide con un formato conocido, la IA extrae los campos y cada número de su respuesta debe aparecer literalmente en el texto. Si no, el borrador queda como "Revisar".
+- **Sin IA disponible:** el borrador se crea igual con los datos de las reglas y sin sugerencias.
+- **Seguridad del endpoint:** firma HMAC con marca de tiempo (máximo 5 minutos), idempotencia por identificador del mensaje, límite de solicitudes y opción de apagado. Cuerpo máximo de pocos KB. El secreto de firma y el usuario dueño viven en variables de entorno del servidor; la rotación es un procedimiento documentado, no una acción de la app (D51).
+- **Privacidad:** a la app y a la IA solo llega la frase del movimiento, sin pies de página ni datos personales; la tarjeta viaja a la IA como identificador interno. No se guarda el HTML del correo. La frase original se conserva solo en el borrador y se borra al confirmarlo o descartarlo. En la API de Claude, las entradas y salidas se borran en un máximo de 30 días y no se usan para entrenar.
+
 ## 6. Modelo de datos
 
 Ocho tablas en Postgres (Supabase), todas con `id uuid`, `user_id`, `created_at` y políticas RLS `user_id = auth.uid()`. Los montos son `numeric(14,2)`, nunca `float`; las fechas de negocio son `date`.
@@ -250,6 +358,22 @@ Ocho tablas en Postgres (Supabase), todas con `id uuid`, `user_id`, `created_at`
 - `statement_totals`: total calculado por extracto y por concepto, uniendo movimientos de 1 cuota e `installments`.
 - `card_balances`: capital pendiente, cupo disponible y utilización por tarjeta.
 
+**Cambios previstos en H10 y H12** (aprobados, pendientes de implementación; el nombre final de cada columna lo confirma el plan del paso)
+
+| Paso | Tablas y columnas |
+| --- | --- |
+| 27 | `transactions.prior_installments`, `prior_principal_paid`, `original_installments_count`; `installments.before_tracking` con `statement_id` nulo solo en cuotas previas. Límite del plan efectivo y del número de cuota: 72 (D50). |
+| 29 | `cards.interest_mode` (`per_installment`, `on_balance`). |
+| 30 | `statement_balances` (extracto, moneda, `real_minimum`, `real_total`, `paid_at`), que sustituye a `statements.real_total` y `statements.paid_at`; `statement_totals` por moneda. |
+| 31 | `cards.usd_default_installments`, `subscriptions.installments_count`. |
+| 32 | `cards.payment_allocation_rule`; `transactions.paid_statement_id`, `payment_kind`, `is_international`; `principal_prepayments` (pago, compra, valor, efecto, supuesto). |
+| 33 | `statement_balances.reconciled_at`; tipo de movimiento `late_interest`. |
+| 34 | Comisión de avance guardada por movimiento (sin columna nueva en `cards`). |
+| 35 | `transactions.statement_override` para los movimientos de borde importados (D30). |
+| 40–42 | `ai_usage`, `transaction_drafts`, `card_aliases`, `capture_settings`, todas con `user_id` y RLS. |
+
+Cada tabla o columna nueva se agrega también a la exportación de datos (`lib/export-schema.ts`), salvo `transaction_drafts`, que puede contener la frase original de un correo (D47).
+
 Las migraciones se manejan con el CLI de Supabase (`supabase/migrations`) y los tipos de TypeScript se generan con `supabase gen types`.
 
 ## 7. Stack y arquitectura
@@ -267,7 +391,8 @@ La app usa Next.js en Vercel con Supabase como base de datos, autenticación y t
 | Dinero y fechas | decimal.js, date-fns + date-fns-tz | Aritmética exacta y zona horaria fija. |
 | Pruebas | Vitest | Pruebas rápidas de `lib/domain/`. |
 | Email (v2) | Resend | Envío simple desde Edge Functions. |
-| IA (v3) | API de Claude | Extraer movimientos de extractos en PDF. |
+| IA (v2, H12) | API de Claude con el SDK de Anthropic, detrás de `lib/ai/` | Salidas estructuradas para interpretar alertas; en v3, leer extractos en PDF. |
+| Captura de correo (v2, H12) | Google Apps Script en la cuenta del dueño, versionado con `clasp` | El correo nunca sale de Google; solo se envía la frase del movimiento. |
 | Hosting | Vercel (plan Hobby) | Despliegue automático en cada push. |
 
 ```mermaid
@@ -291,14 +416,16 @@ flowchart LR
   SA --> PG
   EF --> R["Resend (v2)"]
   EF --> T["TRM datos.gov.co (v2)"]
-  V --> AI["API de Claude (v3)<br/>leer extractos en PDF"]
+  V --> AI["API de Claude (v2, H12)<br/>interpretar alertas; PDF en v3"]
+  G["Apps Script (v2, H12)<br/>cuenta de Google del dueño"] --> IN["Ruta de ingesta<br/>firma HMAC"]
+  IN --> PG
 ```
 
 Todo lo que escribe datos pasa por Server Actions, que usan `lib/domain` para calcular extractos y cuotas antes de guardar. Las tareas diarias no dependen de Vercel: Supabase Cron ejecuta funciones SQL y, desde v2, llama Edge Functions para la TRM y los correos.
 
 ## 8. Pantallas y flujos
 
-El producto tiene nueve pantallas. El diseño es mobile-first, con navegación inferior en el celular y lateral en el computador, y soporta modo claro y oscuro.
+El producto tiene nueve pantallas; H12 agrega una décima, `/por-confirmar`. El diseño es mobile-first, con navegación inferior en el celular y lateral en el computador, y soporta modo claro y oscuro.
 
 | Ruta | Pantalla | Contenido |
 | --- | --- | --- |
@@ -311,6 +438,7 @@ El producto tiene nueve pantallas. El diseño es mobile-first, con navegación i
 | `/tarjetas/[id]/extractos/[cutoff]` | Extracto | Desglose por concepto, total calculado frente al real, marcar como pagado. |
 | `/suscripciones` | Suscripciones | Lista con próximo cobro, costo mensual y anual total, pruebas por vencer. |
 | `/ajustes` | Ajustes | Tarjetas, categorías, preferencias y exportación de datos. |
+| `/por-confirmar` | Por confirmar (H12) | Borradores capturados del correo, con sugerencias marcadas, para confirmar, unir o descartar. No es un quinto destino de la navegación (D25). |
 
 **Flujo principal: registrar una compra a cuotas**
 
@@ -381,6 +509,9 @@ El MVP original se construyó en 9 hitos (H0–H8); H9 agrega la vista por meses
 8. **H7. Tablero e historial.** Indicadores, filtros y gráficos.
 9. **H8. Pulido.** Diseño responsive, estados vacíos, modo oscuro y exportación de datos.
 10. **H9. Vista por meses (MVP 1.1).** Dominio de meses de pago y proyección (R7), brief de diseño, lista de meses como inicio, detalle de mes, ajuste de vistas relacionadas y validación. Pasos 21 a 26 de `plans/`.
+11. **H10. Fidelidad con el extracto bancario (MVP 1.2).** Compras en curso, intereses sobre saldo, pago mínimo y deuda total por moneda, suscripciones diferidas, pagos por tipo y abonos a capital, cierre mensual, cambio de cuotas, comisión de avance por movimiento e importación de los extractos reales de noviembre. Pasos 27 a 35 de `plans/`.
+12. **H11. Prioridades de v2.** Cuotas y categoría sugeridas por comercio, costo de diferir, importación mensual de extractos y pago del saldo USD en pesos. Pasos 36 a 39 reservados; se planifican al cerrar H10.
+13. **H12. Capa de IA y captura por correo (v2).** Capa de IA, borradores por confirmar, endpoint de ingesta con reglas, interpretación con IA, script de Apps Script y validación. Pasos 40 a 45 de `plans/`.
 
 **Cómo trabajar cada hito**
 
@@ -400,13 +531,13 @@ El mayor riesgo es que los cálculos no coincidan con los del banco; la concilia
 | --- | --- |
 | Cada banco calcula intereses de forma distinta (interés proporcional de la primera cuota, redondeos). | Método de amortización por tarjeta y movimientos de ajuste en la conciliación. |
 | La tasa de las tarjetas cambia cada mes. | La tasa se congela por compra; las diferencias se ajustan contra el extracto real. |
-| Registrar a mano es tedioso y se abandona. | Registro rápido en el MVP; importación de PDF y captura por email en v3. |
+| Registrar a mano es tedioso y se abandona. | Registro rápido en el MVP; captura por correo en v2 (H12); importación de PDF en v3. |
 | Errores de fecha por zona horaria. | Tipo `date`, zona fija y pruebas de casos límite. |
 
 **Preguntas abiertas**
 
-- [ ] ¿Alguna tarjeta tiene corte variable (por ejemplo, "último día hábil") en lugar de un día fijo?
-- [ ] ¿Los bancos amortizan las compras con capital fijo o con cuota fija? Se puede confirmar con la tabla de un extracto real.
+- [x] Corte variable: Bancolombia corta entre el 14 y el 16. Se normaliza a día fijo 15 con pago el 2 (D30).
+- [x] Amortización: Bancolombia usa capital fijo (cuota = valor / N) y cobra los intereses sobre saldo en una línea aparte, confirmado con los extractos de noviembre de 2026. Davivienda y BBVA describen el mismo esquema; Nu calcula intereses diarios compuestos y se debe confirmar con un extracto real (D32).
 - [x] Tratamiento de USD en la app: se amortiza en USD y se guarda el equivalente estimado en COP con la TRM de la compra (D3). La forma de facturación de cada banco se confirma con su extracto real.
 - [x] Cambio de día de corte: solo afecta movimientos nuevos; no recalcula extractos existentes y la interfaz lo advierte (D10).
 - [ ] ¿Los recordatorios bastan por email o se quieren notificaciones push en el celular?
@@ -417,7 +548,7 @@ Múltiples usuarios, conexión directa con bancos, cuentas de ahorro, inversione
 
 ### Decisiones aprobadas durante la implementación
 
-Este registro consolida las decisiones del dueño de `plans/README.md`; no sustituye la comprobación contra extractos bancarios. D1–D10, D15 y D16 fueron aprobadas el 9 de noviembre de 2026; D11–D13 el 10; D14 el 11; D17 y D18–D29 el 13, incluidas las precisiones de la revisión de H9. Aprobar una regla no equivale a haberla implementado.
+Este registro consolida las decisiones del dueño de `plans/README.md`; no sustituye la comprobación contra extractos bancarios. D1–D10, D15 y D16 fueron aprobadas el 9 de noviembre de 2026; D11–D13 el 10; D14 el 11; D17 y D18–D29 el 13, incluidas las precisiones de la revisión de H9; D30–D41 el 16; D42–D51 el 17. Aprobar una regla no equivale a haberla implementado.
 
 | Decisión | Regla vigente del MVP |
 | --- | --- |
@@ -450,5 +581,27 @@ Este registro consolida las decisiones del dueño de `plans/README.md`; no susti
 | D27 · Total calculado | El total mensual usa el cálculo y los cargos previstos conocidos; `real_total` se conserva como referencia en el extracto, sin sustituir importes ni crear ajustes implícitos. Si falta TRM, se identifica como "Total conocido" incompleto. |
 | D28 · Desglose mensual | Conceptos y categorías explican el mismo mes de pago: cuotas por `total_cop`, categoría de la compra original, cargos y proyecciones con su categoría o "Sin categoría". Ajustes incluidos, devoluciones restadas y pagos aparte; no se duplica compra completa ni interés. Se conservan ceros y negativos según R7. |
 | D29 · Comparación mensual | Solo meses de pago cerrados, con datos y sin proyecciones ni TRM faltante admiten variación porcentual; para el actual abierto o futuro se indica su condición sin afirmar ahorro. Bases no significativas y porcentajes extremos usan texto neutro o diferencia monetaria. |
+| D30 · Corte normalizado | Bancolombia corta entre el 14 y el 16; las dos tarjetas usan día fijo 15 y pago el 2. Los movimientos de borde importados conservan el extracto en que los facturó el banco; los nuevos usan R1. |
+| D31 · Compras en curso | Cuotas previas guardadas sin extracto y con interés 0, marcadas `before_tracking`; capital previo explícito; si no coincide con el plan, se respeta el saldo del banco con la misma cuota y menos cuotas. El cupo cuenta solo el capital pendiente. |
+| D32 · Intereses sobre saldo | `interest_mode` por tarjeta: `per_installment` (R2) u `on_balance`. En `on_balance`, cuotas solo de capital y un cargo de intereses por extracto, real o estimado sin guardar. El modo solo se puede cambiar mientras la tarjeta no tenga compras a varias cuotas. |
+| D33 · Pago mínimo, deuda y monedas | Por extracto y moneda: pago mínimo (R5) y deuda total calculados, valores del banco como referencia y pago marcado por separado. Los meses suman COP y USD por separado. |
+| D34 · Cuotas por defecto en USD | `usd_default_installments` por tarjeta (1 a 36, por defecto 1; 36 en Bancolombia). El formulario lo precarga al elegir USD. |
+| D35 · Suscripciones diferidas | `installments_count` por suscripción (1 a 36; en USD, el valor por defecto de la tarjeta). El cron registra cada cobro como compra a esas cuotas y la proyección acumula cuotas. |
+| D36 · Importación de extractos | JSON `al-corte-import` v1 y script de un solo uso, fuera de git, con la cuenta como dato por completar. Se ejecuta en una transacción, sin duplicar si se repite, y se verifica contra pago mínimo, deuda total y cupo del banco. |
+| D37 · Pagos por tipo | Mínimo, total u otro valor por extracto y moneda. El total liquida las cuotas futuras; otro valor cubre primero el mínimo y el excedente es abono a capital. Marcar pagado sin valor (D26) sigue disponible. |
+| D38 · Abonos a capital | Regla de aplicación por tarjeta (`bancolombia_priority`, `oldest_first`, `directed`) y efecto por abono (`reduce_term` por defecto, `reduce_installment`). La distribución propuesta se puede editar antes de guardar y el cierre mensual la corrige con el saldo del banco (R9). |
+| D39 · Cierre mensual | Valores del banco por moneda y saldo por compra opcional; diferencias visibles fuera del redondeo; extracto "Conciliado" reabrible. La tasa vigente aplica solo a compras nuevas. |
+| D40 · Cambio de cuotas | Nuevo número de cuotas restantes desde la próxima sin facturar; conserva facturadas y previas. Sin ampliación de plazo global en H10. Precisado por D50. |
+| D41 · Comisión de avance | La de la tarjeta es el valor por defecto; cada avance guarda la suya. |
+| D42 · Capa de IA | Tareas con nombre en `lib/ai/`, SDK de Anthropic, salidas estructuradas revalidadas con Zod, sin herramientas, solo servidor, tope mensual, registro sin contenido y evals. |
+| D43 · Fuente de captura | Google Apps Script en la cuenta del dueño, cada 5 minutos, con firma HMAC hacia una ruta de Next.js. La integración directa con la API de Gmail se descarta por exponer todo el buzón. |
+| D44 · Filtro y tarjeta | Remitente de alertas de Bancolombia con DKIM válido y frase con `T.Cred *NNNN`; lo demás se descarta en el script. Tarjeta por `last4` o alias; sin coincidencia, "Tarjeta no registrada". |
+| D45 · Reglas e IA | Las reglas definen monto, moneda, fecha, hora, comercio original y tarjeta; la IA solo sugiere interpretación. Respaldo con IA para formatos desconocidos con verificación literal de números. |
+| D46 · Borradores | Tabla aparte de movimientos: no participan en ningún cálculo hasta confirmarse. Dedupe por mensaje y propuesta de unión con movimientos manuales iguales. |
+| D47 · Privacidad del correo | Solo la frase del movimiento sale de Google; sin HTML ni datos personales; la frase se borra al confirmar o descartar. |
+| D48 · Centavos en COP | El dinero en COP se calcula y guarda con 2 decimales, como lo factura el banco, y se muestra en pesos enteros. Sustituye el redondeo a pesos de R2 para cálculos nuevos; los datos existentes siguen válidos. |
+| D49 · Datos de una compra en curso | La cuota k y el saldo se copian del último extracto del banco: k es la cuota ya facturada en ese extracto y el saldo es el que queda después de ella. Por defecto, la cuota k cae en el último extracto cerrado de la tarjeta. |
+| D50 · Cuotas restantes y límite | El cambio de cuotas pide las restantes (1 a 36) sobre el saldo pendiente. El plan efectivo y el número de cuota admiten hasta 72 (facturadas o previas más nuevas); las compras nuevas siguen limitadas a 36 (D15). |
+| D51 · Secreto de ingesta | Secreto de firma y usuario dueño en variables de entorno del servidor. Rotar es un procedimiento documentado (Vercel, despliegue y script). Ajustes solo enciende o apaga la captura. |
 
 Precisiones posteriores aprobadas: al editar una compra se conserva la tasa original si no cambian tarjeta ni tipo (10 de noviembre); guardar una suscripción intenta generar su cobro de hoy sin esperar al cron (10 de noviembre); el tablero prioriza el extracto no pagado con vencimiento más antiguo, incluso vencido (11 de noviembre; desde D25 lo cubre la alerta de vencidos de D23).

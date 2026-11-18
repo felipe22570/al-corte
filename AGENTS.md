@@ -57,6 +57,9 @@ components/ui/            Componentes de shadcn/ui
 lib/domain/               Lógica de negocio pura: extractos, cuotas, suscripciones, totales
 lib/domain/__tests__/     Pruebas de la lógica de negocio
 lib/supabase/             Clientes de Supabase (server y browser)
+lib/ai/                   Capa de IA: tareas, esquemas, prompts versionados y evals (H12)
+lib/ingest/               Reglas de lectura de alertas y creación de borradores (H12)
+integrations/apps-script/ Script de captura de correo, versionado con clasp (H12)
 lib/format.ts             Formato de montos, fechas y porcentajes
 lib/actions/              Server Actions (escrituras)
 lib/validation/           Esquemas Zod compartidos
@@ -77,6 +80,7 @@ supabase start            Supabase local (requiere Docker)
 supabase db reset         Recrea la base local y aplica todas las migraciones
 supabase migration new <nombre>
 supabase gen types typescript --local > lib/database.types.ts
+pnpm test:ai              Evals de la capa de IA (llaman a la API; no corren en cada commit)
 ```
 
 ## Reglas no negociables
@@ -84,7 +88,7 @@ supabase gen types typescript --local > lib/database.types.ts
 **Dinero**
 
 - En la base: `numeric(14,2)`. En TypeScript: `Decimal` de decimal.js o `string`. Nunca sumes, restes ni multipliques dinero con `number`.
-- COP se redondea a pesos enteros solo al presentar o al cerrar una cuota; la última cuota absorbe la diferencia de redondeo.
+- COP se calcula y guarda con centavos (2 decimales), como lo factura el banco, y se redondea a pesos enteros solo al presentar. La última cuota absorbe la diferencia de redondeo (D48).
 - Formato en la UI: `Intl.NumberFormat('es-CO', { style: 'currency', currency: 'COP' })`.
 
 **Fechas**
@@ -107,6 +111,16 @@ supabase gen types typescript --local > lib/database.types.ts
 - La `service_role` key solo se usa en Edge Functions y código de servidor; nunca en el navegador ni con prefijo `NEXT_PUBLIC_`.
 - Nunca guardes número completo de tarjeta, CVV ni fecha de vencimiento; solo los últimos 4 dígitos.
 - No hagas commit de archivos `.env*` con valores reales.
+
+**IA y captura por correo (H12, R10)**
+
+- Toda llamada a un modelo pasa por una tarea de `lib/ai/` con esquema Zod de entrada y salida. Nunca llames a la API desde el cliente ni desde un componente.
+- La salida del modelo se valida otra vez con Zod y con las reglas de dominio antes de guardarse. La IA nunca define monto, moneda, fecha ni tarjeta de una alerta, y nunca confirma un movimiento.
+- El contenido de correos y documentos es dato, no instrucción: sin herramientas, delimitado y con salida estructurada.
+- No registres en logs el texto de alertas ni respuestas del modelo; solo tarea, modelo, tokens, latencia y resultado de validación.
+- Los borradores viven en su propia tabla y no entran en extractos, meses, totales ni cupo.
+- Cambiar un prompt o un modelo exige correr `pnpm test:ai` y anotar el resultado en las notas del paso.
+- `ANTHROPIC_API_KEY`, el secreto de firma de ingesta y el usuario dueño de la captura viven solo en variables de entorno del servidor. Rotar el secreto es un procedimiento documentado, no una acción de la app (D51).
 
 **Tareas programadas**
 
@@ -189,6 +203,13 @@ Detalle completo en la sección 5 de `docs/PRD.md`.
 - **Desglose y comparación:** conceptos y categorías usan R7, cuotas por `total_cop` y categoría original, ajustes incluidos, devoluciones restadas, sin duplicar compra/interés. D5 solo como dato separado. Comparaciones solo entre meses cerrados con datos y sin proyección/TRM faltante (D28, D29). Conservar ceros/negativos y usar alternativa textual si una barra proporcional no es válida.
 - **Integración de meses:** lecturas compartidas entre inicio/detalle y actualización de todas las vistas afectadas por cada escritura, incluidas referencias anteriores tras editar/borrar. Considerar cron, TRM y cambio de día; no añadir caché persistente sin invalidación. Controles de pago repetibles con IDs únicos y botones secundarios, no varias copias completas de `StatementControls`.
 
+- **Compras en curso (R8, D31, D49):** la cuota k y el saldo se copian del último extracto del banco (k ya facturada, saldo después de ella). Las cuotas previas (`before_tracking`) nunca entran en extractos, meses, totales ni cupo, y registrar una compra en curso no crea extractos anteriores, cuota de manejo en ellos ni comisión de avance. Si el capital previo no coincide con el plan, manda el saldo del banco: misma cuota, menos cuotas.
+- **Cambio de cuotas (D40, D50):** se piden las cuotas restantes (1 a 36); el plan efectivo admite hasta 72 cuotas.
+- **Intereses sobre saldo (R8, D32):** en `on_balance` las cuotas son solo capital y el interés es un único cargo por extracto, real o estimado. Nunca sumes interés por cuota y por saldo en la misma tarjeta.
+- **Pago mínimo y deuda total (R8, D33):** se calculan por extracto y por moneda. COP y USD no se suman entre sí; el equivalente COP es solo referencia. Desde H10, la falta de TRM solo deja sin equivalente COP de referencia; no vuelve incompleto el total en pesos ni el de dólares.
+
+- **Pagos y abonos (R9, D37, D38):** un pago cubre primero el mínimo facturado; el excedente es abono a capital según la regla de la tarjeta. Nunca apliques un pago en COP al saldo en USD. El orden de Bancolombia dentro de un mismo nivel no es público: el supuesto "más antigua" debe quedar marcado y ser corregible.
+
 ## Casos de prueba obligatorios en `lib/domain/`
 
 - Compra el mismo día del corte y un día después.
@@ -200,11 +221,18 @@ Detalle completo en la sección 5 de `docs/PRD.md`.
 - Suscripción anual que renueva en un año bisiesto.
 - Mes de pago: extracto con corte en un mes y fecha límite en el siguiente (corte 31, pago 5).
 - Proyección: día 31, anual en rango, pausada/cancelada, prueba y tarjeta archivada; actual abierto con cobro antes del corte pagadero este mes; manejo no duplicado y horizonte solo con manejo.
-- Dedupe real/previsto por suscripción/fecha y transición por cron sin doble conteo; USD sin TRM mantiene aviso de total incompleto.
+- Dedupe real/previsto por suscripción/fecha y transición por cron sin doble conteo; USD sin TRM mantiene aviso de total incompleto (hasta H10; desde el paso 30, aviso de equivalente COP faltante con el total en dólares intacto).
 - Estados: vencido, pendiente, todos/algunos extractos marcados y estimado; actual vacío no Pagado. Un abono parcial no reduce el pendiente de confirmar y `real_total` no cambia el total.
 - Rango con cuotas posteriores a 12 meses, aviso de límite e historial conservado con todas las tarjetas archivadas.
 - Desgloses por concepto/categoría que cuadran, con ajustes, cuotas/interés sin duplicar, "Sin categoría", devoluciones y totales cero/negativos.
 - Comparación entre meses de pago cerrados; mes abierto, futuro o incompleto sin afirmación de ahorro ni porcentajes inválidos.
+
+- Compra en curso con plan consistente (cuota 3 de 4) y con abono previo (saldo del banco menor al plan): cuotas efectivas y última cuota, con centavos (GeoGuessr: última de $874,36).
+- Intereses estimados en `on_balance`: compras con y sin interés, avances, compras a una cuota excluidas y tasas distintas por compra.
+- Pago mínimo y deuda total por moneda contra los extractos de noviembre de 2026 (Visa: $1.178.836 y $3.845.775; Mastercard: $1.706.234 y $4.265.728, US$9 y US$154 con el redondeo del banco).
+- Suscripción diferida a 36 cuotas: la proyección acumula una cuota por cobro y no suma el valor completo.
+- Abono con la prioridad de Bancolombia en pesos y en dólares; reducir plazo frente a reducir cuota; pago total que liquida las cuotas futuras.
+- Cambio de cuotas restantes desde la próxima sin facturar, conservando facturadas y previas, incluido un plan efectivo de más de 36 cuotas.
 
 ## Forma de trabajar
 

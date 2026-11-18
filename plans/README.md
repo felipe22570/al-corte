@@ -11,7 +11,7 @@ Este directorio divide la implementación del MVP de **Al Corte** (sección 4 y 
 3. Cambia el estado del paso a 🟡 en la tabla y en el encabezado del archivo, y anota la fecha de inicio.
 4. Ve marcando las casillas `- [ ]` de las tareas a medida que avances.
 5. Ejecuta **todas** las verificaciones de la sección "Verificación". Solo si pasan, marca el paso como ✅, anota la fecha, el hash del commit y cualquier decisión en "Notas de progreso".
-6. Haz un commit por paso (Conventional Commits, en inglés). Al cerrar un hito completo (H0…H9), confirma que se cumple también la "Definición de terminado" global.
+6. Haz un commit por paso (Conventional Commits, en inglés). Al cerrar un hito completo (H0…H12), confirma que se cumple también la "Definición de terminado" global.
 
 Prompt sugerido para el agente al iniciar un paso:
 
@@ -54,6 +54,22 @@ Prompt sugerido para el agente al iniciar un paso:
 | 24 | [Detalle de un mes](24-detalle-mes.md) | H9 | ✅ | Ver historial de git |
 | 25 | [Ajuste de vistas relacionadas y retiro del tablero](25-ajuste-vistas.md) | H9 | ✅ | Ver historial de git |
 | 26 | [Pulido y validación de H9](26-validacion-meses.md) | H9 | 🟡 | |
+| 27 | [Compras en curso: datos y dominio](27-compras-en-curso-dominio.md) | H10 | ⬜ | |
+| 28 | [Compras en curso: formulario y vistas](28-compras-en-curso-ui.md) | H10 | ⬜ | |
+| 29 | [Intereses sobre saldo](29-intereses-sobre-saldo.md) | H10 | ⬜ | |
+| 30 | [Pago mínimo, deuda total y saldos por moneda](30-pago-minimo-deuda-monedas.md) | H10 | ⬜ | |
+| 31 | [Suscripciones diferidas y cuotas por defecto en USD](31-suscripciones-diferidas.md) | H10 | ⬜ | |
+| 32 | [Pagos por tipo y abonos a capital](32-pagos-abonos-capital.md) | H10 | ⬜ | |
+| 33 | [Cierre mensual del extracto](33-cierre-mensual.md) | H10 | ⬜ | |
+| 34 | [Cambio de cuotas y comisión de avance por movimiento](34-cambio-cuotas-comision-avance.md) | H10 | ⬜ | |
+| 35 | [Importación de los extractos reales](35-importacion-extractos.md) | H10 | ⬜ | |
+| 36–39 | Reservados para H11 (prioridades 1 a 4 de v2), por planificar | H11 | ⬜ | |
+| 40 | [Capa de IA](40-capa-ia.md) | H12 | ⬜ | |
+| 41 | [Borradores por confirmar](41-borradores.md) | H12 | ⬜ | |
+| 42 | [Endpoint de ingesta y reglas de alertas](42-ingesta-reglas.md) | H12 | ⬜ | |
+| 43 | [Interpretación de alertas con IA](43-interpretacion-ia.md) | H12 | ⬜ | |
+| 44 | [Script de captura en Apps Script](44-apps-script.md) | H12 | ⬜ | |
+| 45 | [Validación de H12](45-validacion-captura.md) | H12 | ⬜ | |
 
 **MVP cerrado el 12 de noviembre de 2026 por aprobación explícita del dueño con las limitaciones del paso 20.** Los veinte pasos están en ✅. Pasan 117 pruebas de Vitest, 167 pruebas SQL, cobertura de dominio 100 %, build y lint. La revisión adicional con la extensión real axe DevTools cubrió 52 combinaciones sin fallas confirmadas; los casos de contraste y foco se revisaron aparte. El cron remoto se ejecutó a las 05:00 de Bogotá y generó un solo cobro de 25.000 COP para la suscripción de prueba. La etiqueta `mvp` identifica el commit de cierre.
 
@@ -108,8 +124,8 @@ Pruebas de base de datos: se usa `supabase test db` (pgTAP, incluido en el CLI d
 - **Montos siempre positivos.** El signo lo da el `type`: `payment` y `refund` son abonos; todo lo demás son cargos.
 - **R1 vive en dos lugares.** En TypeScript (`lib/domain/`) para la UI y las Server Actions, y en SQL para la tarea de `pg_cron` y la creación de extractos dentro de las RPC. Las pruebas pgTAP del paso 08 replican los mismos casos que las pruebas de Vitest del paso 04 para evitar que diverjan.
 - **Cuotas.** Solo se crean filas en `installments` cuando `installments_count > 1`. Una compra de 1 cuota cuenta en el extracto por `transactions.statement_id`; una compra a N cuotas cuenta solo por sus `installments`.
-- **Redondeo.** Montos en COP: `ROUND_HALF_UP` a pesos enteros por cuota (capital e interés por separado); la última cuota absorbe la diferencia de capital. USD: 2 decimales.
-- **Cuotas en USD (D3).** Una compra en USD se amortiza en USD (centavos, la última cuota absorbe la diferencia para que Σ capital = `amount`). Cada cuota guarda además su equivalente en COP (`principal_cop`, `interest_cop`, `total_cop`) con la TRM de la compra, redondeado a pesos, y la última cuota absorbe la diferencia para que Σ `principal_cop` = `amount_cop`. Los totales de extractos, cupo y gráficos usan siempre las columnas `_cop`. Para cuotas en COP, las columnas `_cop` son iguales a las originales.
+- **Redondeo.** Montos en COP: `ROUND_HALF_UP` a pesos enteros por cuota (capital e interés por separado); la última cuota absorbe la diferencia de capital. USD: 2 decimales. **Desde el paso 27 (D48):** COP también a 2 decimales en cálculo y almacenamiento, y pesos enteros solo al presentar.
+- **Cuotas en USD (D3).** Una compra en USD se amortiza en USD (centavos, la última cuota absorbe la diferencia para que Σ capital = `amount`). Cada cuota guarda además su equivalente en COP (`principal_cop`, `interest_cop`, `total_cop`) con la TRM de la compra, redondeado a pesos (a centavos desde D48), y la última cuota absorbe la diferencia para que Σ `principal_cop` = `amount_cop`. Los totales de extractos, cupo y gráficos usan siempre las columnas `_cop`; desde el paso 30 (D33), los totales de extractos y meses se calculan por moneda y las columnas `_cop` quedan como referencia y para el cupo. Para cuotas en COP, las columnas `_cop` son iguales a las originales.
 - **Vistas con `security_invoker = true`** para que respeten RLS.
 - **`user_id` con `default auth.uid()`** en todas las tablas con dueño; la tarea de `pg_cron` lo escribe explícitamente desde la suscripción.
 - **Lecturas de meses:** capa de consultas compartida por inicio y detalle, con dominio puro y paginación que nunca corte cargos de un mismo total. Las proyecciones no escriben datos y mantienen la identidad `(subscription_id, date)` para dar prioridad al cobro real.
@@ -185,7 +201,43 @@ Aprobadas por el dueño el 2026-11-13. El detalle de cada regla está en R7 y en
 | D28 | **Conceptos y categorías.** | Mismo mes de pago y total neto: cuotas por `total_cop` con categoría original, cargos y previstos con categoría o "Sin categoría", ajustes incluidos y devoluciones restadas. Sin duplicar capital/interés; signos conservados y barra con fallback para cero/negativos. | 21–26 |
 | D29 | **Comparación de meses.** | Solo meses cerrados comparables, sin proyección ni TRM faltante. Sin afirmar ahorro en meses abiertos/estimados/incompletos; bases no significativas con texto neutro o diferencia monetaria. | 21–26 |
 
-Preguntas abiertas del PRD que no bloquean el MVP: corte variable ("último día hábil"), notificaciones push (v2). Se dejan anotadas en `docs/PRD.md`.
+**H10 · Fidelidad con el extracto bancario (MVP 1.2).** Aprobada por el dueño el 16 de noviembre de 2026 (D30–D41 del PRD, precisadas por D48–D50 el 17) a partir de sus extractos reales de Bancolombia. Empieza cuando el paso 26 esté en ✅. Los pasos 27 a 34 cambian datos, dominio y vistas; el 35 carga los datos reales con `al-corte-import-2026-11.json` y solo se ejecuta en producción cuando los anteriores estén desplegados. Las suscripciones diferidas (31) van antes de pagos y abonos por prioridad del dueño.
+
+### Decisiones de H10 (fidelidad con el extracto)
+
+| # | Tema | Decisión | Paso afectado |
+| --- | --- | --- | --- |
+| D30 | **Corte variable de Bancolombia.** | Día fijo 15 y pago el 2. Los movimientos de borde importados conservan el extracto del banco; los nuevos usan R1. | 35 |
+| D31 | **Compras en curso.** | Cuotas previas sin extracto (`before_tracking`), capital previo explícito, saldo del banco por encima del plan cuando no coinciden. Cupo solo con capital pendiente. | 27, 28, 33, 35 |
+| D32 | **Intereses sobre saldo.** | `interest_mode` por tarjeta. En `on_balance`, cuotas de capital y un cargo de intereses por extracto, real o estimado. Modo bloqueado si hay compras a varias cuotas. | 29, 30, 33, 35 |
+| D33 | **Pago mínimo, deuda total y monedas.** | Por extracto y moneda, con valores del banco como referencia y pago marcado por separado. COP y USD no se suman. | 30, 32, 33, 35 |
+| D34 | **Cuotas por defecto en USD.** | `usd_default_installments` por tarjeta; 36 en Bancolombia. | 31, 35 |
+| D35 | **Suscripciones diferidas.** | `installments_count` por suscripción; el cron registra compras a esas cuotas y la proyección acumula cuotas. | 31 |
+| D36 | **Importación de extractos.** | JSON y script de un solo uso fuera de git, cuenta por completar, transacción idempotente y verificación contra el banco. | 35 |
+| D37 | **Pagos por tipo.** | Mínimo, total u otro valor, por extracto y moneda. El total liquida cuotas futuras; otro valor cubre primero el mínimo y el excedente es abono. Marcar pagado sin valor (D26) sigue disponible. | 32, 35 |
+| D38 | **Abonos a capital.** | Regla de aplicación por tarjeta (`bancolombia_priority`, `oldest_first`, `directed`) y efecto por abono (`reduce_term` por defecto, `reduce_installment`). Distribución propuesta editable antes de guardar; el cierre mensual la corrige con el saldo del banco. | 32, 33 |
+| D39 | **Cierre mensual.** | Valores del banco por moneda (mínimo, total, intereses, tasa vigente) y saldo por compra opcional. Diferencias visibles fuera del redondeo; extracto "Conciliado" reabrible. | 33 |
+| D40 | **Cambio de cuotas.** | Nuevo número de cuotas restantes desde la próxima sin facturar; conserva facturadas y previas. La ampliación de plazo global queda fuera de H10. | 34 |
+| D41 | **Comisión de avance por movimiento.** | La de la tarjeta es solo el valor por defecto; se guarda la del avance. | 34 |
+| D48 | **Centavos en COP.** | Cálculo y almacenamiento con 2 decimales, como factura el banco; presentación en pesos enteros. Sustituye el redondeo a pesos de R2 para cálculos nuevos. | 27 (cambio base), 29–35 |
+| D49 | **Datos de una compra en curso.** | Cuota k (ya facturada) y saldo después de ella, copiados del último extracto del banco. Por defecto, la cuota k cae en el último extracto cerrado de la tarjeta. | 27, 28, 35 |
+| D50 | **Cuotas restantes y límite.** | El cambio de cuotas pide las restantes (1 a 36). Plan efectivo y número de cuota hasta 72; compras nuevas siguen en 36 (D15). | 27, 34 |
+
+**H12 · Capa de IA y captura por correo (v2).** Aprobado por el dueño el 17 de noviembre de 2026 (D42–D47). Se ejecuta después de H10 y de H11; el paso 41 reutiliza la revisión de la importación mensual de H11 si ya existe. Requiere un secreto `ANTHROPIC_API_KEY` y un secreto de firma de ingesta, ambos solo en el servidor.
+
+### Decisiones de H12 (IA y captura por correo)
+
+| # | Tema | Decisión | Paso afectado |
+| --- | --- | --- | --- |
+| D42 | **Capa de IA.** | Tareas con nombre en `lib/ai/`, SDK de Anthropic, salidas estructuradas revalidadas, sin herramientas, solo servidor, tope mensual, registro sin contenido y evals. | 40, 43 |
+| D43 | **Fuente de captura.** | Apps Script en la cuenta del dueño cada 5 minutos, con firma HMAC hacia una ruta de Next.js. Sin API de Gmail en el servidor. | 42, 44 |
+| D44 | **Filtro y tarjeta.** | Remitente de alertas con DKIM válido y `T.Cred *NNNN`; lo demás se descarta en el script. Tarjeta por `last4` o alias; sin coincidencia, "Tarjeta no registrada". | 42, 44 |
+| D45 | **Reglas e IA.** | Reglas para los hechos; IA para interpretar y como respaldo con verificación literal de números. | 42, 43 |
+| D46 | **Borradores.** | Tabla propia fuera de todo cálculo; dedupe por mensaje; propuesta de unión con movimientos manuales iguales. | 41, 42 |
+| D47 | **Privacidad del correo.** | Solo la frase del movimiento sale de Google; sin HTML ni datos personales; la frase se borra al confirmar o descartar. | 42, 44 |
+| D51 | **Secreto de ingesta.** | Secreto de firma y usuario dueño en variables de entorno del servidor; rotación documentada (Vercel, despliegue y script). Ajustes solo enciende o apaga la captura. | 42, 44, 45 |
+
+Preguntas abiertas del PRD: método de intereses de bancos distintos a Bancolombia (por ejemplo, Nu) y notificaciones push (v2). El corte variable y la amortización de Bancolombia quedaron resueltos con D30 y D32. Se dejan anotadas en `docs/PRD.md`.
 
 ## Registro de decisiones
 
@@ -207,3 +259,7 @@ Anota aquí cada decisión tomada durante la implementación (fecha, paso, decis
 | 2026-11-13 | 21–26 | H9 · Vista por meses: D18–D25 aprobadas. La pantalla de inicio pasa a organizarse por mes de pago y sustituye al tablero; "Compromisos futuros" sale de v2. | Pedido del dueño. |
 | 2026-11-13 | 21–26 | Precisiones de H9 aprobadas: proyección también en el actual abierto, dedupe real/previsto, TRM faltante explícita, manejo que por sí solo extiende hasta 12 meses, conservación de deuda e historial, desgloses R7 y comparaciones seguras. D26–D29 registradas. | El dueño pide aplicar todas las recomendaciones y confirma por separado control por extracto, total calculado y manejo hasta 12 meses. |
 | 2026-11-13 | 21–26 | Se amplían planes/pruebas para invalidación transversal, pagos compactos accesibles, navegación histórica y ceros/negativos; se recuperan reglas/evidencias anteriores de `DESIGN.md`. Los seis pasos siguen pendientes. | Evitar errores de cálculo, regresiones y confundir una aprobación documental con implementación validada. |
+| 2026-11-16 | 27–32 | H10 · Fidelidad con el extracto bancario: D30–D36 aprobadas a partir de los extractos reales de Bancolombia de noviembre. Fanova no se registra como suscripción (último cobro); los cobros sin identificar y Tinder quedan como compras puntuales; las compras en USD se difieren a 36 cuotas; ambas tarjetas sin cuota de manejo desde ahora; los saldos irregulares usan el valor del banco. | Pedido y respuestas del dueño. |
+| 2026-11-16 | 31–35 | H10 ampliado con pagos por tipo y abonos a capital, cierre mensual, cambio de cuotas y comisión de avance por movimiento (D37–D41). La importación pasa al paso 35. En v2, cuotas y categoría sugeridas, costo de diferir, importación mensual de extractos y pago del saldo USD en pesos pasan a ser las primeras prioridades. Investigación de abonos de Bancolombia anotada en R9. | Pedido del dueño. |
+| 2026-11-17 | 40–45 | H12 · Capa de IA y captura por correo aprobado (D42–D47). La captura desde email pasa de v3 a v2. Se agrega el filtro por "T.Cred" pedido por el dueño, con clasificación por verbo y alias de tarjeta. Pasos 36–39 reservados para H11. | Pedido del dueño. |
+| 2026-11-17 | 27–45 | Revisión de los planes de H10 y H12 contra el código. D48 (centavos en COP), D49 (cuota y saldo del último extracto), D50 (cuotas restantes y plan de hasta 72) y D51 (secreto de ingesta en variables de entorno) aprobadas. Se completan los planes: extracto de la compra en curso sin crear extractos antiguos, `statement_balances` como única fuente de pago por moneda, plan de cuotas en SQL para el cron con pruebas de paridad, pago enlazado al extracto que cubre, migraciones y `db reset` faltantes, exportación de columnas nuevas, `ai_usage` con RLS y alcance de Gmail. Como consecuencia de D33, la falta de TRM solo afecta el equivalente COP de referencia desde el paso 30. | Pedido del dueño. |
