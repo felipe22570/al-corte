@@ -40,7 +40,7 @@ values ('44444444-4444-4444-4444-444444444444', '11111111-1111-1111-1111-1111111
 insert into public.transactions (user_id, card_id, statement_id, type, date, amount, amount_cop, subscription_id)
 values ('11111111-1111-1111-1111-111111111111', '22222222-2222-2222-2222-222222222222', '33333333-3333-3333-3333-333333333333', 'purchase', '2026-02-01', 10000, 10000, '44444444-4444-4444-4444-444444444444');
 select throws_ok($$insert into public.transactions (user_id, card_id, statement_id, type, date, amount, amount_cop, subscription_id) values ('11111111-1111-1111-1111-111111111111', '22222222-2222-2222-2222-222222222222', '33333333-3333-3333-3333-333333333333', 'purchase', '2026-02-01', 10000, 10000, '44444444-4444-4444-4444-444444444444')$$, '23505', null, 'no se duplica un cobro');
-select throws_ok($$update public.transactions set installments_count = 37$$, '23514', null, 'máximo 36 cuotas');
+select throws_ok($$update public.transactions set installments_count = 73$$, '23514', null, 'plan efectivo de máximo 72 cuotas (D50)');
 
 select * from finish();
 rollback;

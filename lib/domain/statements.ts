@@ -36,6 +36,17 @@ export function statementCutoffFor(cutoffDay: number, date: IsoDate): IsoDate {
   return shiftStatement(cutoffDay, currentMonthCutoff, 1);
 }
 
+/** Whether `date` is a cutoff date that a card with `cutoffDay` can have (R1, month-end clamp). */
+export function isStatementCutoff(cutoffDay: number, date: IsoDate): boolean {
+  const { year, month } = parseIsoDate(date);
+  return cutoffDateForMonth(cutoffDay, year, month) === date;
+}
+
+/** Latest cutoff strictly before `today`; a statement that cuts today is still open (R7). */
+export function lastClosedCutoff(cutoffDay: number, today: IsoDate): IsoDate {
+  return previousCutoff(cutoffDay, statementCutoffFor(cutoffDay, today));
+}
+
 export function previousCutoff(cutoffDay: number, cutoffDate: IsoDate): IsoDate {
   return shiftStatement(cutoffDay, cutoffDate, -1);
 }

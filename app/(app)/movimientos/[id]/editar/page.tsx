@@ -29,7 +29,7 @@ export default async function EditTransactionPage({ params }: { params: Promise<
   const transaction = transactionResult.data as unknown as RawTransaction;
   const type = transactionSchema.shape.type.safeParse(transaction.type);
   if (!type.success || (transaction.type === "advance_fee" && transaction.parent_id)) notFound();
-  const statementIds = (installmentsResult.data ?? []).map((row) => row.statement_id);
+  const statementIds = (installmentsResult.data ?? []).flatMap((row) => row.statement_id ? [row.statement_id] : []);
   const paid = statementIds.length ? await supabase.from("statements").select("id", { count: "exact", head: true }).eq("user_id", user.id).in("id", statementIds).not("paid_at", "is", null) : { count: 0, error: null };
   if (paid.error) throw new Error("No pudimos consultar los extractos pagados.");
   const cards: TransactionCardOption[] = ((cardsResult.data ?? []) as RawCard[]).map((card) => ({ id: card.id, name: card.name, last4: card.last4, color: card.color, cutoffDay: card.cutoff_day, paymentDay: card.payment_day, purchaseRateEa: card.purchase_rate_ea, advanceRateEa: card.advance_rate_ea, advanceFee: card.advance_fee, amortizationMethod: card.amortization_method }));

@@ -20,7 +20,7 @@ export const metadata: Metadata = { title: "Detalle del movimiento" };
 const typeLabels: Record<string, string> = { purchase: "Compra", cash_advance: "Avance", advance_fee: "Comisión por avance", payment: "Pago", handling_fee: "Cuota de manejo", interest: "Interés", insurance: "Seguro", refund: "Devolución", adjustment: "Ajuste" };
 const sourceLabels: Record<string, string> = { manual: "Manual", subscription: "Suscripción", import: "Importado", email: "Correo", system: "Sistema" };
 type RawTransaction = { id: string; card_id: string; category_id: string | null; statement_id: string; parent_id: string | null; subscription_id: string | null; type: string; date: string; merchant: string | null; note: string | null; currency: Currency; amount: string; amount_cop: string; fx_rate: string | null; source: string };
-type RawInstallment = { number: number; statement_id: string; principal: string; interest: string; total: string; balance_after: string; principal_cop: string; interest_cop: string; total_cop: string };
+type RawInstallment = { number: number; statement_id: string | null; before_tracking: boolean; principal: string; interest: string; total: string; balance_after: string; principal_cop: string; interest_cop: string; total_cop: string };
 
 export default async function TransactionDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
@@ -35,7 +35,7 @@ export default async function TransactionDetailPage({ params }: { params: Promis
   const [cardResult, categoryResult, installmentResult, statementsResult, childrenResult] = await Promise.all([
     supabase.from("cards").select("name,last4,color").eq("id", transaction.card_id).eq("user_id", user.id).single(),
     transaction.category_id ? supabase.from("categories").select("name,icon").eq("id", transaction.category_id).eq("user_id", user.id).maybeSingle() : Promise.resolve({ data: null, error: null }),
-    supabase.from("installments").select("number,statement_id,principal::text,interest::text,total::text,balance_after::text,principal_cop::text,interest_cop::text,total_cop::text").eq("transaction_id", id).eq("user_id", user.id).order("number"),
+    supabase.from("installments").select("number,statement_id,before_tracking,principal::text,interest::text,total::text,balance_after::text,principal_cop::text,interest_cop::text,total_cop::text").eq("transaction_id", id).eq("user_id", user.id).order("number"),
     supabase.from("statements").select("id,cutoff_date,due_date").eq("card_id", transaction.card_id).eq("user_id", user.id),
     supabase.from("transactions").select("id", { count: "exact", head: true }).eq("parent_id", id).eq("user_id", user.id),
   ]);
@@ -48,9 +48,9 @@ export default async function TransactionDetailPage({ params }: { params: Promis
   if (!savedStatement) throw new Error("No pudimos consultar el extracto del movimiento.");
   const cutoff = savedStatement.cutoff_date;
   const items: AmortizationItem[] = ((installmentResult.data ?? []) as unknown as RawInstallment[]).map((item) => {
-    const installmentStatement = statements.get(item.statement_id);
-    if (!installmentStatement) throw new Error("No pudimos consultar el extracto de una cuota.");
-    return { number: item.number, cutoffDate: installmentStatement.cutoff_date, principal: item.principal, interest: item.interest, total: item.total, balanceAfter: item.balance_after, principalCop: item.principal_cop, interestCop: item.interest_cop, totalCop: item.total_cop };
+    const installmentStatement = item.before_tracking || item.statement_id === null ? null : statements.get(item.statement_id);
+    if (installmentStatement === undefined) throw new Error("No pudimos consultar el extracto de una cuota.");
+    return { number: item.number, cutoffDate: installmentStatement?.cutoff_date ?? null, beforeTracking: item.before_tracking, principal: item.principal, interest: item.interest, total: item.total, balanceAfter: item.balance_after, principalCop: item.principal_cop, interestCop: item.interest_cop, totalCop: item.total_cop };
   });
   const today = todayInBogota();
   const editable = !(transaction.type === "advance_fee" && transaction.parent_id);

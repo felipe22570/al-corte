@@ -1,10 +1,10 @@
 # Paso 27 — Compras en curso: datos y dominio
 
 - **Hito PRD:** H10 (parte 1 de 9)
-- **Estado:** ⬜ Pendiente
-- **Inicio:**
-- **Fin:**
-- **Commit:**
+- **Estado:** ✅ Terminado
+- **Inicio:** 2026-11-17
+- **Fin:** 2026-11-17
+- **Commit:** `feat: support purchases with installments paid before tracking` (ver historial de git)
 - **Depende de:** 26
 - **Decisiones aplicables (decididas, ver README):** D1, D2, D3, D15, D31, D48, D49, D50
 
@@ -36,24 +36,24 @@ Poder guardar una compra que ya tenía cuotas pagadas antes de Al Corte, con su 
 
 ## Tareas
 
-- [ ] Cambio a centavos en COP con sus pruebas.
-- [ ] Migración con restricciones y RLS sin cambios de alcance.
-- [ ] RPC de registro y edición, con pruebas SQL de extracto de la cuota k, sin extractos antiguos ni comisión.
-- [ ] Dominio y pruebas; cobertura de `lib/domain/` en 100 %.
-- [ ] Actualizar la vista `card_balances` y `lib/domain/months.ts` donde corresponda.
-- [ ] Exportación y `lib/database.types.ts` regenerado.
+- [x] Cambio a centavos en COP con sus pruebas.
+- [x] Migración con restricciones y RLS sin cambios de alcance.
+- [x] RPC de registro y edición, con pruebas SQL de extracto de la cuota k, sin extractos antiguos ni comisión.
+- [x] Dominio y pruebas; cobertura de `lib/domain/` en 100 %.
+- [x] Actualizar la vista `card_balances` y `lib/domain/months.ts` donde corresponda.
+- [x] Exportación y `lib/database.types.ts` regenerado.
 
 ## Pruebas
 
 Los saldos de los ejemplos son los del extracto, después de la cuota k (D49). Los cuatro casos se comprobaron con esa lectura.
 
-- [ ] IKEA de la Visa: $451.860 a 4 cuotas, cuota 3 de 4, saldo $112.965 → 2 cuotas previas, cuota actual $112.965, una restante.
-- [ ] Avance de la Mastercard del 16 de abril: $600.000, cuota 7 de 24, cuota $25.000, saldo después del extracto $269.998,46 → plan efectivo de 18 cuotas y última de $19.998,46. Sin comisión nueva.
-- [ ] GeoGuessr: $131.904,26, cuota 10 de 36, saldo $88.810,60 → cuota $3.664,01, plan efectivo de 35 y última de $874,36 (con pesos enteros daría $874,60).
-- [ ] Fanova (USD): US$11,22, cuota 3 de 36, saldo US$7,33 → plan efectivo de 27 y última de US$0,20.
-- [ ] Saldo del banco mayor al plan: el plan efectivo puede superar N, hasta 72.
-- [ ] Cupo: una compra en curso solo resta su capital pendiente; las cuotas previas no aparecen en ningún extracto ni mes.
-- [ ] Registrar una compra en curso de abril no crea extractos de abril a octubre ni cuotas de manejo en ellos.
+- [x] IKEA de la Visa: $451.860 a 4 cuotas, cuota 3 de 4, saldo $112.965 → 2 cuotas previas, cuota actual $112.965, una restante.
+- [x] Avance de la Mastercard del 16 de abril: $600.000, cuota 7 de 24, cuota $25.000, saldo después del extracto $269.998,46 → plan efectivo de 18 cuotas y última de $19.998,46. Sin comisión nueva.
+- [x] GeoGuessr: $131.904,26, cuota 10 de 36, saldo $88.810,60 → cuota $3.664,01, plan efectivo de 35 y última de $874,36 (con pesos enteros daría $874,60).
+- [x] Fanova (USD): US$11,22, cuota 3 de 36, saldo US$7,33 → plan efectivo de 27 y última de US$0,20.
+- [x] Saldo del banco mayor al plan: el plan efectivo puede superar N, hasta 72.
+- [x] Cupo: una compra en curso solo resta su capital pendiente; las cuotas previas no aparecen en ningún extracto ni mes.
+- [x] Registrar una compra en curso de abril no crea extractos de abril a octubre ni cuotas de manejo en ellos.
 
 ## Verificación
 
@@ -70,3 +70,14 @@ supabase db reset && supabase test db
 ## Notas de progreso
 
 <!-- Fecha — nota -->
+
+- 2026-11-17 — Implementado. Migración `20261117010000_in_progress_purchases.sql`; dominio en `lib/domain/installments.ts` (`inProgress`, `isInstallmentCompleted`), `transaction-plan.ts` y `statements.ts` (`lastClosedCutoff`, `isStatementCutoff`). Pruebas: 363 de Vitest (cobertura de dominio 100 %), 200 de pgTAP y la integración local de meses con `AL_CORTE_LOCAL_DB_TEST=1`.
+- Decisiones menores (para revisión del dueño):
+    - Tolerancia de "plan consistente": |c − p × cuota| ≤ |P − N × cuota| + 0,01, es decir, el residuo de redondeo del propio plan más un centavo del banco. Si es consistente, c se normaliza a p × cuota.
+    - El saldo opcional solo se acepta en tarjetas de capital fijo. Con cuota fija (`french`) se pide solo la cuota k y las previas toman el capital del plan francés, porque R8 define c con la cuota P/N.
+    - Sin saldo, k va de 2 a N. Con saldo, k puede superar N si el plan efectivo lo hace (hasta 72).
+    - El capital previo se reparte truncando a centavos y la última cuota previa absorbe el resto, así nunca queda negativa.
+    - La RPC exige que el corte de la cuota k sea un corte real de la tarjeta, no anterior al corte de la compra según R1 y no posterior al extracto abierto de hoy.
+    - El equivalente COP del capital previo no tiene columna propia: `card_balances` resta la suma de `principal_cop` de las cuotas `before_tracking`.
+    - Prueba de esquema 010: el límite de columna pasa de 36 a 72 (D50). El límite de 36 para compras nuevas queda en la RPC y en Zod.
+- Pendiente para el paso 28: el formulario de edición todavía no envía `inProgress`. Ninguna pantalla crea compras en curso aún, pero el paso 28 debe conservar las cuotas previas al editar. La tabla de amortización ya muestra "Pagada antes de Al Corte" en lugar del corte para no romper el detalle; el estilo atenuado y la revisión a 360 px y en modo oscuro quedan para el paso 28.

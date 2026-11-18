@@ -11,7 +11,7 @@ import { StatementStatus } from "@/components/statement-status";
 import { UtilizationBar } from "@/components/utilization-bar";
 import type { CardColor } from "@/lib/card-colors";
 import { todayInBogota } from "@/lib/domain/dates";
-import { installmentProgress, type InstallmentRow } from "@/lib/domain/installments";
+import { installmentProgress, isInstallmentCompleted, type InstallmentRow } from "@/lib/domain/installments";
 import { statementPeriod } from "@/lib/domain/statements";
 import { formatDateShort } from "@/lib/format";
 import { createClient } from "@/lib/supabase/server";
@@ -21,7 +21,7 @@ type Card = { id: string; name: string; bank: string; last4: string; color: Card
 type Statement = { id: string; period_start: string; cutoff_date: string; due_date: string; paid_at: string | null };
 type Total = { statement_id: string; total_calculated: string };
 type Purchase = { id: string; merchant: string | null; currency: "COP" | "USD"; installments_count: number };
-type Installment = { transaction_id: string; statement_id: string; number: number; principal: string; interest: string; total: string; balance_after: string; principal_cop: string; interest_cop: string; total_cop: string };
+type Installment = { transaction_id: string; statement_id: string | null; before_tracking: boolean; number: number; principal: string; interest: string; total: string; balance_after: string; principal_cop: string; interest_cop: string; total_cop: string };
 
 export default async function CardDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
@@ -51,16 +51,16 @@ export default async function CardDetailPage({ params }: { params: Promise<{ id:
   const upcoming = statements.filter((item) => item.cutoff_date > openCutoff);
   const previous = statements.filter((item) => item.cutoff_date < openCutoff).reverse();
   const purchases = (purchaseResult.data ?? []) as Purchase[];
-  const installmentResult = purchases.length ? await supabase.from("installments").select("transaction_id,statement_id,number,principal::text,interest::text,total::text,balance_after::text,principal_cop::text,interest_cop::text,total_cop::text").eq("user_id", user.id).in("transaction_id", purchases.map((purchase) => purchase.id)).order("number") : { data: [], error: null };
+  const installmentResult = purchases.length ? await supabase.from("installments").select("transaction_id,statement_id,before_tracking,number,principal::text,interest::text,total::text,balance_after::text,principal_cop::text,interest_cop::text,total_cop::text").eq("user_id", user.id).in("transaction_id", purchases.map((purchase) => purchase.id)).order("number") : { data: [], error: null };
   if (installmentResult.error) throw new Error("No pudimos consultar las cuotas.");
   const installments = (installmentResult.data ?? []) as unknown as Installment[];
   const activePurchases = purchases.flatMap((purchase) => {
     const entries = installments.filter((item) => item.transaction_id === purchase.id).map((item): InstallmentRow => {
-      const statement = statements.find((entry) => entry.id === item.statement_id);
-      if (!statement) throw new Error("No pudimos consultar el corte de una cuota.");
-      return { number: item.number, cutoffDate: statement.cutoff_date, principal: new Decimal(item.principal), interest: new Decimal(item.interest), total: new Decimal(item.total), balanceAfter: new Decimal(item.balance_after), principalCop: new Decimal(item.principal_cop), interestCop: new Decimal(item.interest_cop), totalCop: new Decimal(item.total_cop) };
+      const statement = item.before_tracking ? null : statements.find((entry) => entry.id === item.statement_id);
+      if (statement === undefined) throw new Error("No pudimos consultar el corte de una cuota.");
+      return { number: item.number, cutoffDate: statement?.cutoff_date ?? null, beforeTracking: item.before_tracking, principal: new Decimal(item.principal), interest: new Decimal(item.interest), total: new Decimal(item.total), balanceAfter: new Decimal(item.balance_after), principalCop: new Decimal(item.principal_cop), interestCop: new Decimal(item.interest_cop), totalCop: new Decimal(item.total_cop) };
     });
-    if (!entries.length || entries.every((entry) => entry.cutoffDate < today)) return [];
+    if (!entries.length || entries.every((entry) => isInstallmentCompleted(entry, today))) return [];
     const progress = installmentProgress(entries, today);
     const currentInstallment = entries.find((entry) => entry.number === progress.current);
     return currentInstallment ? [{ purchase, progress, currentInstallment }] : [];

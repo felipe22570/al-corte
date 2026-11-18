@@ -94,6 +94,26 @@ describe.skipIf(!enabled)("month reads against local Supabase", () => {
       expect(affected.map((month) => month.month)).toEqual(["2027-01", "2027-02", "2027-03", "2027-04", "2027-05", "2027-06"]);
       expect(affected.every((month) => month.total.eq(120000))).toBe(true);
       expect((await refreshedSource.loadPurchaseMonthSpending("2027-01")).toString()).toBe("600000");
+      // R8/D31: installments paid before tracking never enter statements, months or credit.
+      const inProgressRows = [1, 2, 3, 4].map((number) => ({
+        number, cutoff_date: number <= 2 ? null : number === 3 ? "2026-11-25" : "2026-12-25", before_tracking: number <= 2,
+        principal: "50000", interest: "0", total: "50000", balance_after: String(200000 - number * 50000),
+        principal_cop: "50000", interest_cop: "0", total_cop: "50000",
+      }));
+      const cardsBeforeInProgress = await createSupabaseMonthSource(client as never, userId).loadCardDetails();
+      const inProgress = await client.rpc("create_transaction_with_installments", { p_payload: {
+        card_id: cardId, type: "purchase", date: "2026-08-01", amount: "200000", currency: "COP",
+        fx_rate: null, amount_cop: "200000", installments_count: 4, interest_free: true,
+        rate_ea_applied: "0", category_id: categoryId, merchant: "Compra en curso sintética", note: "",
+        prior_installments: 2, prior_principal_paid: "100000", original_installments_count: null, tracked_from_cutoff: "2026-11-25",
+        installments: inProgressRows,
+      } });
+      expect(inProgress.error).toBeNull();
+      const inProgressSource = createSupabaseMonthSource(client as never, userId);
+      const [withInProgress, inProgressCards] = await Promise.all([loadMonthOverview(inProgressSource, "2026-11-14"), inProgressSource.loadCardDetails()]);
+      expect(withInProgress.current.total.minus(withPurchase.current.total).toString()).toBe("50000");
+      expect(withInProgress.future.find((month) => month.month === "2026-12")?.total.toString()).toBe("70000");
+      expect(inProgressCards.find((card) => card.id === cardId)!.used.minus(cardsBeforeInProgress.find((card) => card.id === cardId)!.used).toString()).toBe("100000");
     } finally {
       if (created) sql(`delete from auth.users where id = '${userId}';`);
     }

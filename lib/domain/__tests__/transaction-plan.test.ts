@@ -51,6 +51,25 @@ describe("transaction plan", () => {
     expect(result.payload.rate_ea_applied).toBeNull();
     expect(result.payload.installments).toEqual([]);
   });
+  it("marca los movimientos normales sin cuotas previas", () => {
+    const result = buildTransactionPlan({ ...base, installmentsCount: 2 }, card);
+    expect(result.payload).toMatchObject({ prior_installments: 0, prior_principal_paid: "0", original_installments_count: null, tracked_from_cutoff: null });
+    expect(result.payload.installments.every((row) => row.before_tracking === false)).toBe(true);
+  });
+  it("arma una compra en curso en el extracto de la cuota k, sin cortes anteriores", () => {
+    const result = buildTransactionPlan({ ...base, date: "2026-04-16", amount: "600000", installmentsCount: 24, inProgress: { currentInstallment: 7, balanceAfter: "269998.46", trackedFromCutoff: "2026-11-15" } }, card);
+    expect(result.firstCutoff).toBe("2026-11-15");
+    expect(result.dueDate).toBe("2026-12-05");
+    expect(result.firstInstallment).toBe(result.payload.installments[6]?.total);
+    expect(result.payload).toMatchObject({ installments_count: 18, original_installments_count: 24, prior_installments: 6, prior_principal_paid: "305001.54", tracked_from_cutoff: "2026-11-15" });
+    expect(result.payload.installments.slice(0, 6).every((row) => row.before_tracking && row.cutoff_date === null && row.interest === "0")).toBe(true);
+    expect(result.payload.installments[6]).toMatchObject({ number: 7, cutoff_date: "2026-11-15", before_tracking: false });
+  });
+  it("no cobra comisión a un avance en curso", () => {
+    const result = buildTransactionPlan({ ...base, type: "cash_advance", amount: "600000", installmentsCount: 24, inProgress: { currentInstallment: 7, balanceAfter: null, trackedFromCutoff: "2026-11-15" } }, card);
+    expect(result.advanceFee).toBe("0");
+    expect(result.payload.original_installments_count).toBeNull();
+  });
   it("rechaza una tarjeta diferente a la solicitada", () => {
     expect(() => buildTransactionPlan({ ...base, cardId: "other" }, card)).toThrow("La tarjeta no coincide");
   });

@@ -7,8 +7,11 @@ export function toDecimal(value: string | Decimal): Decimal {
   throw new Error("El monto debe ser Decimal o string");
 }
 
+/** COP and USD are calculated and stored with cents, as banks bill them (D48); COP is shown in whole pesos. */
+const MONEY_DECIMALS: Record<Currency, number> = { COP: 2, USD: 2 };
+
 export function roundMoney(value: Decimal, currency: Currency): Decimal {
-  return new Decimal(value).toDecimalPlaces(currency === "COP" ? 0 : 2, Decimal.ROUND_HALF_UP);
+  return new Decimal(value).toDecimalPlaces(MONEY_DECIMALS[currency], Decimal.ROUND_HALF_UP);
 }
 
 export function toCop(amount: Decimal, currency: Currency, fxRate?: Decimal): Decimal {

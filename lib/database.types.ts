@@ -67,14 +67,14 @@ export type Database = {
                   ]
                 },"installments": {
                   Row: {
-                    "balance_after": number,"created_at": string,"id": string,"interest": number,"interest_cop": number,"number": number,"principal": number,"principal_cop": number,"statement_id": string,"total": number,"total_cop": number,"transaction_id": string,"user_id": string
+                    "balance_after": number,"before_tracking": boolean,"created_at": string,"id": string,"interest": number,"interest_cop": number,"number": number,"principal": number,"principal_cop": number,"statement_id": string | null,"total": number,"total_cop": number,"transaction_id": string,"user_id": string
                   }
                   ComputedFields: never
                   Insert: {
-                    "balance_after": number,"created_at"?: string,"id"?: string,"interest": number,"interest_cop": number,"number": number,"principal": number,"principal_cop": number,"statement_id": string,"total": number,"total_cop": number,"transaction_id": string,"user_id"?: string
+                    "balance_after": number,"before_tracking"?: boolean,"created_at"?: string,"id"?: string,"interest": number,"interest_cop": number,"number": number,"principal": number,"principal_cop": number,"statement_id"?: string | null,"total": number,"total_cop": number,"transaction_id": string,"user_id"?: string
                   }
                   Update: {
-                    "balance_after"?: number,"created_at"?: string,"id"?: string,"interest"?: number,"interest_cop"?: number,"number"?: number,"principal"?: number,"principal_cop"?: number,"statement_id"?: string,"total"?: number,"total_cop"?: number,"transaction_id"?: string,"user_id"?: string
+                    "balance_after"?: number,"before_tracking"?: boolean,"created_at"?: string,"id"?: string,"interest"?: number,"interest_cop"?: number,"number"?: number,"principal"?: number,"principal_cop"?: number,"statement_id"?: string | null,"total"?: number,"total_cop"?: number,"transaction_id"?: string,"user_id"?: string
                   }
                   Relationships: [
                     {
@@ -219,14 +219,14 @@ isOneToOne: false
                   ]
                 },"transactions": {
                   Row: {
-                    "amount": number,"amount_cop": number,"card_id": string,"category_id": string | null,"created_at": string,"currency": Database["public"]['Enums']["currency_code"],"date": string,"fx_rate": number | null,"id": string,"installments_count": number,"interest_free": boolean,"merchant": string | null,"note": string | null,"parent_id": string | null,"rate_ea_applied": number | null,"source": Database["public"]['Enums']["transaction_source"],"statement_id": string,"subscription_id": string | null,"type": Database["public"]['Enums']["transaction_type"],"updated_at": string,"user_id": string,"verified": boolean
+                    "amount": number,"amount_cop": number,"card_id": string,"category_id": string | null,"created_at": string,"currency": Database["public"]['Enums']["currency_code"],"date": string,"fx_rate": number | null,"id": string,"installments_count": number,"interest_free": boolean,"merchant": string | null,"note": string | null,"original_installments_count": number | null,"parent_id": string | null,"prior_installments": number,"prior_principal_paid": number,"rate_ea_applied": number | null,"source": Database["public"]['Enums']["transaction_source"],"statement_id": string,"subscription_id": string | null,"type": Database["public"]['Enums']["transaction_type"],"updated_at": string,"user_id": string,"verified": boolean
                   }
                   ComputedFields: never
                   Insert: {
-                    "amount": number,"amount_cop": number,"card_id": string,"category_id"?: string | null,"created_at"?: string,"currency"?: Database["public"]['Enums']["currency_code"],"date": string,"fx_rate"?: number | null,"id"?: string,"installments_count"?: number,"interest_free"?: boolean,"merchant"?: string | null,"note"?: string | null,"parent_id"?: string | null,"rate_ea_applied"?: number | null,"source"?: Database["public"]['Enums']["transaction_source"],"statement_id": string,"subscription_id"?: string | null,"type": Database["public"]['Enums']["transaction_type"],"updated_at"?: string,"user_id"?: string,"verified"?: boolean
+                    "amount": number,"amount_cop": number,"card_id": string,"category_id"?: string | null,"created_at"?: string,"currency"?: Database["public"]['Enums']["currency_code"],"date": string,"fx_rate"?: number | null,"id"?: string,"installments_count"?: number,"interest_free"?: boolean,"merchant"?: string | null,"note"?: string | null,"original_installments_count"?: number | null,"parent_id"?: string | null,"prior_installments"?: number,"prior_principal_paid"?: number,"rate_ea_applied"?: number | null,"source"?: Database["public"]['Enums']["transaction_source"],"statement_id": string,"subscription_id"?: string | null,"type": Database["public"]['Enums']["transaction_type"],"updated_at"?: string,"user_id"?: string,"verified"?: boolean
                   }
                   Update: {
-                    "amount"?: number,"amount_cop"?: number,"card_id"?: string,"category_id"?: string | null,"created_at"?: string,"currency"?: Database["public"]['Enums']["currency_code"],"date"?: string,"fx_rate"?: number | null,"id"?: string,"installments_count"?: number,"interest_free"?: boolean,"merchant"?: string | null,"note"?: string | null,"parent_id"?: string | null,"rate_ea_applied"?: number | null,"source"?: Database["public"]['Enums']["transaction_source"],"statement_id"?: string,"subscription_id"?: string | null,"type"?: Database["public"]['Enums']["transaction_type"],"updated_at"?: string,"user_id"?: string,"verified"?: boolean
+                    "amount"?: number,"amount_cop"?: number,"card_id"?: string,"category_id"?: string | null,"created_at"?: string,"currency"?: Database["public"]['Enums']["currency_code"],"date"?: string,"fx_rate"?: number | null,"id"?: string,"installments_count"?: number,"interest_free"?: boolean,"merchant"?: string | null,"note"?: string | null,"original_installments_count"?: number | null,"parent_id"?: string | null,"prior_installments"?: number,"prior_principal_paid"?: number,"rate_ea_applied"?: number | null,"source"?: Database["public"]['Enums']["transaction_source"],"statement_id"?: string,"subscription_id"?: string | null,"type"?: Database["public"]['Enums']["transaction_type"],"updated_at"?: string,"user_id"?: string,"verified"?: boolean
                   }
                   Relationships: [
                     {

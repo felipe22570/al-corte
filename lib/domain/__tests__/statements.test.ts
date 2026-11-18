@@ -4,6 +4,8 @@ import {
   cutoffDateForMonth,
   classifyStatement,
   dueDateFor,
+  isStatementCutoff,
+  lastClosedCutoff,
   periodStartFor,
   previousCutoff,
   shiftStatement,
@@ -12,6 +14,19 @@ import {
 } from "@/lib/domain/statements";
 
 describe("statements", () => {
+  it("finds the last closed cutoff; today's cutoff is still open", () => {
+    expect(lastClosedCutoff(15, "2026-11-17")).toBe("2026-11-15");
+    expect(lastClosedCutoff(15, "2026-11-15")).toBe("2026-10-15");
+    expect(lastClosedCutoff(31, "2026-03-01")).toBe("2026-02-28");
+  });
+
+  it("recognizes valid cutoffs for a cutoff day, including month-end clamps", () => {
+    expect(isStatementCutoff(15, "2026-11-15")).toBe(true);
+    expect(isStatementCutoff(15, "2026-11-14")).toBe(false);
+    expect(isStatementCutoff(31, "2026-02-28")).toBe(true);
+    expect(isStatementCutoff(31, "2026-02-27")).toBe(false);
+  });
+
   it("clamps cutoff dates to each month's final day", () => {
     expect(cutoffDateForMonth(31, 2026, 2)).toBe("2026-02-28");
     expect(cutoffDateForMonth(31, 2028, 2)).toBe("2028-02-29");
