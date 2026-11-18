@@ -1,5 +1,6 @@
 import Decimal from "decimal.js";
 import { compareIsoDates, type IsoDate } from "./dates";
+import type { InterestMode } from "./interest";
 import { type Currency, roundMoney, toCop } from "./money";
 import { monthlyRateFromEA } from "./rates";
 import { isStatementCutoff, shiftStatement, statementCutoffFor } from "./statements";
@@ -9,7 +10,7 @@ export type AmortizationMethod = "fixed_principal" | "french";
 export type InstallmentRow = { number: number; principal: Decimal; interest: Decimal; total: Decimal; balanceAfter: Decimal; cutoffDate: IsoDate | null; beforeTracking: boolean; principalCop: Decimal; interestCop: Decimal; totalCop: Decimal };
 /** Copied from the last bank statement (D49): installment k already billed there and, optionally, the balance left after it. */
 export type InProgressInput = { currentInstallment: number; balanceAfter?: Decimal | null; trackedFromCutoff: IsoDate };
-type Input = { principal: Decimal; count: number; annualRateEa: Decimal; method: AmortizationMethod; interestFree: boolean; currency: Currency; fxRate?: Decimal; cutoffDay: number; purchaseDate: IsoDate; inProgress?: InProgressInput | null };
+type Input = { principal: Decimal; count: number; annualRateEa: Decimal; method: AmortizationMethod; interestFree: boolean; currency: Currency; fxRate?: Decimal; cutoffDay: number; purchaseDate: IsoDate; inProgress?: InProgressInput | null; interestMode?: InterestMode };
 type ScheduleItem = { principal: Decimal; interest: Decimal; beforeTracking: boolean };
 
 /** New purchases are limited to 36 installments (D15); effective plans of in-progress purchases, to 72 (D50). */
@@ -91,7 +92,8 @@ export function buildInstallmentPlan(input: Input) {
   if (input.annualRateEa.lt(0)) throw new Error("La tasa no puede ser negativa");
   if (input.currency === "USD" && (!input.fxRate || !input.fxRate.gt(0))) throw new Error("La TRM es obligatoria para USD");
   if (input.currency === "COP" && input.fxRate) throw new Error("La TRM no aplica para COP");
-  const rate = input.count === 1 || input.interestFree ? new Decimal(0) : monthlyRateFromEA(input.annualRateEa);
+  // On-balance cards bill interest once per statement (D32): their installments are principal only.
+  const rate = input.count === 1 || input.interestFree || input.interestMode === "on_balance" ? new Decimal(0) : monthlyRateFromEA(input.annualRateEa);
   const amountCop = toCop(input.principal, input.currency, input.fxRate);
   const standard = standardSchedule(input, rate);
   const progress = input.inProgress ? inProgressSchedule(input, input.inProgress, rate, standard) : { prior: 0, paid: ZERO, items: standard };

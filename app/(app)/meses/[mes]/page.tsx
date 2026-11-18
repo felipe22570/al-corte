@@ -73,7 +73,7 @@ export default async function MonthDetailPage({ params }: { params: Promise<{ me
           <dl className="grid gap-2 text-body">
             {Object.entries(conceptLabels).map(([key, label]) => {
               const amount = breakdown.concepts[key as keyof typeof breakdown.concepts];
-              return <div className={`flex justify-between gap-3 ${amount.isZero() ? "text-muted-foreground" : ""}`} key={key}><dt>{label}</dt><dd className="text-right"><Money value={amount} currency="COP" /></dd></div>;
+              return <div className={`flex justify-between gap-3 ${amount.isZero() ? "text-muted-foreground" : ""}`} key={key}><dt>{key === "interest" && breakdown.estimatedInterest ? "Intereses (incluye estimados)" : label}</dt><dd className="text-right"><Money value={amount} currency="COP" /></dd></div>;
             })}
             <div className="flex justify-between gap-3 border-t border-border pt-3 font-medium"><dt>{totalLabel}</dt><dd className="text-right"><Money value={breakdown.total} currency="COP" /></dd></div>
           </dl>

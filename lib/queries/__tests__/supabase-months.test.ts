@@ -42,8 +42,8 @@ describe("createSupabaseMonthSource", () => {
           async range(from: number, to: number) {
             ranges.push([table, from, to]);
             const rows = table === "statements" ? statements
-              : table === "installments" ? [{ id: "i", statement_id: "s0", transaction_id: "t", total_cop: "100000.25" }]
-                : fields === "id,category_id" ? [{ id: "t", category_id: "category" }] : [];
+              : table === "installments" ? [{ id: "i", statement_id: "s0", transaction_id: "t", total_cop: "100000.25", principal: "100000.25", balance_after: "200000.5" }]
+                : fields.startsWith("id,category_id") ? [{ id: "t", category_id: "category", date: "2026-08-01", rate_ea_applied: "0.2899", interest_free: false, currency: "COP", fx_rate: null }] : [];
             return { data: rows.slice(from, to + 1), error: null };
           },
         };
@@ -56,5 +56,8 @@ describe("createSupabaseMonthSource", () => {
     const charges = await source.loadCharges(["s0"]);
     expect(charges.installments[0]?.categoryId).toBe("category");
     expect(charges.installments[0]?.totalCop.toString()).toBe("100000.25");
+    expect(charges.installments[0]?.interestBasis).toMatchObject({ purchaseDate: "2026-08-01", interestFree: false, currency: "COP", fxRate: null });
+    expect(charges.installments[0]?.interestBasis?.balanceAfter.toString()).toBe("200000.5");
+    expect(charges.installments[0]?.interestBasis?.rateEa?.toString()).toBe("0.2899");
   });
 });

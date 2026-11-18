@@ -16,3 +16,8 @@ it("rechaza datos inválidos", () => {
   expect(categorySchema.safeParse({ name: "Mercado", icon: "shopping-cart" }).success).toBe(true);
   expect(categorySchema.safeParse({ name: "", icon: "invalid" }).success).toBe(false);
 });
+it("usa intereses por cuota por defecto y acepta intereses sobre saldo (D32)", () => {
+  expect(cardSchema.parse(card).interestMode).toBe("per_installment");
+  expect(cardSchema.parse({ ...card, interestMode: "on_balance" }).interestMode).toBe("on_balance");
+  expect(cardSchema.safeParse({ ...card, interestMode: "diario" }).success).toBe(false);
+});

@@ -320,6 +320,39 @@ describe("projectStatements", () => {
     expect(monthBreakdown(result.statements).total.toString()).toBe("80");
   });
 
+  describe("intereses sobre saldo (D32)", () => {
+    const statement = { id: "s", cardId: "visa", periodStart: "2026-10-26", cutoffDate: "2026-11-25", dueDate: "2026-11-28", paidAt: null };
+    const basis = { principal: new Decimal("112965"), balanceAfter: new Decimal("225930"), purchaseDate: "2026-08-01", rateEa: new Decimal("0.2899"), interestFree: false, currency: "COP" as const, fxRate: null };
+    const input = { ...base, subscriptions: [], statements: [statement], installments: [{ id: "i", statementId: "s", categoryId: "home", totalCop: new Decimal("112965"), interestBasis: basis }] };
+
+    it("suma la estimación una sola vez al total calculado y la marca como estimada", () => {
+      const result = projectStatements({ ...input, cards: [{ ...card, handlingFee: new Decimal(0), interestMode: "on_balance" }] });
+      const interest = result.statements[0]?.charges.filter((charge) => charge.concept === "interest");
+      expect(interest).toEqual([expect.objectContaining({ estimated: true, origin: "real", categoryId: null })]);
+      expect(interest?.[0]?.amountCop?.toString()).toBe("7266.02");
+      expect(result.statements[0]?.recordedTotal.toString()).toBe("120231.02");
+      expect(monthBreakdown(result.statements).concepts.interest.toString()).toBe("7266.02");
+      expect(monthBreakdown(result.statements).estimatedInterest).toBe(true);
+    });
+
+    it("el interés real reemplaza al estimado sin duplicarlo", () => {
+      const result = projectStatements({ ...input, cards: [{ ...card, handlingFee: new Decimal(0), interestMode: "on_balance" }],
+        movements: [{ id: "real", statementId: "s", type: "interest", amountCop: new Decimal("7100.50"), categoryId: null, date: "2026-11-25" }] });
+      expect(result.statements[0]?.charges.filter((charge) => charge.concept === "interest").map((charge) => charge.estimated ?? false)).toEqual([false]);
+      expect(result.statements[0]?.recordedTotal.toString()).toBe("120065.5");
+      expect(monthBreakdown(result.statements).estimatedInterest).toBe(false);
+    });
+
+    it("no estima en tarjetas por cuota ni sin capital con interés", () => {
+      const perInstallment = projectStatements({ ...input, cards: [{ ...card, handlingFee: new Decimal(0), interestMode: "per_installment" }] });
+      expect(perInstallment.statements[0]?.recordedTotal.toString()).toBe("112965");
+      const free = projectStatements({ ...input, cards: [{ ...card, handlingFee: new Decimal(0), interestMode: "on_balance" }], installments: [{ ...input.installments[0]!, interestBasis: { ...basis, interestFree: true } }] });
+      expect(free.statements[0]?.charges.some((charge) => charge.estimated)).toBe(false);
+      const empty = projectStatements({ ...input, cards: [{ ...card, handlingFee: new Decimal(0), interestMode: "on_balance" }], installments: [] });
+      expect(empty.statements[0]?.recordedTotal.isZero()).toBe(true);
+    });
+  });
+
   it("adds a COP projection to an existing real extract without another handling fee", () => {
     const result = projectStatements({
       ...base,

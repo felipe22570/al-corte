@@ -70,6 +70,12 @@ describe("transaction plan", () => {
     expect(result.advanceFee).toBe("0");
     expect(result.payload.original_installments_count).toBeNull();
   });
+  it("en tarjetas con intereses sobre saldo guarda la tasa pero genera cuotas solo de capital", () => {
+    const result = buildTransactionPlan({ ...base, installmentsCount: 6 }, { ...card, interestMode: "on_balance" });
+    expect(result.payload.rate_ea_applied).toBe("0.28");
+    expect(result.totalInterest).toBe("0");
+    expect(result.payload.installments.every((row) => row.interest === "0")).toBe(true);
+  });
   it("rechaza una tarjeta diferente a la solicitada", () => {
     expect(() => buildTransactionPlan({ ...base, cardId: "other" }, card)).toThrow("La tarjeta no coincide");
   });

@@ -48,6 +48,14 @@ describe("installments", () => {
     expect(free.rows.every((row) => row.interest.isZero())).toBe(true);
   });
 
+  it("on-balance cards bill principal-only installments (D32)", () => {
+    const plan = buildInstallmentPlan({ principal: decimal("451860"), count: 4, annualRateEa: decimal("0.28"), method: "fixed_principal", interestFree: false, currency: "COP", cutoffDay: 15, purchaseDate: "2026-01-20", interestMode: "on_balance" });
+    expect(plan.rows.every((row) => row.interest.isZero() && row.total.equals(row.principal))).toBe(true);
+    expect(plan.totalInterest.isZero()).toBe(true);
+    const perInstallment = buildInstallmentPlan({ principal: decimal("451860"), count: 4, annualRateEa: decimal("0.28"), method: "fixed_principal", interestFree: false, currency: "COP", cutoffDay: 15, purchaseDate: "2026-01-20", interestMode: "per_installment" });
+    expect(perInstallment.totalInterest.gt(0)).toBe(true);
+  });
+
   it("reports installment progress from cutoffs already passed", () => {
     const plan = buildInstallmentPlan({ principal: decimal("120000"), count: 12, annualRateEa: decimal(0), method: "fixed_principal", interestFree: false, currency: "COP", cutoffDay: 15, purchaseDate: "2026-01-20" });
     const progress = installmentProgress(plan.rows, "2026-04-16");

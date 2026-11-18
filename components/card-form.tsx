@@ -34,6 +34,7 @@ export function CardForm({ card, usedColors }: { card?: CardRecord; usedColors: 
   const [open, setOpen] = useState(false);
   const [serverError, setServerError] = useState("");
   const [saved, setSaved] = useState(false);
+  const interestModeLocked = !!card?.hasInstallmentPurchases;
   const preferredColor = CARD_COLORS.find((color) => !usedColors.includes(color)) ?? CARD_COLORS[0];
   const defaultValues: DefaultValues<CardInput> = {
     name: card?.name ?? "", bank: card?.bank ?? "", network: card?.network as CardInput["network"] ?? "Visa", last4: card?.last4 ?? "",
@@ -41,7 +42,7 @@ export function CardForm({ card, usedColors }: { card?: CardRecord; usedColors: 
     cutoffDay: card?.cutoffDay ?? "", paymentDay: card?.paymentDay ?? "",
     purchaseRateEa: card ? inputValue(new Decimal(card.purchaseRateEa).times(100).toFixed()) : "0",
     advanceRateEa: card ? inputValue(new Decimal(card.advanceRateEa).times(100).toFixed()) : "0",
-    amortizationMethod: card?.amortizationMethod ?? "fixed_principal", color: card?.color ?? preferredColor,
+    amortizationMethod: card?.amortizationMethod ?? "fixed_principal", interestMode: card?.interestMode ?? "per_installment", color: card?.color ?? preferredColor,
   };
   const form = useForm<CardInput>({
     resolver: zodResolver(cardSchema, undefined, { raw: true }),
@@ -66,7 +67,9 @@ export function CardForm({ card, usedColors }: { card?: CardRecord; usedColors: 
       {card && <Alert variant="warning"><AlertDescription>Los cambios de corte o pago solo afectan movimientos nuevos. Las tasas no recalculan cuotas existentes.</AlertDescription></Alert>}
       <fieldset className="flex flex-col gap-4"><legend className="mb-4 text-heading">Datos básicos</legend><div className="grid gap-4 sm:grid-cols-2">{fields.slice(0, 4).map(renderField)}<div className="flex flex-col gap-2"><Label htmlFor="card-network">Franquicia</Label><Controller control={form.control} name="network" render={({ field: { onChange, ...field } }) => <SelectControl {...field} id="card-network" onValueChange={onChange} options={["Visa", "Mastercard", "American Express", "Diners", "Otra"].map((value) => ({ value, label: value }))} />} /></div></div></fieldset>
        <fieldset className="flex min-w-0 flex-col gap-4"><legend className="mb-4 text-heading">Fechas</legend><div className="grid grid-cols-2 gap-4">{fields.slice(4, 6).map(renderField)}</div></fieldset>
-      <fieldset className="flex flex-col gap-4"><legend className="mb-4 text-heading">Tasas y costos</legend><div className="grid gap-4 sm:grid-cols-2">{fields.slice(6).map(renderField)}<div className="flex flex-col gap-2"><Label htmlFor="card-method">Método de amortización</Label><Controller control={form.control} name="amortizationMethod" render={({ field: { onChange, ...field } }) => <SelectControl {...field} id="card-method" onValueChange={onChange} options={[{ value: "fixed_principal", label: "Capital fijo" }, { value: "french", label: "Cuota fija" }]} />} /></div></div></fieldset>
+      <fieldset className="flex flex-col gap-4"><legend className="mb-4 text-heading">Tasas y costos</legend><div className="grid gap-4 sm:grid-cols-2">{fields.slice(6).map(renderField)}<div className="flex flex-col gap-2"><Label htmlFor="card-method">Método de amortización</Label><Controller control={form.control} name="amortizationMethod" render={({ field: { onChange, ...field } }) => <SelectControl {...field} id="card-method" onValueChange={onChange} options={[{ value: "fixed_principal", label: "Capital fijo" }, { value: "french", label: "Cuota fija" }]} />} /></div>
+        <div className="flex flex-col gap-2 sm:col-span-2"><Label htmlFor="card-interestMode">Cobro de intereses</Label><Controller control={form.control} name="interestMode" render={({ field: { onChange, ...field } }) => <SelectControl {...field} id="card-interestMode" aria-describedby="card-interestMode-help" disabled={interestModeLocked} onValueChange={onChange} options={[{ value: "per_installment", label: "En cada cuota" }, { value: "on_balance", label: "Sobre el saldo" }]} />} /><p id="card-interestMode-help" className="text-small text-muted-foreground">{interestModeLocked ? "No se puede cambiar porque la tarjeta ya tiene compras a cuotas." : "Bancolombia cobra intereses sobre el saldo en una sola línea."}</p></div>
+      </div></fieldset>
       <Controller control={form.control} name="color" render={({ field }) => <CardColorPicker value={field.value} onChange={field.onChange} />} />
       <CardColorChip color={color ?? preferredColor} name={`${name || "Tu tarjeta"} · •••• ${last4 || "0000"}`} />
       </SheetBody>

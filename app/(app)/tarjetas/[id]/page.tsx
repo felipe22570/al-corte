@@ -14,10 +14,11 @@ import { todayInBogota } from "@/lib/domain/dates";
 import { installmentProgress, isInstallmentCompleted, type InstallmentRow } from "@/lib/domain/installments";
 import { statementPeriod } from "@/lib/domain/statements";
 import { formatDateShort } from "@/lib/format";
+import { loadInterestEstimates, type InterestEstimate } from "@/lib/queries/interest-estimates";
 import { createClient } from "@/lib/supabase/server";
 
 export const metadata: Metadata = { title: "Detalle de tarjeta" };
-type Card = { id: string; name: string; bank: string; last4: string; color: CardColor; cutoff_day: number; payment_day: number };
+type Card = { id: string; name: string; bank: string; last4: string; color: CardColor; cutoff_day: number; payment_day: number; interest_mode: "per_installment" | "on_balance" };
 type Statement = { id: string; period_start: string; cutoff_date: string; due_date: string; paid_at: string | null };
 type Total = { statement_id: string; total_calculated: string };
 type Purchase = { id: string; merchant: string | null; currency: "COP" | "USD"; installments_count: number };
@@ -30,7 +31,7 @@ export default async function CardDetailPage({ params }: { params: Promise<{ id:
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) redirect("/login");
   const [cardResult, balanceResult, statementResult, totalResult, purchaseResult] = await Promise.all([
-    supabase.from("cards").select("id,name,bank,last4,color,cutoff_day,payment_day").eq("id", id).eq("user_id", user.id).maybeSingle(),
+    supabase.from("cards").select("id,name,bank,last4,color,cutoff_day,payment_day,interest_mode").eq("id", id).eq("user_id", user.id).maybeSingle(),
     supabase.from("card_balances").select("available::text,utilization::text").eq("card_id", id).eq("user_id", user.id).maybeSingle(),
     supabase.from("statements").select("id,period_start,cutoff_date,due_date,paid_at").eq("card_id", id).eq("user_id", user.id).order("cutoff_date"),
     supabase.from("statement_totals").select("statement_id,total_calculated::text").eq("card_id", id).eq("user_id", user.id),
@@ -44,6 +45,9 @@ export default async function CardDetailPage({ params }: { params: Promise<{ id:
   const statements = (statementResult.data ?? []) as Statement[];
   const totals = new Map(((totalResult.data ?? []) as unknown as Total[]).map((item) => [item.statement_id, item.total_calculated]));
   if (statements.some((item) => !totals.has(item.id))) throw new Error("No pudimos consultar los totales de los extractos.");
+  // D32: on-balance statements without registered interest carry the R8 estimate in their calculated total.
+  const estimates = card.interest_mode === "on_balance" ? await loadInterestEstimates(supabase, user.id, statements) : new Map<string, InterestEstimate>();
+  const statementTotal = (statementId: string) => new Decimal(totals.get(statementId) ?? "0").plus(estimates.get(statementId)?.amountCop ?? 0);
   const today = todayInBogota();
   const current = statementPeriod({ cutoffDay: card.cutoff_day, paymentDay: card.payment_day }, today);
   const open = statements.find((item) => item.period_start <= today && today <= item.cutoff_date);
@@ -68,7 +72,7 @@ export default async function CardDetailPage({ params }: { params: Promise<{ id:
   const statementRow = (item: Statement) => (
     <Link key={item.id} href={`/tarjetas/${id}/extractos/${item.cutoff_date}`} className="flex min-h-10 min-w-0 flex-wrap items-center justify-between gap-4 rounded-md py-3 underline-offset-4 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring pointer-coarse:min-h-11">
       <span className="flex min-w-0 flex-col gap-2"><span className="text-body">Corte {formatDateShort(item.cutoff_date, today)}</span><StatementStatus dueDate={item.due_date} paidAt={item.paid_at} today={today} /></span>
-      <span className="ml-auto min-w-0 max-w-full text-right"><Money value={totals.get(item.id) ?? "0"} currency="COP" /></span>
+      <span className="ml-auto flex min-w-0 max-w-full flex-col text-right"><Money value={statementTotal(item.id)} currency="COP" />{estimates.has(item.id) && <span className="text-small text-muted-foreground">Incluye intereses estimados</span>}</span>
     </Link>
   );
   return (
@@ -78,7 +82,7 @@ export default async function CardDetailPage({ params }: { params: Promise<{ id:
         <div className="grid min-w-0 items-start gap-6 xl:grid-cols-2">
           <section className="flex min-w-0 flex-col items-start gap-3">
             <h2 className="text-heading">Extracto abierto</h2>
-            <Money value={open ? totals.get(open.id) ?? "0" : "0"} currency="COP" size="lg" />
+            <Money value={open ? statementTotal(open.id) : "0"} currency="COP" size="lg" />{open && estimates.has(open.id) && <p className="text-small text-muted-foreground">Incluye intereses estimados</p>}
             <p className="text-small text-muted-foreground">Pagas el {formatDateShort(open?.due_date ?? current.dueDate, today)} · corte {formatDateShort(openCutoff, today)}</p>
             <StatementStatus dueDate={open?.due_date ?? current.dueDate} paidAt={open?.paid_at ?? null} today={today} />
             <Link href={`/tarjetas/${id}/extractos/${openCutoff}`} className="inline-flex min-h-10 items-center rounded-md text-body underline underline-offset-4 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring pointer-coarse:min-h-11">Ver extracto</Link>

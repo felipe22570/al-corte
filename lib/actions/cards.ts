@@ -10,7 +10,7 @@ function databaseFields(card: ValidCard) {
     name: card.name, bank: card.bank, network: card.network, last4: card.last4,
     credit_limit: card.creditLimit, advance_fee: card.advanceFee, handling_fee: card.handlingFee,
     cutoff_day: card.cutoffDay, payment_day: card.paymentDay, purchase_rate_ea: card.purchaseRateEa,
-    advance_rate_ea: card.advanceRateEa, amortization_method: card.amortizationMethod, color: card.color,
+    advance_rate_ea: card.advanceRateEa, amortization_method: card.amortizationMethod, interest_mode: card.interestMode, color: card.color,
   };
 }
 
@@ -34,6 +34,8 @@ export async function updateCard(id: string, input: unknown) {
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return { ok: false as const, error: "Inicia sesión para guardar la tarjeta." };
   const { data, error } = await supabase.from("cards").update(databaseFields(parsed.data)).eq("id", id).eq("user_id", user.id).select("id").maybeSingle();
+  // D32: a database trigger keeps the interest mode while the card has purchases with several installments.
+  if (error?.code === "23514" && error.message.includes("modo de intereses")) return { ok: false as const, error: "No puedes cambiar cómo se cobran los intereses: la tarjeta ya tiene compras a cuotas." };
   if (error || !data) return { ok: false as const, error: "No pudimos actualizar la tarjeta." };
   revalidateFinancialViews();
   return { ok: true as const };

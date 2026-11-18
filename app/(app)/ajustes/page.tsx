@@ -26,7 +26,7 @@ export const metadata: Metadata = { title: "Ajustes" };
 type RawCard = {
   id: string; name: string; bank: string; network: string; last4: string; color: CardColor; archived_at: string | null;
   credit_limit: string; advance_fee: string; handling_fee: string; cutoff_day: number; payment_day: number;
-  purchase_rate_ea: string; advance_rate_ea: string; amortization_method: "fixed_principal" | "french";
+  purchase_rate_ea: string; advance_rate_ea: string; amortization_method: "fixed_principal" | "french"; interest_mode: "per_installment" | "on_balance";
 };
 type RawCategory = { id: string; name: string; icon: string; archived_at: string | null };
 
@@ -36,16 +36,20 @@ export default async function SettingsPage() {
   if (!user) redirect("/login");
 
   const [cardResult, categoryResult] = await Promise.all([
-    supabase.from("cards").select("id,name,bank,network,last4,color,archived_at,credit_limit::text,advance_fee::text,handling_fee::text,cutoff_day,payment_day,purchase_rate_ea::text,advance_rate_ea::text,amortization_method").eq("user_id", user.id).order("name"),
+    supabase.from("cards").select("id,name,bank,network,last4,color,archived_at,credit_limit::text,advance_fee::text,handling_fee::text,cutoff_day,payment_day,purchase_rate_ea::text,advance_rate_ea::text,amortization_method,interest_mode").eq("user_id", user.id).order("name"),
     supabase.from("categories").select("id,name,icon,archived_at").eq("user_id", user.id).order("name"),
   ]);
   if (cardResult.error || categoryResult.error) throw new Error("No fue posible cargar los ajustes.");
+  const rawCards = (cardResult.data ?? []) as RawCard[];
+  const installmentCounts = await Promise.all(rawCards.map((card) => supabase.from("transactions").select("id", { count: "exact", head: true }).eq("user_id", user.id).eq("card_id", card.id).gt("installments_count", 1)));
+  if (installmentCounts.some((result) => result.error)) throw new Error("No fue posible cargar los ajustes.");
 
-  const cards: CardRecord[] = ((cardResult.data ?? []) as RawCard[]).map((card) => ({
+  const cards: CardRecord[] = rawCards.map((card, index) => ({
     id: card.id, name: card.name, bank: card.bank, network: card.network, last4: card.last4, color: card.color, archivedAt: card.archived_at,
     creditLimit: card.credit_limit, advanceFee: card.advance_fee, handlingFee: card.handling_fee,
     cutoffDay: card.cutoff_day, paymentDay: card.payment_day, purchaseRateEa: card.purchase_rate_ea,
     advanceRateEa: card.advance_rate_ea, amortizationMethod: card.amortization_method,
+    interestMode: card.interest_mode, hasInstallmentPurchases: (installmentCounts[index]?.count ?? 0) > 0,
   }));
   const categories: CategoryRecord[] = ((categoryResult.data ?? []) as RawCategory[]).map((category) => ({ id: category.id, name: category.name, icon: category.icon, archivedAt: category.archived_at }));
   const activeCards = cards.filter((card) => !card.archivedAt);

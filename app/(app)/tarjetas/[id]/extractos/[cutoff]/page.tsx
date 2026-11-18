@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
+import Decimal from "decimal.js";
 import { z } from "zod";
 import { Money } from "@/components/money";
 import { CardColorChip } from "@/components/card-color-chip";
@@ -8,11 +9,13 @@ import { PageHeader } from "@/components/page-header";
 import { StatementBreakdown } from "@/components/statement-breakdown";
 import type { StatementConceptData } from "@/components/statement-concept";
 import { StatementControls } from "@/components/statement-controls";
+import { StatementInterestForm } from "@/components/statement-interest-form";
 import { StatementStatus } from "@/components/statement-status";
 import { isValidIsoDate, todayInBogota } from "@/lib/domain/dates";
 import { isWithinMonthProjectionWindow, paymentMonth } from "@/lib/domain/months";
 import { statementPeriod } from "@/lib/domain/statements";
 import { formatDateShort } from "@/lib/format";
+import { loadInterestEstimates, type InterestEstimate } from "@/lib/queries/interest-estimates";
 import { createClient } from "@/lib/supabase/server";
 import type { CardColor } from "@/lib/card-colors";
 
@@ -44,7 +47,7 @@ export default async function StatementDetailPage({ params }: { params: Promise<
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) redirect("/login");
   const [cardResult, statementResult, neighborsResult] = await Promise.all([
-    supabase.from("cards").select("id,name,last4,color,cutoff_day,payment_day").eq("id", id).eq("user_id", user.id).maybeSingle(),
+    supabase.from("cards").select("id,name,last4,color,cutoff_day,payment_day,interest_mode,archived_at").eq("id", id).eq("user_id", user.id).maybeSingle(),
     supabase.from("statements").select("id,period_start,cutoff_date,due_date,paid_at,real_total::text").eq("card_id", id).eq("user_id", user.id).eq("cutoff_date", cutoff).maybeSingle(),
     supabase.from("statements").select("period_start,cutoff_date").eq("card_id", id).eq("user_id", user.id).order("cutoff_date"),
   ]);
@@ -81,6 +84,21 @@ export default async function StatementDetailPage({ params }: { params: Promise<
       parents = (result.data ?? []) as unknown as Movement[];
     }
   }
+  // D32: without a registered interest charge, an on-balance statement carries the R8 estimate in its calculated total.
+  const onBalance = card.interest_mode === "on_balance";
+  let estimate: InterestEstimate | undefined;
+  let latestRate: string | null = null;
+  if (statement && onBalance) {
+    const [estimates, rate] = await Promise.all([
+      loadInterestEstimates(supabase, user.id, [statement]),
+      supabase.from("fx_rates").select("usd_cop::text").order("date", { ascending: false }).limit(1).maybeSingle(),
+    ]);
+    if (rate.error) throw new Error("No pudimos consultar la última TRM.");
+    estimate = estimates.get(statement.id);
+    latestRate = (rate.data as { usd_cop: string } | null)?.usd_cop ?? null;
+  }
+  const hasRealInterest = movements.some((item) => item.type === "interest");
+  const calculatedTotal = new Decimal(totals?.total_calculated ?? "0").plus(estimate?.amountCop ?? 0);
   const movementEntry = (item: Movement, fallback: string): StatementConceptData["entries"][number] => ({
     id: item.id,
     href: `/movimientos/${item.id}`,
@@ -90,8 +108,8 @@ export default async function StatementDetailPage({ params }: { params: Promise<
   });
   const concepts: StatementConceptData[] = groups.map(([key, label]) => ({
     key,
-    label,
-    total: totals?.[key] ?? "0",
+    label: key === "interest" && estimate ? "Intereses estimados" : label,
+    total: key === "interest" && estimate ? estimate.amountCop.toFixed() : totals?.[key] ?? "0",
     subtract: key === "refunds",
     entries: key === "installments"
       ? installments.map((item) => {
@@ -121,7 +139,8 @@ export default async function StatementDetailPage({ params }: { params: Promise<
         <div className="grid items-start gap-6 xl:grid-cols-2">
           <section className="flex flex-col items-start gap-3">
             <h2 className="text-heading">Total calculado</h2>
-            <Money value={totals?.total_calculated ?? "0"} currency="COP" size="lg" />
+            <Money value={calculatedTotal} currency="COP" size="lg" />
+            {estimate && <p className="text-small text-muted-foreground">Incluye intereses estimados</p>}
             <p className="text-body">{formatDateShort(statement?.period_start ?? period.periodStart, today)} – {formatDateShort(cutoff, today)} · pagas el {formatDateShort(statement?.due_date ?? period.dueDate, today)}</p>
             {statement && <StatementStatus dueDate={statement.due_date} paidAt={statement.paid_at} today={today} />}
             {statement && isWithinMonthProjectionWindow(statement.due_date, today) && <Link className="text-body underline" href={`/meses/${paymentMonth(statement.due_date)}`}>Ver mes de pago</Link>}
@@ -129,6 +148,7 @@ export default async function StatementDetailPage({ params }: { params: Promise<
           {statement && <StatementControls id={statement.id} realTotal={statement.real_total} paid={!!statement.paid_at} today={today} />}
         </div>
         {statement ? <StatementBreakdown concepts={concepts} payments={payments} /> : <p className="text-body text-muted-foreground">Aún no hay movimientos en este extracto.</p>}
+        {statement && onBalance && !hasRealInterest && !card.archived_at && <StatementInterestForm id={statement.id} latestRate={latestRate} />}
         <nav aria-label="Navegación de extractos" className="flex justify-between gap-4">
           {previous ? <Link className="text-body underline" href={`/tarjetas/${id}/extractos/${previous}`}>Anterior</Link> : <span />}
           {next && <Link className="text-body underline" href={`/tarjetas/${id}/extractos/${next}`}>Siguiente</Link>}

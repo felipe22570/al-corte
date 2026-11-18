@@ -56,3 +56,12 @@ it("invalidates all financial routes after card and category updates or archivin
     expect(mocks.revalidatePath).toHaveBeenCalledWith("/");
   }
 });
+
+it("explica por qué no se puede cambiar el modo de intereses (D32)", async () => {
+  const id = "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa";
+  const query = { update: vi.fn(), eq: vi.fn(), select: vi.fn(), maybeSingle: vi.fn().mockResolvedValue({ data: null, error: { code: "23514", message: "No puedes cambiar el modo de intereses: la tarjeta ya tiene compras a cuotas." } }) };
+  query.update.mockReturnValue(query); query.eq.mockReturnValue(query); query.select.mockReturnValue(query);
+  mocks.createClient.mockResolvedValue({ auth: { getUser: vi.fn().mockResolvedValue({ data: { user: { id: "user-a" } } }) }, from: vi.fn().mockReturnValue(query) });
+  expect(await updateCard(id, { ...validCard, interestMode: "on_balance" })).toEqual({ ok: false, error: "No puedes cambiar cómo se cobran los intereses: la tarjeta ya tiene compras a cuotas." });
+  expect(query.update).toHaveBeenCalledWith(expect.objectContaining({ interest_mode: "on_balance" }));
+});

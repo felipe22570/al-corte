@@ -33,6 +33,7 @@ export const cardSchema = z.object({
   creditLimit: money, advanceFee: money, handlingFee: money,
   cutoffDay: day, paymentDay: day, purchaseRateEa: rate, advanceRateEa: rate,
   amortizationMethod: z.enum(["fixed_principal", "french"], { error: "Elige un método de amortización." }),
+  interestMode: z.enum(["per_installment", "on_balance"], { error: "Elige cómo cobra intereses tu banco." }).default("per_installment"),
   color: z.enum(CARD_COLORS, { error: "Elige un color de la lista." }),
 });
 export type CardInput = z.input<typeof cardSchema>;

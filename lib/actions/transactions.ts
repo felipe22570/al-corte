@@ -6,7 +6,7 @@ import { buildTransactionPlan, type TransactionCard } from "@/lib/domain/transac
 import { createClient } from "@/lib/supabase/server";
 import { transactionSchema, transactionTypeSchema } from "@/lib/validation/transaction";
 
-type RawCard = { id: string; cutoff_day: number; payment_day: number; purchase_rate_ea: string; advance_rate_ea: string; advance_fee: string; amortization_method: "fixed_principal" | "french" };
+type RawCard = { id: string; cutoff_day: number; payment_day: number; purchase_rate_ea: string; advance_rate_ea: string; advance_fee: string; amortization_method: "fixed_principal" | "french"; interest_mode: "per_installment" | "on_balance" };
 
 export async function createTransaction(input: unknown) {
   const parsed = transactionSchema.safeParse(input);
@@ -14,10 +14,10 @@ export async function createTransaction(input: unknown) {
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return { ok: false as const, error: "Inicia sesión para guardar el movimiento." };
-  const { data, error: cardError } = await supabase.from("cards").select("id,cutoff_day,payment_day,purchase_rate_ea::text,advance_rate_ea::text,advance_fee::text,amortization_method").eq("id", parsed.data.cardId).eq("user_id", user.id).is("archived_at", null).maybeSingle();
+  const { data, error: cardError } = await supabase.from("cards").select("id,cutoff_day,payment_day,purchase_rate_ea::text,advance_rate_ea::text,advance_fee::text,amortization_method,interest_mode").eq("id", parsed.data.cardId).eq("user_id", user.id).is("archived_at", null).maybeSingle();
   if (cardError || !data) return { ok: false as const, error: "La tarjeta ya no está disponible." };
   const raw = data as RawCard;
-  const card: TransactionCard = { id: raw.id, cutoffDay: raw.cutoff_day, paymentDay: raw.payment_day, purchaseRateEa: raw.purchase_rate_ea, advanceRateEa: raw.advance_rate_ea, advanceFee: raw.advance_fee, amortizationMethod: raw.amortization_method };
+  const card: TransactionCard = { id: raw.id, cutoffDay: raw.cutoff_day, paymentDay: raw.payment_day, purchaseRateEa: raw.purchase_rate_ea, advanceRateEa: raw.advance_rate_ea, advanceFee: raw.advance_fee, amortizationMethod: raw.amortization_method, interestMode: raw.interest_mode };
   let payload;
   try {
     payload = buildTransactionPlan(parsed.data, card).payload;
@@ -53,13 +53,13 @@ export async function updateTransaction(id: unknown, input: unknown) {
   if (!user) return { ok: false as const, error: "Inicia sesión para editar el movimiento." };
   const [originalResult, cardResult] = await Promise.all([
     supabase.from("transactions").select("card_id,type,rate_ea_applied::text,parent_id").eq("id", id).eq("user_id", user.id).maybeSingle(),
-    supabase.from("cards").select("id,cutoff_day,payment_day,purchase_rate_ea::text,advance_rate_ea::text,advance_fee::text,amortization_method").eq("id", parsed.data.cardId).eq("user_id", user.id).is("archived_at", null).maybeSingle(),
+    supabase.from("cards").select("id,cutoff_day,payment_day,purchase_rate_ea::text,advance_rate_ea::text,advance_fee::text,amortization_method,interest_mode").eq("id", parsed.data.cardId).eq("user_id", user.id).is("archived_at", null).maybeSingle(),
   ]);
   if (originalResult.error || !originalResult.data || cardResult.error || !cardResult.data) return { ok: false as const, error: "El movimiento o la tarjeta ya no están disponibles." };
   const original = originalResult.data as unknown as { card_id: string; type: string; rate_ea_applied: string | null; parent_id: string | null };
   if (original.type === "advance_fee" && original.parent_id) return { ok: false as const, error: "Edita la comisión desde su avance." };
   const raw = cardResult.data as RawCard;
-  const card: TransactionCard = { id: raw.id, cutoffDay: raw.cutoff_day, paymentDay: raw.payment_day, purchaseRateEa: raw.purchase_rate_ea, advanceRateEa: raw.advance_rate_ea, advanceFee: raw.advance_fee, amortizationMethod: raw.amortization_method };
+  const card: TransactionCard = { id: raw.id, cutoffDay: raw.cutoff_day, paymentDay: raw.payment_day, purchaseRateEa: raw.purchase_rate_ea, advanceRateEa: raw.advance_rate_ea, advanceFee: raw.advance_fee, amortizationMethod: raw.amortization_method, interestMode: raw.interest_mode };
   let payload;
   try {
     const originalType = transactionTypeSchema.safeParse(original.type);

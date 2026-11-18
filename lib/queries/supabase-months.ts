@@ -1,22 +1,24 @@
 import Decimal from "decimal.js";
 import type { CardColor } from "@/lib/card-colors";
 import { monthDateBounds, purchaseMonthSpending, type ProjectionInput } from "@/lib/domain/months";
+import type { InterestMode } from "@/lib/domain/interest";
 import { fetchAllPages } from "@/lib/paginate";
 import type { createClient } from "@/lib/supabase/server";
 import type { MonthReadSource } from "./months";
 
 type Client = Awaited<ReturnType<typeof createClient>>;
-type RawCard = { id: string; name: string; bank: string; last4: string; color: CardColor; archived_at: string | null; cutoff_day: number; payment_day: number; handling_fee: string };
+type RawCard = { id: string; name: string; bank: string; last4: string; color: CardColor; archived_at: string | null; cutoff_day: number; payment_day: number; handling_fee: string; interest_mode: InterestMode };
 type RawBalance = { card_id: string; used: string; available: string; utilization: string };
 type RawStatement = { id: string; card_id: string; period_start: string; cutoff_date: string; due_date: string; paid_at: string | null };
 type RawSubscription = { id: string; name: string; card_id: string; category_id: string | null; amount: string; currency: "COP" | "USD"; frequency: "monthly" | "yearly"; billing_day: number; start_date: string; trial_ends_at: string | null; status: "active" | "paused" | "cancelled" };
 type Movement = ProjectionInput["movements"][number];
 type RawMovement = { id: string; statement_id: string; type: Movement["type"]; amount_cop: string; amount: string; currency: "COP" | "USD"; fx_rate: string | null; installments_count: number; source: Movement["source"]; category_id: string | null; subscription_id: string | null; date: string };
-type RawInstallment = { id: string; statement_id: string; transaction_id: string; total_cop: string };
+type RawInstallment = { id: string; statement_id: string; transaction_id: string; total_cop: string; principal: string; balance_after: string };
+type RawParent = { id: string; category_id: string | null; date: string; rate_ea_applied: string | null; interest_free: boolean; currency: "COP" | "USD"; fx_rate: string | null };
 
 export type MonthCardDetails = {
   id: string; name: string; bank: string; last4: string; color: CardColor; archived: boolean;
-  cutoffDay: number; paymentDay: number; handlingFee: Decimal;
+  cutoffDay: number; paymentDay: number; handlingFee: Decimal; interestMode?: InterestMode;
   used: Decimal; available: Decimal; utilization: Decimal;
 };
 
@@ -46,7 +48,7 @@ export function createSupabaseMonthSource(client: Client, userId: string): Month
   function loadCardDetails() {
     cardDetails ??= (async () => {
       const [cards, balances] = await Promise.all([
-        fetchAllPages((from, to) => client.from("cards").select("id,name,bank,last4,color,archived_at,cutoff_day,payment_day,handling_fee::text").eq("user_id", userId).order("id").range(from, to)),
+        fetchAllPages((from, to) => client.from("cards").select("id,name,bank,last4,color,archived_at,cutoff_day,payment_day,handling_fee::text,interest_mode").eq("user_id", userId).order("id").range(from, to)),
         fetchAllPages((from, to) => client.from("card_balances").select("card_id,used::text,available::text,utilization::text").eq("user_id", userId).order("card_id").range(from, to)),
       ]);
       const byCard = new Map((balances as unknown as RawBalance[]).map((balance) => [balance.card_id, balance]));
@@ -56,7 +58,7 @@ export function createSupabaseMonthSource(client: Client, userId: string): Month
         return {
           id: card.id, name: card.name, bank: card.bank, last4: card.last4, color: card.color,
           archived: card.archived_at !== null, cutoffDay: card.cutoff_day, paymentDay: card.payment_day,
-          handlingFee: new Decimal(card.handling_fee), used: new Decimal(balance.used),
+          handlingFee: new Decimal(card.handling_fee), interestMode: card.interest_mode, used: new Decimal(balance.used),
           available: new Decimal(balance.available), utilization: new Decimal(balance.utilization),
         };
       });
@@ -106,17 +108,25 @@ export function createSupabaseMonthSource(client: Client, userId: string): Month
       const groups = batches(statementIds);
       const [movements, installments] = await Promise.all([
         Promise.all(groups.map((ids) => fetchAllPages((from, to) => client.from("transactions").select(movementFields).eq("user_id", userId).in("statement_id", ids).order("id").range(from, to)))),
-        Promise.all(groups.map((ids) => fetchAllPages((from, to) => client.from("installments").select("id,statement_id,transaction_id,total_cop::text").eq("user_id", userId).in("statement_id", ids).order("id").range(from, to)))),
+        Promise.all(groups.map((ids) => fetchAllPages((from, to) => client.from("installments").select("id,statement_id,transaction_id,total_cop::text,principal::text,balance_after::text").eq("user_id", userId).in("statement_id", ids).order("id").range(from, to)))),
       ]);
       const rows = installments.flat() as unknown as RawInstallment[];
       const transactionIds = [...new Set(rows.map((item) => item.transaction_id))];
-      const parents = await Promise.all(batches(transactionIds).map((ids) => fetchAllPages((from, to) => client.from("transactions").select("id,category_id").eq("user_id", userId).in("id", ids).order("id").range(from, to))));
-      const categories = new Map((parents.flat() as unknown as Array<{ id: string; category_id: string | null }>).map((parent) => [parent.id, parent.category_id]));
+      const parents = await Promise.all(batches(transactionIds).map((ids) => fetchAllPages((from, to) => client.from("transactions").select("id,category_id,date,rate_ea_applied::text,interest_free,currency,fx_rate::text").eq("user_id", userId).in("id", ids).order("id").range(from, to))));
+      const purchases = new Map((parents.flat() as unknown as RawParent[]).map((parent) => [parent.id, parent]));
       return {
         movements: (movements.flat() as unknown as RawMovement[]).map(mapMovement),
         installments: rows.map((item) => {
-          if (!categories.has(item.transaction_id)) throw new Error("No pudimos consultar la categoría de una cuota.");
-          return { id: item.id, statementId: item.statement_id, categoryId: categories.get(item.transaction_id) ?? null, totalCop: new Decimal(item.total_cop) };
+          const purchase = purchases.get(item.transaction_id);
+          if (!purchase) throw new Error("No pudimos consultar la categoría de una cuota.");
+          return {
+            id: item.id, statementId: item.statement_id, categoryId: purchase.category_id, totalCop: new Decimal(item.total_cop),
+            interestBasis: {
+              principal: new Decimal(item.principal), balanceAfter: new Decimal(item.balance_after), purchaseDate: purchase.date,
+              rateEa: purchase.rate_ea_applied === null ? null : new Decimal(purchase.rate_ea_applied), interestFree: purchase.interest_free,
+              currency: purchase.currency, fxRate: purchase.fx_rate === null ? null : new Decimal(purchase.fx_rate),
+            },
+          };
         }),
       };
     },

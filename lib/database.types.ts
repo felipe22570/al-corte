@@ -25,14 +25,14 @@ export type Database = {
           Tables: {
             "cards": {
                   Row: {
-                    "advance_fee": number,"advance_rate_ea": number,"amortization_method": Database["public"]['Enums']["amortization_method"],"archived_at": string | null,"bank": string,"color": string,"created_at": string,"credit_limit": number,"cutoff_day": number,"handling_fee": number,"id": string,"last4": string,"name": string,"network": string,"payment_day": number,"purchase_rate_ea": number,"updated_at": string,"user_id": string
+                    "advance_fee": number,"advance_rate_ea": number,"amortization_method": Database["public"]['Enums']["amortization_method"],"archived_at": string | null,"bank": string,"color": string,"created_at": string,"credit_limit": number,"cutoff_day": number,"handling_fee": number,"id": string,"interest_mode": Database["public"]['Enums']["interest_mode"],"last4": string,"name": string,"network": string,"payment_day": number,"purchase_rate_ea": number,"updated_at": string,"user_id": string
                   }
                   ComputedFields: never
                   Insert: {
-                    "advance_fee"?: number,"advance_rate_ea"?: number,"amortization_method"?: Database["public"]['Enums']["amortization_method"],"archived_at"?: string | null,"bank": string,"color"?: string,"created_at"?: string,"credit_limit": number,"cutoff_day": number,"handling_fee"?: number,"id"?: string,"last4": string,"name": string,"network": string,"payment_day": number,"purchase_rate_ea"?: number,"updated_at"?: string,"user_id"?: string
+                    "advance_fee"?: number,"advance_rate_ea"?: number,"amortization_method"?: Database["public"]['Enums']["amortization_method"],"archived_at"?: string | null,"bank": string,"color"?: string,"created_at"?: string,"credit_limit": number,"cutoff_day": number,"handling_fee"?: number,"id"?: string,"interest_mode"?: Database["public"]['Enums']["interest_mode"],"last4": string,"name": string,"network": string,"payment_day": number,"purchase_rate_ea"?: number,"updated_at"?: string,"user_id"?: string
                   }
                   Update: {
-                    "advance_fee"?: number,"advance_rate_ea"?: number,"amortization_method"?: Database["public"]['Enums']["amortization_method"],"archived_at"?: string | null,"bank"?: string,"color"?: string,"created_at"?: string,"credit_limit"?: number,"cutoff_day"?: number,"handling_fee"?: number,"id"?: string,"last4"?: string,"name"?: string,"network"?: string,"payment_day"?: number,"purchase_rate_ea"?: number,"updated_at"?: string,"user_id"?: string
+                    "advance_fee"?: number,"advance_rate_ea"?: number,"amortization_method"?: Database["public"]['Enums']["amortization_method"],"archived_at"?: string | null,"bank"?: string,"color"?: string,"created_at"?: string,"credit_limit"?: number,"cutoff_day"?: number,"handling_fee"?: number,"id"?: string,"interest_mode"?: Database["public"]['Enums']["interest_mode"],"last4"?: string,"name"?: string,"network"?: string,"payment_day"?: number,"purchase_rate_ea"?: number,"updated_at"?: string,"user_id"?: string
                   }
                   Relationships: [
                     
@@ -396,7 +396,7 @@ isOneToOne: false
                            }
           }
           Enums: {
-            "amortization_method": "fixed_principal"|"french","currency_code": "COP"|"USD","subscription_frequency": "monthly"|"yearly","subscription_status": "active"|"paused"|"cancelled","transaction_source": "manual"|"subscription"|"import"|"email"|"system","transaction_type": "purchase"|"cash_advance"|"advance_fee"|"payment"|"handling_fee"|"interest"|"insurance"|"refund"|"adjustment"
+            "amortization_method": "fixed_principal"|"french","currency_code": "COP"|"USD","interest_mode": "per_installment"|"on_balance","subscription_frequency": "monthly"|"yearly","subscription_status": "active"|"paused"|"cancelled","transaction_source": "manual"|"subscription"|"import"|"email"|"system","transaction_type": "purchase"|"cash_advance"|"advance_fee"|"payment"|"handling_fee"|"interest"|"insurance"|"refund"|"adjustment"
           }
           CompositeTypes: {
             [_ in never]: never
@@ -516,7 +516,7 @@ export const Constants = {
           }
         },"public": {
           Enums: {
-            "amortization_method": ["fixed_principal", "french"],"currency_code": ["COP", "USD"],"subscription_frequency": ["monthly", "yearly"],"subscription_status": ["active", "paused", "cancelled"],"transaction_source": ["manual", "subscription", "import", "email", "system"],"transaction_type": ["purchase", "cash_advance", "advance_fee", "payment", "handling_fee", "interest", "insurance", "refund", "adjustment"]
+            "amortization_method": ["fixed_principal", "french"],"currency_code": ["COP", "USD"],"interest_mode": ["per_installment", "on_balance"],"subscription_frequency": ["monthly", "yearly"],"subscription_status": ["active", "paused", "cancelled"],"transaction_source": ["manual", "subscription", "import", "email", "system"],"transaction_type": ["purchase", "cash_advance", "advance_fee", "payment", "handling_fee", "interest", "insurance", "refund", "adjustment"]
           }
         }
 } as const

@@ -10,7 +10,7 @@ import type { TransactionCardOption, TransactionCategoryOption } from "@/lib/tra
 import { transactionTypeSchema } from "@/lib/validation/transaction";
 
 export const metadata: Metadata = { title: "Editar movimiento" };
-type RawCard = { id: string; name: string; last4: string; color: TransactionCardOption["color"]; cutoff_day: number; payment_day: number; purchase_rate_ea: string; advance_rate_ea: string; advance_fee: string; amortization_method: TransactionCardOption["amortizationMethod"] };
+type RawCard = { id: string; name: string; last4: string; color: TransactionCardOption["color"]; cutoff_day: number; payment_day: number; purchase_rate_ea: string; advance_rate_ea: string; advance_fee: string; amortization_method: TransactionCardOption["amortizationMethod"]; interest_mode: "per_installment" | "on_balance" };
 type RawTransaction = { card_id: string; category_id: string | null; type: string; date: string; amount: string; currency: "COP" | "USD"; fx_rate: string | null; installments_count: number; interest_free: boolean; merchant: string | null; note: string | null; rate_ea_applied: string | null; parent_id: string | null; statement_id: string; prior_installments: number; original_installments_count: number | null };
 type RawInstallment = { statement_id: string | null; number: number; balance_after: string };
 
@@ -22,7 +22,7 @@ export default async function EditTransactionPage({ params }: { params: Promise<
   if (!user) redirect("/login");
   const [transactionResult, cardsResult, categoriesResult, installmentsResult] = await Promise.all([
     supabase.from("transactions").select("card_id,category_id,type,date,amount::text,currency,fx_rate::text,installments_count,interest_free,merchant,note,rate_ea_applied::text,parent_id,statement_id,prior_installments,original_installments_count").eq("id", id).eq("user_id", user.id).maybeSingle(),
-    supabase.from("cards").select("id,name,last4,color,cutoff_day,payment_day,purchase_rate_ea::text,advance_rate_ea::text,advance_fee::text,amortization_method").eq("user_id", user.id).is("archived_at", null).order("name"),
+    supabase.from("cards").select("id,name,last4,color,cutoff_day,payment_day,purchase_rate_ea::text,advance_rate_ea::text,advance_fee::text,amortization_method,interest_mode").eq("user_id", user.id).is("archived_at", null).order("name"),
     supabase.from("categories").select("id,name,icon").eq("user_id", user.id).is("archived_at", null).order("name"),
     supabase.from("installments").select("statement_id,number,balance_after::text").eq("transaction_id", id).eq("user_id", user.id),
   ]);
@@ -47,7 +47,7 @@ export default async function EditTransactionPage({ params }: { params: Promise<
     inProgress: true, currentInstallment: String(prior + 1), trackedFromCutoff: statementResult.data.cutoff_date,
     balanceAfter: transaction.original_installments_count !== null && installmentK ? installmentK.balance_after.replace(".", ",") : "",
   } : {};
-  const cards: TransactionCardOption[] = ((cardsResult.data ?? []) as RawCard[]).map((card) => ({ id: card.id, name: card.name, last4: card.last4, color: card.color, cutoffDay: card.cutoff_day, paymentDay: card.payment_day, purchaseRateEa: card.purchase_rate_ea, advanceRateEa: card.advance_rate_ea, advanceFee: card.advance_fee, amortizationMethod: card.amortization_method }));
+  const cards: TransactionCardOption[] = ((cardsResult.data ?? []) as RawCard[]).map((card) => ({ id: card.id, name: card.name, last4: card.last4, color: card.color, cutoffDay: card.cutoff_day, paymentDay: card.payment_day, purchaseRateEa: card.purchase_rate_ea, advanceRateEa: card.advance_rate_ea, advanceFee: card.advance_fee, amortizationMethod: card.amortization_method, interestMode: card.interest_mode }));
   const categories = (categoriesResult.data ?? []) as TransactionCategoryOption[];
   const categoryArchived = !!transaction.category_id && !categories.some((category) => category.id === transaction.category_id);
   if (categoryArchived) {

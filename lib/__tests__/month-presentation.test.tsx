@@ -14,7 +14,7 @@ const card = {
   last4: "1234",
   color: "card-1" as const,
   available: new Decimal("4500000"), used: new Decimal("1500000"), utilization: new Decimal("0.25"),
-  handlingFee: new Decimal(0), cutoffDay: 15, paymentDay: 28, archived: false,
+  handlingFee: new Decimal(0), interestMode: "per_installment" as const, cutoffDay: 15, paymentDay: 28, archived: false,
 };
 
 describe("dashboard card presentation", () => {

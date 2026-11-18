@@ -53,6 +53,12 @@ describe("compras en curso en el formulario (F10)", () => {
     expect(html).not.toContain("Saldo pendiente (opcional)");
   });
 
+  it("en tarjetas con intereses sobre saldo explica que el interés llega en cada extracto (D32)", () => {
+    const html = renderForm({ ...advance, type: "purchase", inProgress: false }, {}, [{ ...card, interestMode: "on_balance" }]);
+    expect(html).toContain("Tu banco cobra los intereses sobre el saldo, en una línea de cada extracto.");
+    expect(html).not.toContain("Intereses totales");
+  });
+
   it("no ofrece cuotas pagadas a compras de una cuota", () => {
     expect(renderForm({ ...advance, installmentsCount: "1", inProgress: false })).not.toContain("Ya pagué cuotas");
   });

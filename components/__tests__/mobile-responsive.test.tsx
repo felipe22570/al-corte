@@ -36,7 +36,7 @@ vi.mock("@/lib/supabase/server", () => ({ createClient: async () => ({
   from: (table: string) => {
     const cards = [{ id: cardId, name: longName, bank: longName, network: "Visa", last4: "1234", color: "card-1", archived_at: null, credit_limit: amount, advance_fee: "15000", handling_fee: "15000", cutoff_day: 15, payment_day: 30, purchase_rate_ea: "0.25", advance_rate_ea: "0.28", amortization_method: "fixed_principal" }];
     const statements = [{ id: "statement", card_id: cardId, period_start: "2026-10-16", cutoff_date: "2026-11-15", due_date: state.dueDate, paid_at: null, real_total: null }];
-    const transactions = [{ id: transactionId, card_id: cardId, category_id: categoryId, statement_id: "statement", parent_id: null, subscription_id: null, merchant: longName, note: longName.repeat(3), type: "purchase", source: "manual", date: "2026-11-13", currency: "USD", amount, amount_cop: amount, fx_rate: "4000", installments_count: 12 }];
+    const transactions = [{ id: transactionId, card_id: cardId, category_id: categoryId, statement_id: "statement", parent_id: null, subscription_id: null, merchant: longName, note: longName.repeat(3), type: "purchase", source: "manual", date: "2026-11-13", currency: "USD", amount, amount_cop: amount, fx_rate: "4000", installments_count: 12, rate_ea_applied: "0.25", interest_free: false }];
     const tables: Record<string, object[]> = {
       cards,
       categories: [{ id: categoryId, name: longName, icon: "tags", archived_at: null }],

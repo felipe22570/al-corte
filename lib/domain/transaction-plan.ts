@@ -1,5 +1,6 @@
 import Decimal from "decimal.js";
 import { buildInstallmentPlan, type AmortizationMethod } from "./installments";
+import type { InterestMode } from "./interest";
 import { toCop, type Currency } from "./money";
 import { dueDateFor, statementCutoffFor } from "./statements";
 import type { IsoDate } from "./dates";
@@ -12,7 +13,7 @@ export type TransactionPlanInput = {
   interestFree: boolean; categoryId: string | null; merchant: string; note: string;
   inProgress?: TransactionInProgress | null;
 };
-export type TransactionCard = { id: string; cutoffDay: number; paymentDay: number; purchaseRateEa: string; advanceRateEa: string; advanceFee: string; amortizationMethod: AmortizationMethod };
+export type TransactionCard = { id: string; cutoffDay: number; paymentDay: number; purchaseRateEa: string; advanceRateEa: string; advanceFee: string; amortizationMethod: AmortizationMethod; interestMode?: InterestMode };
 
 export function buildTransactionPlan(input: TransactionPlanInput, card: TransactionCard, original?: { cardId: string; type: TransactionPlanInput["type"]; rateEaApplied: string | null }) {
   if (input.cardId !== card.id) throw new Error("La tarjeta no coincide con el movimiento.");
@@ -26,7 +27,7 @@ export function buildTransactionPlan(input: TransactionPlanInput, card: Transact
   const inProgress = input.inProgress ?? null;
   const plan = buildInstallmentPlan({
     principal, count: input.installmentsCount, annualRateEa: new Decimal(isPurchase || isAdvance ? rate : "0"), method: card.amortizationMethod,
-    interestFree: input.interestFree, currency: input.currency, fxRate, cutoffDay: card.cutoffDay, purchaseDate: input.date,
+    interestFree: input.interestFree, currency: input.currency, fxRate, cutoffDay: card.cutoffDay, purchaseDate: input.date, interestMode: card.interestMode,
     inProgress: inProgress && { currentInstallment: inProgress.currentInstallment, balanceAfter: inProgress.balanceAfter === null ? null : new Decimal(inProgress.balanceAfter), trackedFromCutoff: inProgress.trackedFromCutoff },
   });
   // With prior installments, the movement belongs to the statement of installment k, not to the one R1 gives its date.

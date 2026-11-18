@@ -1,5 +1,6 @@
 import Decimal from "decimal.js";
 import { addDays, addMonths, compareIsoDates, daysInMonth, monthKey, parseIsoDate, type IsoDate } from "./dates";
+import { estimateBalanceInterest, type BalanceInterestInstallment, type InterestMode } from "./interest";
 import { toCop, type Currency } from "./money";
 import { statementPeriod, shiftStatement } from "./statements";
 import { chargeDatesBetween, type Frequency, type SubscriptionStatus } from "./subscriptions";
@@ -137,10 +138,12 @@ export type MonthCharge = {
   fxRate?: Decimal | null;
   subscriptionId?: string;
   date?: IsoDate;
+  /** On-balance interest estimated by R8 because the real one is not registered yet; part of the calculated total. */
+  estimated?: boolean;
 };
 
 type ProjectionCard = {
-  id: string; cutoffDay: number; paymentDay: number; archived: boolean; handlingFee: Decimal;
+  id: string; cutoffDay: number; paymentDay: number; archived: boolean; handlingFee: Decimal; interestMode?: InterestMode;
 };
 type SavedStatement = {
   id: string; cardId: string; periodStart: IsoDate; cutoffDate: IsoDate; dueDate: IsoDate; paidAt: string | null;
@@ -151,6 +154,8 @@ type Movement = Parameters<typeof statementItemsFromMovements>[0][number] & {
 };
 type Installment = {
   id: string; statementId: string; categoryId: string | null; totalCop: Decimal;
+  /** Needed only for on-balance cards (D32). */
+  interestBasis?: BalanceInterestInstallment;
 };
 type ProjectionSubscription = Omit<ProjectableSubscription, "cardArchived"> & {
   id: string; cardId: string; categoryId: string | null; amount: Decimal; currency: Currency;
@@ -181,14 +186,22 @@ export function projectStatements(input: ProjectionInput): { statements: Project
       subscriptionId: movement.subscriptionId ?? undefined, date: movement.date });
     chargesByStatement.set(movement.statementId, charges);
   }
+  const interestBasis = new Map<string, BalanceInterestInstallment[]>();
   for (const installment of input.installments) {
     const charges = chargesByStatement.get(installment.statementId) ?? [];
     charges.push({ id: installment.id, origin: "real", concept: "installments", categoryId: installment.categoryId, amountCop: installment.totalCop });
     chargesByStatement.set(installment.statementId, charges);
+    if (installment.interestBasis) interestBasis.set(installment.statementId, [...interestBasis.get(installment.statementId) ?? [], installment.interestBasis]);
   }
+  const interestModes = new Map(input.cards.map((card) => [card.id, card.interestMode]));
 
   const result: ProjectedStatement[] = input.statements.filter((s) => paymentMonth(s.dueDate) <= lastMonth).map((s) => {
     const charges = chargesByStatement.get(s.id) ?? [];
+    // D32: without a real interest charge, on-balance statements carry the R8 estimate in their calculated total.
+    if (interestModes.get(s.cardId) === "on_balance" && !charges.some((charge) => charge.concept === "interest")) {
+      const estimate = estimateBalanceInterest(interestBasis.get(s.id) ?? [], s.periodStart);
+      if (estimate.amountCop.gt(0)) charges.push({ id: `interest:${s.id}`, origin: "real", concept: "interest", categoryId: null, amountCop: estimate.amountCop, estimated: true });
+    }
     const total = statementTotals(charges.map((charge) => ({ concept: charge.concept, amountCop: charge.amountCop }))).total;
     return { ...s, origin: "real", recordedTotal: total, projectedTotal: new Decimal(0), unconvertedCharges: [], charges };
   });
@@ -363,9 +376,11 @@ export function monthBreakdown(statements: MonthStatement[]) {
   const categories = new Map<string | null, Decimal>();
   let total = new Decimal(0);
   let payments = new Decimal(0);
+  let estimatedInterest = false;
   for (const statement of statements) {
     for (const charge of statement.charges ?? []) {
       if (charge.amountCop === null) continue;
+      if (charge.estimated) estimatedInterest = true;
       if (charge.concept === "payments") {
         payments = payments.plus(charge.amountCop);
         concepts.payments = concepts.payments.plus(charge.amountCop);
@@ -377,7 +392,7 @@ export function monthBreakdown(statements: MonthStatement[]) {
       total = total.plus(amount);
     }
   }
-  return { concepts, categories, total, payments };
+  return { concepts, categories, total, payments, estimatedInterest };
 }
 
 export function overdueStatements(statements: MonthStatement[], today: IsoDate) {
