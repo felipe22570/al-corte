@@ -6,6 +6,7 @@ import { DateInput } from "@/components/date-input";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { markStatementPaid, unmarkStatementPaid } from "@/lib/actions/statements";
+import type { Currency } from "@/lib/domain/money";
 
 type Props = {
   id: string;
@@ -15,9 +16,14 @@ type Props = {
   context: string;
   /** Formatted cutoff when the statement can still receive charges. */
   openUntil?: string;
+  /** Each currency is marked separately (D33). */
+  currency?: Currency;
+  /** Visible currency name when one statement shows several payment controls ("pesos", "dólares"). */
+  currencyName?: string;
 };
 
-export function StatementPaymentControl({ id, paid, today, context, openUntil }: Props) {
+export function StatementPaymentControl({ id, paid, today, context, openUntil, currency = "COP", currencyName }: Props) {
+  const suffix = currencyName ? ` en ${currencyName}` : "";
   const fieldId = useId();
   const panelId = useId();
   const noteId = useId();
@@ -50,7 +56,7 @@ export function StatementPaymentControl({ id, paid, today, context, openUntil }:
     setBusy(true);
     setMessage("");
     try {
-      const result = markPaid ? await markStatementPaid(id, date) : await unmarkStatementPaid(id);
+      const result = markPaid ? await markStatementPaid(id, date, currency) : await unmarkStatementPaid(id, currency);
       setFailed(!result.ok);
       if (!result.ok) {
         setMessage(result.error ?? "No pudimos actualizar el extracto. Intenta de nuevo.");
@@ -77,9 +83,9 @@ export function StatementPaymentControl({ id, paid, today, context, openUntil }:
   return <div className="grid gap-2">
     {!paid && openUntil && <p className="text-small text-muted-foreground">Aún puede recibir cargos hasta el {openUntil}.</p>}
     {paid ? (
-      <Button ref={mainButton} type="button" variant="outline" className="w-fit" disabled={busy} onClick={() => update(false)} aria-label={`Deshacer pago · ${context}`}>Deshacer pago</Button>
+      <Button ref={mainButton} type="button" variant="outline" className="w-fit" disabled={busy} onClick={() => update(false)} aria-label={`Deshacer pago · ${context}`}>Deshacer pago{suffix}</Button>
     ) : !open ? (
-      <Button ref={mainButton} type="button" variant="outline" className="w-fit" onClick={() => setOpen(true)} aria-expanded={false} aria-controls={panelId} aria-label={`Marcar como pagado · ${context}`}>Marcar como pagado</Button>
+      <Button ref={mainButton} type="button" variant="outline" className="w-fit" onClick={() => setOpen(true)} aria-expanded={false} aria-controls={panelId} aria-label={`Marcar como pagado · ${context}`}>Marcar como pagado{suffix}</Button>
     ) : (
       <div id={panelId} className="grid gap-3 rounded-md border border-border p-3">
         <Label htmlFor={fieldId}>¿Cuándo lo pagaste?<span className="sr-only"> {context}</span></Label>

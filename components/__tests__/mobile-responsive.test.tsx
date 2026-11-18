@@ -35,7 +35,7 @@ vi.mock("@/lib/supabase/server", () => ({ createClient: async () => ({
   auth: { getUser: async () => ({ data: { user: { id: "owner" } } }) },
   from: (table: string) => {
     const cards = [{ id: cardId, name: longName, bank: longName, network: "Visa", last4: "1234", color: "card-1", archived_at: null, credit_limit: amount, advance_fee: "15000", handling_fee: "15000", cutoff_day: 15, payment_day: 30, purchase_rate_ea: "0.25", advance_rate_ea: "0.28", amortization_method: "fixed_principal" }];
-    const statements = [{ id: "statement", card_id: cardId, period_start: "2026-10-16", cutoff_date: "2026-11-15", due_date: state.dueDate, paid_at: null, real_total: null }];
+    const statements = [{ id: "statement", card_id: cardId, period_start: "2026-10-16", cutoff_date: "2026-11-15", due_date: state.dueDate }];
     const transactions = [{ id: transactionId, card_id: cardId, category_id: categoryId, statement_id: "statement", parent_id: null, subscription_id: null, merchant: longName, note: longName.repeat(3), type: "purchase", source: "manual", date: "2026-11-13", currency: "USD", amount, amount_cop: amount, fx_rate: "4000", installments_count: 12, rate_ea_applied: "0.25", interest_free: false }];
     const tables: Record<string, object[]> = {
       cards,
@@ -44,7 +44,7 @@ vi.mock("@/lib/supabase/server", () => ({ createClient: async () => ({
       statements,
       transactions,
       installments: [{ transaction_id: transactionId, statement_id: "statement", number: 1, principal: amount, interest: "0", total: amount, balance_after: "0", principal_cop: amount, interest_cop: "0", total_cop: amount }],
-      statement_totals: [{ statement_id: "statement", total_calculated: amount, single_purchases: "0", installments: amount, subscriptions: "0", cash_advances: "0", interest: "0", handling_fees: "0", insurance: "0", adjustments: "0", refunds: "0", payments: "0" }],
+      statement_currency_totals: [{ statement_id: "statement", currency: "USD", has_charges: true, total_calculated: amount, total_cop: amount, pending_principal: "0", total_debt: amount, single_purchases: "0", installments: amount, subscriptions: "0", cash_advances: "0", interest: "0", handling_fees: "0", insurance: "0", adjustments: "0", refunds: "0", payments: "0" }],
       subscriptions: [{ id: "subscription", name: longName, card_id: cardId, category_id: categoryId, amount, currency: "USD", frequency: "monthly", billing_day: 15, start_date: "2026-01-15", trial_ends_at: null, status: "active" }],
       fx_rates: [{ usd_cop: "4000" }],
     };

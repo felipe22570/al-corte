@@ -35,7 +35,7 @@ export default async function EditTransactionPage({ params }: { params: Promise<
   const statementIds = installments.flatMap((row) => row.statement_id ? [row.statement_id] : []);
   const today = todayInBogota();
   const [paid, statementResult, existingCutoffs] = await Promise.all([
-    statementIds.length ? supabase.from("statements").select("id", { count: "exact", head: true }).eq("user_id", user.id).in("id", statementIds).not("paid_at", "is", null) : Promise.resolve({ count: 0, error: null }),
+    statementIds.length ? supabase.from("statement_balances").select("id", { count: "exact", head: true }).eq("user_id", user.id).in("statement_id", statementIds).not("paid_at", "is", null) : Promise.resolve({ count: 0, error: null }),
     supabase.from("statements").select("cutoff_date").eq("id", transaction.statement_id).eq("user_id", user.id).single(),
     loadRecentStatementCutoffs(supabase, user.id, today),
   ]);

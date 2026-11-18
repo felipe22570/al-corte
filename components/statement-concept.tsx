@@ -9,6 +9,8 @@ export type StatementConceptData = {
   key: string;
   label: string;
   total: string;
+  /** Currency of `total` (D33); COP by default. */
+  currency?: "COP" | "USD";
   subtract?: boolean;
   entries: {
     id: string;
@@ -23,7 +25,7 @@ export function StatementConcept({ concept }: { concept: StatementConceptData })
   const amount = (
     <span className="shrink-0 text-right text-amount">
       {concept.subtract && !new Decimal(concept.total).isZero() && "−"}
-      <Money value={concept.total} currency="COP" />
+      <Money value={concept.total} currency={concept.currency ?? "COP"} />
     </span>
   );
 

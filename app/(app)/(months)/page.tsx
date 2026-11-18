@@ -3,7 +3,7 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import { Plus, WalletCards } from "lucide-react";
 import { EmptyState } from "@/components/empty-state";
-import { Money } from "@/components/money";
+import { CurrencyInline } from "@/components/currency-amounts";
 import { MonthCardsStrip } from "@/components/month-cards-strip";
 import { MonthRow } from "@/components/month-row";
 import { NewExpenseFab } from "@/components/new-expense-fab";
@@ -41,14 +41,14 @@ export default async function MonthsPage({ searchParams }: { searchParams: Promi
       <div className="grid min-w-0 gap-6">
         {overview.overdue.months.size > 0 && (
           <Alert variant="destructive" role="note">
-            <AlertTitle>Extractos vencidos sin confirmar pago: <Money value={overview.overdue.total} currency="COP" /></AlertTitle>
+            <AlertTitle>Extractos vencidos sin confirmar pago: <CurrencyInline cop={overview.overdue.total} usd={overview.overdue.totalUsd} /></AlertTitle>
             <AlertDescription className="text-foreground">
               <p>No descuenta abonos registrados. Los extractos siguen en su mes de pago.</p>
               <div className="flex flex-wrap gap-3">{[...overview.overdue.months.keys()].sort().map((month) => <Link key={month} className="underline" href={`/meses/${month}`}>{formatMonth(month, "long")}</Link>)}</div>
             </AlertDescription>
           </Alert>
         )}
-        {incomplete && <Alert variant="warning" role="note"><AlertTitle>Estimación incompleta</AlertTitle><AlertDescription className="text-foreground">Hay cobros en USD sin convertir porque no hay TRM. Para estimarlos, <Link className="underline" href="/movimientos/nuevo">registra un movimiento en USD con la TRM del día</Link>.</AlertDescription></Alert>}
+        {incomplete && <Alert variant="warning" role="note"><AlertTitle>Falta la TRM</AlertTitle><AlertDescription className="text-foreground">Los cobros en dólares se suman aparte y sus totales no cambian. Solo falta su equivalente en pesos de referencia. Para calcularlo, <Link className="underline" href="/movimientos/nuevo">registra un movimiento en USD con la TRM del día</Link>.</AlertDescription></Alert>}
         <section aria-labelledby="current-month-heading" className="grid gap-3">
           <h2 id="current-month-heading" className="text-heading">Este mes</h2>
           <MonthRow month={overview.current} {...rowProps} featured />

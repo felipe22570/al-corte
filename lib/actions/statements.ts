@@ -8,7 +8,8 @@ import { revalidateFinancialViews } from "@/lib/revalidate-views";
 import { createClient } from "@/lib/supabase/server";
 import { statementCutoffFor } from "@/lib/domain/statements";
 import { buildTransactionPlan } from "@/lib/domain/transaction-plan";
-import { realTotalSchema, statementInterestSchema, statementPaymentDateSchema } from "@/lib/validation/statement";
+import { bankValuesSchema, statementInterestSchema, statementPaymentDateSchema } from "@/lib/validation/statement";
+import { currencySchema } from "@/lib/validation/transaction";
 
 function revalidateStatement(statement: { card_id: string; cutoff_date: string; due_date: string }) {
   revalidatePath(`/tarjetas/${statement.card_id}`);
@@ -18,32 +19,38 @@ function revalidateStatement(statement: { card_id: string; cutoff_date: string; 
   revalidateFinancialViews();
 }
 
-async function updateStatement(id: unknown, values: { real_total?: string | null; paid_at?: string | null }) {
+/** Bank values and payment mark live per statement and currency (D33); marking never creates a payment (D26). */
+async function updateBalance(id: unknown, currency: unknown, values: { real_minimum?: string | null; real_total?: string | null; paid_at?: string | null }) {
   if (typeof id !== "string" || !z.uuid().safeParse(id).success) return { ok: false as const, error: "El extracto no es válido." };
+  const parsedCurrency = currencySchema.safeParse(currency);
+  if (!parsedCurrency.success) return { ok: false as const, error: "La moneda no es válida." };
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return { ok: false as const, error: "Inicia sesión para actualizar el extracto." };
-  const { data, error } = await supabase.from("statements").update(values).eq("id", id).eq("user_id", user.id).select("card_id,cutoff_date,due_date").maybeSingle();
+  const { data, error } = await supabase.from("statements").select("card_id,cutoff_date,due_date").eq("id", id).eq("user_id", user.id).maybeSingle();
   if (error || !data) return { ok: false as const, error: "No pudimos actualizar el extracto." };
+  const { error: balanceError } = await supabase.from("statement_balances")
+    .upsert({ user_id: user.id, statement_id: id, currency: parsedCurrency.data, ...values }, { onConflict: "statement_id,currency" });
+  if (balanceError) return { ok: false as const, error: "No pudimos actualizar el extracto." };
   revalidateStatement(data);
   return { ok: true as const };
 }
 
-export async function setStatementRealTotal(id: unknown, input: unknown) {
-  const parsed = realTotalSchema.safeParse(input);
-  if (!parsed.success) return { ok: false as const, error: "Ingresa un total real válido." };
-  return updateStatement(id, { real_total: parsed.data });
+export async function setStatementBankValues(id: unknown, currency: unknown, input: unknown) {
+  const parsed = bankValuesSchema.safeParse(input);
+  if (!parsed.success) return { ok: false as const, error: "Ingresa los valores como aparecen en tu extracto." };
+  return updateBalance(id, currency, { real_minimum: parsed.data.realMinimum, real_total: parsed.data.realTotal });
 }
 
-export async function markStatementPaid(id: unknown, input: unknown) {
+export async function markStatementPaid(id: unknown, input: unknown, currency: unknown = "COP") {
   const parsed = statementPaymentDateSchema.safeParse(input);
   if (!parsed.success) return { ok: false as const, error: "Ingresa una fecha válida." };
   if (parsed.data > todayInBogota()) return { ok: false as const, error: "La fecha de pago no puede ser posterior a hoy." };
-  return updateStatement(id, { paid_at: `${parsed.data}T05:00:00.000Z` });
+  return updateBalance(id, currency, { paid_at: `${parsed.data}T05:00:00.000Z` });
 }
 
-export async function unmarkStatementPaid(id: unknown) {
-  return updateStatement(id, { paid_at: null });
+export async function unmarkStatementPaid(id: unknown, currency: unknown = "COP") {
+  return updateBalance(id, currency, { paid_at: null });
 }
 
 type InterestCard = { id: string; cutoff_day: number; payment_day: number; purchase_rate_ea: string; advance_rate_ea: string; advance_fee: string; amortization_method: "fixed_principal" | "french"; interest_mode: "per_installment" | "on_balance" };

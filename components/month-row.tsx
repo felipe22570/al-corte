@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { CardColorChip } from "@/components/card-color-chip";
+import { CurrencyAmounts, CurrencyInline } from "@/components/currency-amounts";
 import { Money } from "@/components/money";
 import { StatementStatus } from "@/components/statement-status";
 import { StatusBadge } from "@/components/status-badge";
@@ -20,7 +21,6 @@ function nextStatement(summary: MonthCardSummary) {
 }
 
 function totalLabel(month: PaymentMonthSummary) {
-  if (!month.complete) return "Total conocido";
   return month.kind === "future" ? "Total estimado" : "Total del mes";
 }
 
@@ -31,7 +31,7 @@ export function MonthRow({ month, cards, subscriptionNames, today, featured = fa
   const composition = month.cards.length > 1 ? cardCompositionPercentages(month) : null;
   const status = month.status ? monthStatusLabels[month.status] : null;
   const hasReal = month.statements.some((statement) => statement.origin === "real");
-  const showPending = hasReal && month.status !== "paid" && !month.pendingConfirmation.eq(month.total);
+  const showPending = hasReal && month.status !== "paid" && (!month.pendingConfirmation.eq(month.total) || !month.pendingConfirmationUsd.eq(month.totalUsd));
   const soon = addDays(today, 5);
 
   const summary = <div className="grid min-w-0 content-start gap-3">
@@ -42,25 +42,21 @@ export function MonthRow({ month, cards, subscriptionNames, today, featured = fa
       </div>
       <div className="min-w-0 text-right">
         <p className="text-small text-muted-foreground">{totalLabel(month)}</p>
-        <Money value={month.total} currency="COP" size={featured ? "lg" : "md"} />
+        <CurrencyAmounts cop={month.total} usd={month.totalUsd} size={featured ? "lg" : "md"} />
         {month.total.isNegative() && <p className="text-small">Saldo a favor</p>}
       </div>
     </div>
     {showPending && <div className="text-small">
-      <p>Pendiente de confirmar pago: <Money value={month.pendingConfirmation} currency="COP" /></p>
+      <p>Pendiente de confirmar pago: <CurrencyInline cop={month.pendingConfirmation} usd={month.pendingConfirmationUsd} /></p>
       <p className="text-muted-foreground">Suma de extractos sin marcar como pagados. No descuenta abonos registrados.</p>
     </div>}
-    {month.hasProjection && <p className="text-small">
-      Cobros previstos{!month.complete && month.projected.isZero()
-        ? ": pendientes de conversión"
-        : <>: <Money value={month.projected} currency="COP" />{!month.complete && " conocidos"}</>}
-    </p>}
+    {month.hasProjection && <p className="text-small">Cobros previstos: <CurrencyInline cop={month.projected} usd={month.projectedUsd} /></p>}
     {featured && month.hasOpenStatements && hasReal && <p className="flex flex-wrap gap-x-4 text-small text-muted-foreground">
       <span className="whitespace-nowrap">Ya facturado <Money value={month.billed} currency="COP" /></span>
       <span className="whitespace-nowrap">Aún puede crecer <Money value={monthOpenGrowth(month)} currency="COP" /></span>
     </p>}
     {!month.complete && <div className="text-small">
-      <p>Estimación incompleta: faltan cobros en USD sin convertir.</p>
+      <p>Falta la TRM para el equivalente en pesos de estos cobros en dólares:</p>
       {month.unconvertedCharges.map((charge) => <p key={`${charge.subscriptionId}:${charge.date}`}>{subscriptionNames[charge.subscriptionId] ?? "Suscripción"}: <Money value={charge.amountUsd} currency="USD" /></p>)}
     </div>}
   </div>;
@@ -83,7 +79,7 @@ export function MonthRow({ month, cards, subscriptionNames, today, featured = fa
             {next && <span className="text-small text-muted-foreground">pago {formatDateShort(next.statement.dueDate, today)}</span>}
             {dueSoon && <StatementStatus dueDate={next.statement.dueDate} paidAt={null} today={today} />}
           </span>
-          <Money value={subtotal.total} currency="COP" />
+          <span className="text-right"><CurrencyAmounts cop={subtotal.total} usd={subtotal.totalUsd} /></span>
         </div>;
       })}
     </div> : <div className="grid min-w-0 gap-1">
@@ -92,7 +88,7 @@ export function MonthRow({ month, cards, subscriptionNames, today, featured = fa
         // Name wraps in its own column so long card names never push the amount off the right edge.
         return <div key={subtotal.cardId} className="grid min-w-0 grid-cols-[minmax(0,1fr)_auto] items-center gap-x-3">
           {card ? <CardColorChip color={card.color} name={`${card.name} · •••• ${card.last4}`} /> : <span className="text-small">Tarjeta</span>}
-          <span className="text-right"><Money value={subtotal.total} currency="COP" /></span>
+          <span className="text-right"><CurrencyAmounts cop={subtotal.total} usd={subtotal.totalUsd} /></span>
         </div>;
       })}
     </div>}

@@ -20,13 +20,17 @@ export type BalanceInterestInstallment = {
  */
 export function estimateBalanceInterest(installments: BalanceInterestInstallment[], periodStart: IsoDate) {
   const byCurrency: Record<Currency, Decimal> = { COP: new Decimal(0), USD: new Decimal(0) };
+  const copByCurrency: Record<Currency, Decimal> = { COP: new Decimal(0), USD: new Decimal(0) };
   let amountCop = new Decimal(0);
   for (const installment of installments) {
     if (installment.interestFree || !installment.rateEa?.gt(0) || compareIsoDates(installment.purchaseDate, periodStart) >= 0) continue;
     const pending = installment.principal.plus(installment.balanceAfter);
     const interest = roundMoney(pending.times(monthlyRateFromEA(installment.rateEa)), installment.currency);
     byCurrency[installment.currency] = byCurrency[installment.currency].plus(interest);
-    amountCop = amountCop.plus(toCop(interest, installment.currency, installment.fxRate ?? undefined));
+    const cop = toCop(interest, installment.currency, installment.fxRate ?? undefined);
+    copByCurrency[installment.currency] = copByCurrency[installment.currency].plus(cop);
+    amountCop = amountCop.plus(cop);
   }
-  return { byCurrency, amountCop };
+  /** byCurrency is the estimate in each currency (D33); copByCurrency and amountCop are reference equivalents. */
+  return { byCurrency, copByCurrency, amountCop };
 }

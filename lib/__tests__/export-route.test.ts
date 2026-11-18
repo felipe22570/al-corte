@@ -30,8 +30,8 @@ describe("data export", () => {
     expect(response.headers.get("cache-control")).toBe("private, no-store");
     const body = await response.json();
     expect(body.tables.cards[0].credit_limit).toBe("1234567.89");
-    expect(from).toHaveBeenCalledTimes(8);
-    expect(query.eq).toHaveBeenCalledTimes(7);
+    expect(from).toHaveBeenCalledTimes(9);
+    expect(query.eq).toHaveBeenCalledTimes(8);
     expect(query.eq).toHaveBeenCalledWith("user_id", "owner");
   });
   it("sends CSV with a BOM and fails closed on query error", async () => {

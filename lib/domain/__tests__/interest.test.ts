@@ -21,6 +21,8 @@ describe("intereses sobre saldo (R8, D32)", () => {
     expect(estimate.byCurrency.COP.toString()).toBe("20243.44");
     expect(estimate.byCurrency.USD.toString()).toBe("0.16");
     expect(estimate.amountCop.toString()).toBe("20883.44");
+    expect(estimate.copByCurrency.USD.toString()).toBe("640");
+    expect(estimate.copByCurrency.COP.toString()).toBe("20243.44");
   });
 
   it("no estima nada sin compras con interés vigentes al inicio del periodo", () => {

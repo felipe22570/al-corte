@@ -1,7 +1,9 @@
 import Decimal from "decimal.js";
 import type { CardColor } from "@/lib/card-colors";
 import { monthDateBounds, purchaseMonthSpending, type ProjectionInput } from "@/lib/domain/months";
+import { statementPaidAt } from "@/lib/domain/balances";
 import type { InterestMode } from "@/lib/domain/interest";
+import type { Currency } from "@/lib/domain/money";
 import { fetchAllPages } from "@/lib/paginate";
 import type { createClient } from "@/lib/supabase/server";
 import type { MonthReadSource } from "./months";
@@ -9,11 +11,13 @@ import type { MonthReadSource } from "./months";
 type Client = Awaited<ReturnType<typeof createClient>>;
 type RawCard = { id: string; name: string; bank: string; last4: string; color: CardColor; archived_at: string | null; cutoff_day: number; payment_day: number; handling_fee: string; interest_mode: InterestMode };
 type RawBalance = { card_id: string; used: string; available: string; utilization: string };
-type RawStatement = { id: string; card_id: string; period_start: string; cutoff_date: string; due_date: string; paid_at: string | null };
+type RawStatement = { id: string; card_id: string; period_start: string; cutoff_date: string; due_date: string };
+type RawBalanceMark = { statement_id: string; currency: Currency; paid_at: string | null };
+type RawCurrencyTotal = { statement_id: string; currency: Currency; has_charges: boolean; pending_principal: string };
 type RawSubscription = { id: string; name: string; card_id: string; category_id: string | null; amount: string; currency: "COP" | "USD"; frequency: "monthly" | "yearly"; billing_day: number; start_date: string; trial_ends_at: string | null; status: "active" | "paused" | "cancelled" };
 type Movement = ProjectionInput["movements"][number];
 type RawMovement = { id: string; statement_id: string; type: Movement["type"]; amount_cop: string; amount: string; currency: "COP" | "USD"; fx_rate: string | null; installments_count: number; source: Movement["source"]; category_id: string | null; subscription_id: string | null; date: string };
-type RawInstallment = { id: string; statement_id: string; transaction_id: string; total_cop: string; principal: string; balance_after: string };
+type RawInstallment = { id: string; statement_id: string; transaction_id: string; total_cop: string; total: string; principal: string; balance_after: string };
 type RawParent = { id: string; category_id: string | null; date: string; rate_ea_applied: string | null; interest_free: boolean; currency: "COP" | "USD"; fx_rate: string | null };
 
 export type MonthCardDetails = {
@@ -78,10 +82,27 @@ export function createSupabaseMonthSource(client: Client, userId: string): Month
     },
     loadCards: loadCardDetails,
     async loadStatements() {
-      const rows = await fetchAllPages((from, to) => client.from("statements").select("id,card_id,period_start,cutoff_date,due_date,paid_at").eq("user_id", userId).order("id").range(from, to));
-      return (rows as unknown as RawStatement[]).map((s) => ({
-        id: s.id, cardId: s.card_id, periodStart: s.period_start, cutoffDate: s.cutoff_date, dueDate: s.due_date, paidAt: s.paid_at,
-      }));
+      const [rows, marks, totals] = await Promise.all([
+        fetchAllPages((from, to) => client.from("statements").select("id,card_id,period_start,cutoff_date,due_date").eq("user_id", userId).order("id").range(from, to)),
+        fetchAllPages((from, to) => client.from("statement_balances").select("statement_id,currency,paid_at").eq("user_id", userId).order("id").range(from, to)),
+        fetchAllPages((from, to) => client.from("statement_currency_totals").select("statement_id,currency,has_charges,pending_principal::text").eq("user_id", userId).order("statement_id").order("currency").range(from, to)),
+      ]);
+      const paid = new Map<string, Partial<Record<Currency, string | null>>>();
+      for (const mark of marks as unknown as RawBalanceMark[]) paid.set(mark.statement_id, { ...paid.get(mark.statement_id), [mark.currency]: mark.paid_at });
+      const currencies = new Map<string, Currency[]>();
+      const pending = new Map<string, Partial<Record<Currency, Decimal>>>();
+      for (const total of totals as unknown as RawCurrencyTotal[]) {
+        if (total.has_charges) currencies.set(total.statement_id, [...currencies.get(total.statement_id) ?? [], total.currency]);
+        pending.set(total.statement_id, { ...pending.get(total.statement_id), [total.currency]: new Decimal(total.pending_principal) });
+      }
+      // D33: a statement is paid once every currency with charges is marked.
+      return (rows as unknown as RawStatement[]).map((s) => {
+        const paidByCurrency = { COP: paid.get(s.id)?.COP ?? null, USD: paid.get(s.id)?.USD ?? null };
+        return {
+          id: s.id, cardId: s.card_id, periodStart: s.period_start, cutoffDate: s.cutoff_date, dueDate: s.due_date,
+          paidAt: statementPaidAt(paidByCurrency, currencies.get(s.id) ?? []), paidByCurrency, pendingPrincipal: pending.get(s.id) ?? {},
+        };
+      });
     },
     async loadSubscriptions() {
       const rows = await fetchAllPages((from, to) => client.from("subscriptions").select("id,name,card_id,category_id,amount::text,currency,frequency,billing_day,start_date,trial_ends_at,status").eq("user_id", userId).order("id").range(from, to));
@@ -108,7 +129,7 @@ export function createSupabaseMonthSource(client: Client, userId: string): Month
       const groups = batches(statementIds);
       const [movements, installments] = await Promise.all([
         Promise.all(groups.map((ids) => fetchAllPages((from, to) => client.from("transactions").select(movementFields).eq("user_id", userId).in("statement_id", ids).order("id").range(from, to)))),
-        Promise.all(groups.map((ids) => fetchAllPages((from, to) => client.from("installments").select("id,statement_id,transaction_id,total_cop::text,principal::text,balance_after::text").eq("user_id", userId).in("statement_id", ids).order("id").range(from, to)))),
+        Promise.all(groups.map((ids) => fetchAllPages((from, to) => client.from("installments").select("id,statement_id,transaction_id,total_cop::text,total::text,principal::text,balance_after::text").eq("user_id", userId).in("statement_id", ids).order("id").range(from, to)))),
       ]);
       const rows = installments.flat() as unknown as RawInstallment[];
       const transactionIds = [...new Set(rows.map((item) => item.transaction_id))];
@@ -121,6 +142,7 @@ export function createSupabaseMonthSource(client: Client, userId: string): Month
           if (!purchase) throw new Error("No pudimos consultar la categoría de una cuota.");
           return {
             id: item.id, statementId: item.statement_id, categoryId: purchase.category_id, totalCop: new Decimal(item.total_cop),
+            total: new Decimal(item.total), currency: purchase.currency,
             interestBasis: {
               principal: new Decimal(item.principal), balanceAfter: new Decimal(item.balance_after), purchaseDate: purchase.date,
               rateEa: purchase.rate_ea_applied === null ? null : new Decimal(purchase.rate_ea_applied), interestFree: purchase.interest_free,

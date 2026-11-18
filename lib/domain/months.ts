@@ -1,5 +1,6 @@
 import Decimal from "decimal.js";
 import { addDays, addMonths, compareIsoDates, daysInMonth, monthKey, parseIsoDate, type IsoDate } from "./dates";
+import { statementPaidAt } from "./balances";
 import { estimateBalanceInterest, type BalanceInterestInstallment, type InterestMode } from "./interest";
 import { toCop, type Currency } from "./money";
 import { statementPeriod, shiftStatement } from "./statements";
@@ -116,15 +117,38 @@ export type MonthStatement = {
   periodStart?: IsoDate;
   cutoffDate: IsoDate;
   dueDate: IsoDate;
+  /** Paid when every currency with charges is marked (D33). */
   paidAt: string | null;
+  /** Payment mark per currency; a missing currency falls back to `paidAt`. */
+  paidByCurrency?: Partial<Record<Currency, string | null>>;
+  /** Charges in pesos (D33): registered in the statement and projected. */
   recordedTotal: Decimal;
   projectedTotal: Decimal;
+  /** Charges in dollars, never converted into the peso totals (D33). */
+  recordedUsd?: Decimal;
+  projectedUsd?: Decimal;
+  /** COP reference for the dollar charges; incomplete when `unconvertedCharges` is not empty. */
+  usdEquivalentCop?: Decimal;
+  /** Total debt per currency at the cutoff (R8): minimum payment plus principal still to be billed. Real statements only. */
+  debt?: Record<Currency, Decimal>;
   unconvertedCharges: UnconvertedCharge[];
   charges?: MonthCharge[];
 };
 
+/** Peso total of the statement (minimum payment in COP, D33). */
 export function statementKnownTotal(statement: Pick<MonthStatement, "recordedTotal" | "projectedTotal">): Decimal {
   return statement.recordedTotal.plus(statement.projectedTotal);
+}
+
+/** Dollar total of the statement, shown apart from the peso total (D33). */
+export function statementUsdTotal(statement: Pick<MonthStatement, "recordedUsd" | "projectedUsd">): Decimal {
+  return (statement.recordedUsd ?? new Decimal(0)).plus(statement.projectedUsd ?? new Decimal(0));
+}
+
+/** Payment mark of one currency of a statement (D33). */
+export function currencyPaidAt(statement: Pick<MonthStatement, "paidAt" | "paidByCurrency">, currency: Currency): string | null {
+  const mark = statement.paidByCurrency?.[currency];
+  return mark === undefined ? statement.paidAt : mark;
 }
 
 export type MonthCharge = {
@@ -146,7 +170,12 @@ type ProjectionCard = {
   id: string; cutoffDay: number; paymentDay: number; archived: boolean; handlingFee: Decimal; interestMode?: InterestMode;
 };
 type SavedStatement = {
-  id: string; cardId: string; periodStart: IsoDate; cutoffDate: IsoDate; dueDate: IsoDate; paidAt: string | null;
+  id: string; cardId: string; periodStart: IsoDate; cutoffDate: IsoDate; dueDate: IsoDate;
+  /** Paid in every currency with charges; without `paidByCurrency` it applies to all currencies. */
+  paidAt: string | null;
+  paidByCurrency?: Partial<Record<Currency, string | null>>;
+  /** Principal still to be billed after this statement, per currency (statement_currency_totals). */
+  pendingPrincipal?: Partial<Record<Currency, Decimal>>;
 };
 type Movement = Parameters<typeof statementItemsFromMovements>[0][number] & {
   id: string; statementId: string; categoryId: string | null; subscriptionId?: string | null; date: IsoDate;
@@ -154,6 +183,8 @@ type Movement = Parameters<typeof statementItemsFromMovements>[0][number] & {
 };
 type Installment = {
   id: string; statementId: string; categoryId: string | null; totalCop: Decimal;
+  /** Installment total in the purchase currency (D33); defaults to `totalCop` in COP. */
+  total?: Decimal; currency?: Currency;
   /** Needed only for on-balance cards (D32). */
   interestBasis?: BalanceInterestInstallment;
 };
@@ -167,7 +198,23 @@ export type ProjectionInput = {
   fxRate: Decimal | null;
   today: IsoDate;
 };
-export type ProjectedStatement = MonthStatement & { charges: MonthCharge[] };
+export type ProjectedStatement = MonthStatement & { charges: MonthCharge[]; recordedUsd: Decimal; projectedUsd: Decimal; usdEquivalentCop: Decimal };
+
+const CURRENCIES: Currency[] = ["COP", "USD"];
+function chargeCurrency(charge: MonthCharge): Currency {
+  return charge.currency ?? "COP";
+}
+/** Amount of the charge in `currency`, or null when it is billed in the other one (D33). */
+function chargeAmountIn(charge: MonthCharge, currency: Currency): Decimal | null {
+  if (chargeCurrency(charge) !== currency) return null;
+  return charge.amount ?? charge.amountCop;
+}
+function totalIn(charges: MonthCharge[], currency: Currency): Decimal {
+  return statementTotals(charges.flatMap((charge) => {
+    const amount = chargeAmountIn(charge, currency);
+    return amount === null ? [] : [{ concept: charge.concept, amountCop: amount }];
+  })).total;
+}
 
 export function projectStatements(input: ProjectionInput): { statements: ProjectedStatement[]; hasLaterCommitments: boolean } {
   const currentMonth = monthKey(input.today);
@@ -182,14 +229,15 @@ export function projectStatements(input: ProjectionInput): { statements: Project
     if (!item) continue;
     const charges = chargesByStatement.get(movement.statementId) ?? [];
     charges.push({ id: movement.id, origin: "real", concept: item.concept, categoryId: movement.categoryId,
-      amountCop: item.amountCop, amount: movement.amount, currency: movement.currency, fxRate: movement.fxRate,
+      amountCop: item.amountCop, amount: movement.amount ?? item.amountCop, currency: movement.currency ?? "COP", fxRate: movement.fxRate,
       subscriptionId: movement.subscriptionId ?? undefined, date: movement.date });
     chargesByStatement.set(movement.statementId, charges);
   }
   const interestBasis = new Map<string, BalanceInterestInstallment[]>();
   for (const installment of input.installments) {
     const charges = chargesByStatement.get(installment.statementId) ?? [];
-    charges.push({ id: installment.id, origin: "real", concept: "installments", categoryId: installment.categoryId, amountCop: installment.totalCop });
+    charges.push({ id: installment.id, origin: "real", concept: "installments", categoryId: installment.categoryId, amountCop: installment.totalCop,
+      amount: installment.total ?? installment.totalCop, currency: installment.currency ?? "COP" });
     chargesByStatement.set(installment.statementId, charges);
     if (installment.interestBasis) interestBasis.set(installment.statementId, [...interestBasis.get(installment.statementId) ?? [], installment.interestBasis]);
   }
@@ -200,10 +248,24 @@ export function projectStatements(input: ProjectionInput): { statements: Project
     // D32: without a real interest charge, on-balance statements carry the R8 estimate in their calculated total.
     if (interestModes.get(s.cardId) === "on_balance" && !charges.some((charge) => charge.concept === "interest")) {
       const estimate = estimateBalanceInterest(interestBasis.get(s.id) ?? [], s.periodStart);
-      if (estimate.amountCop.gt(0)) charges.push({ id: `interest:${s.id}`, origin: "real", concept: "interest", categoryId: null, amountCop: estimate.amountCop, estimated: true });
+      for (const currency of CURRENCIES) {
+        if (estimate.byCurrency[currency].gt(0)) charges.push({ id: `interest:${s.id}:${currency}`, origin: "real", concept: "interest", categoryId: null,
+          amount: estimate.byCurrency[currency], currency, amountCop: estimate.copByCurrency[currency], estimated: true });
+      }
     }
-    const total = statementTotals(charges.map((charge) => ({ concept: charge.concept, amountCop: charge.amountCop }))).total;
-    return { ...s, origin: "real", recordedTotal: total, projectedTotal: new Decimal(0), unconvertedCharges: [], charges };
+    const recordedTotal = totalIn(charges, "COP");
+    const recordedUsd = totalIn(charges, "USD");
+    const paidByCurrency = { COP: s.paidByCurrency?.COP ?? s.paidAt, USD: s.paidByCurrency?.USD ?? s.paidAt };
+    const currencies = CURRENCIES.filter((currency) => charges.some((charge) => charge.concept !== "payments" && chargeCurrency(charge) === currency));
+    const statement: ProjectedStatement = {
+      id: s.id, cardId: s.cardId, periodStart: s.periodStart, cutoffDate: s.cutoffDate, dueDate: s.dueDate,
+      origin: "real", paidAt: statementPaidAt(paidByCurrency, currencies), paidByCurrency,
+      recordedTotal, projectedTotal: new Decimal(0), recordedUsd, projectedUsd: new Decimal(0),
+      usdEquivalentCop: statementTotals(charges.filter((charge) => chargeCurrency(charge) === "USD").map((charge) => ({ concept: charge.concept, amountCop: charge.amountCop }))).total,
+      unconvertedCharges: [], charges,
+    };
+    if (s.pendingPrincipal) statement.debt = { COP: recordedTotal.plus(s.pendingPrincipal.COP ?? 0), USD: recordedUsd.plus(s.pendingPrincipal.USD ?? 0) };
+    return statement;
   });
   const hasLaterCommitments = input.statements.some((s) => paymentMonth(s.dueDate) > lastMonth);
   const byCutoff = new Map(result.map((s) => [`${s.cardId}:${s.cutoffDate}`, s]));
@@ -219,13 +281,14 @@ export function projectStatements(input: ProjectionInput): { statements: Project
     if (dueMonth < currentMonth || dueMonth > lastMonth) return null;
     const statement: ProjectedStatement = {
       cardId: card.id, origin: "virtual", ...period, paidAt: null,
-      recordedTotal: new Decimal(0), projectedTotal: new Decimal(0), unconvertedCharges: [], charges: [],
+      recordedTotal: new Decimal(0), projectedTotal: new Decimal(0), recordedUsd: new Decimal(0), projectedUsd: new Decimal(0),
+      usdEquivalentCop: new Decimal(0), unconvertedCharges: [], charges: [],
     };
     byCutoff.set(key, statement);
     result.push(statement);
     if (card.handlingFee.gt(0)) {
       statement.projectedTotal = statement.projectedTotal.plus(card.handlingFee);
-      statement.charges.push({ id: `handling:${key}`, origin: "projected", concept: "handling_fees", categoryId: null, amountCop: card.handlingFee });
+      statement.charges.push({ id: `handling:${key}`, origin: "projected", concept: "handling_fees", categoryId: null, amountCop: card.handlingFee, amount: card.handlingFee, currency: "COP" });
     }
     return statement;
   }
@@ -251,8 +314,13 @@ export function projectStatements(input: ProjectionInput): { statements: Project
         statement.charges.push({ id: `subscription:${subscription.id}:${date}`, origin: "projected", concept: "subscriptions",
           categoryId: subscription.categoryId, amountCop, amount: subscription.amount, currency: subscription.currency,
           fxRate: subscription.currency === "USD" ? input.fxRate : null, subscriptionId: subscription.id, date });
-        if (amountCop) statement.projectedTotal = statement.projectedTotal.plus(amountCop);
-        else statement.unconvertedCharges.push({ subscriptionId: subscription.id, date, amountUsd: subscription.amount });
+        // D33: dollar projections stay in dollars; without TRM only their COP reference is missing.
+        if (subscription.currency === "COP") statement.projectedTotal = statement.projectedTotal.plus(subscription.amount);
+        else {
+          statement.projectedUsd = statement.projectedUsd.plus(subscription.amount);
+          if (amountCop) statement.usdEquivalentCop = statement.usdEquivalentCop.plus(amountCop);
+          else statement.unconvertedCharges.push({ subscriptionId: subscription.id, date, amountUsd: subscription.amount });
+        }
       }
     }
   }
@@ -264,11 +332,21 @@ export type PaymentMonthSummary = {
   kind: "past" | "current" | "future";
   status: "overdue" | "pending" | "paid" | "estimated" | null;
   statements: MonthStatement[];
+  /** Pesos to pay in the month (D33); dollars go apart in `totalUsd`. */
   total: Decimal;
   billed: Decimal;
   openRecorded: Decimal;
   projected: Decimal;
   pendingConfirmation: Decimal;
+  totalUsd: Decimal;
+  /** Dollar part of `totalUsd` that is still projected. */
+  projectedUsd: Decimal;
+  pendingConfirmationUsd: Decimal;
+  /** COP reference for the dollar charges, complete only when `complete`. */
+  usdEquivalentCop: Decimal;
+  /** Total debt of the month's real statements per currency (R8), secondary data; null without real statements. */
+  debt: Record<Currency, Decimal> | null;
+  /** False when some dollar projection lacks TRM: only the COP reference is incomplete (D33). */
   complete: boolean;
   unconvertedCharges: UnconvertedCharge[];
   hasOpenStatements: boolean;
@@ -280,6 +358,7 @@ export type PaymentMonthSummary = {
 export type MonthCardSummary = {
   cardId: string;
   total: Decimal;
+  totalUsd: Decimal;
   complete: boolean;
   statements: Array<{ statement: MonthStatement; status: "virtual" | "paid" | "overdue" | "pending" }>;
 };
@@ -287,7 +366,7 @@ export type MonthCardSummary = {
 /** Calculated total of real statements already marked as paid (D26); not a payment balance. */
 export function confirmedPaymentTotal(month: PaymentMonthSummary): Decimal {
   return month.statements.reduce((sum, statement) =>
-    statement.origin === "real" && statement.paidAt ? sum.plus(statement.recordedTotal) : sum, new Decimal(0));
+    statement.origin === "real" && currencyPaidAt(statement, "COP") ? sum.plus(statement.recordedTotal) : sum, new Decimal(0));
 }
 
 /** "Aún puede crecer" (D19): recorded in open statements plus known projected charges. */
@@ -324,6 +403,12 @@ export function buildMonths(statements: MonthStatement[], today: IsoDate): Payme
     let openRecorded = new Decimal(0);
     let projected = new Decimal(0);
     let pendingConfirmation = new Decimal(0);
+    let totalUsd = new Decimal(0);
+    let pendingConfirmationUsd = new Decimal(0);
+    let projectedUsd = new Decimal(0);
+    let usdEquivalentCop = new Decimal(0);
+    const debt = { COP: new Decimal(0), USD: new Decimal(0) };
+    let hasDebt = false;
     let hasOverdue = false;
     let hasUnpaid = false;
     let hasProjection = false;
@@ -331,21 +416,31 @@ export function buildMonths(statements: MonthStatement[], today: IsoDate): Payme
     const cards = new Map<string, MonthCardSummary>();
 
     for (const statement of group) {
-      const card = cards.get(statement.cardId) ?? { cardId: statement.cardId, total: new Decimal(0), complete: true, statements: [] };
+      const card = cards.get(statement.cardId) ?? { cardId: statement.cardId, total: new Decimal(0), totalUsd: new Decimal(0), complete: true, statements: [] };
       const status = statement.origin === "virtual" ? "virtual" : statement.paidAt ? "paid"
         : compareIsoDates(statement.dueDate, today) < 0 ? "overdue" : "pending";
       card.statements.push({ statement, status });
       if (statement.origin === "real") card.total = card.total.plus(statement.recordedTotal);
       card.total = card.total.plus(statement.projectedTotal);
+      card.totalUsd = card.totalUsd.plus(statementUsdTotal(statement));
+      totalUsd = totalUsd.plus(statementUsdTotal(statement));
+      projectedUsd = projectedUsd.plus(statement.projectedUsd ?? 0);
+      usdEquivalentCop = usdEquivalentCop.plus(statement.usdEquivalentCop ?? 0);
       card.complete = card.complete && statement.unconvertedCharges.length === 0;
       cards.set(statement.cardId, card);
       if (statement.origin === "real") {
         if (compareIsoDates(statement.cutoffDate, today) < 0) billed = billed.plus(statement.recordedTotal);
         else openRecorded = openRecorded.plus(statement.recordedTotal);
+        if (!currencyPaidAt(statement, "COP")) pendingConfirmation = pendingConfirmation.plus(statement.recordedTotal);
+        if (!currencyPaidAt(statement, "USD")) pendingConfirmationUsd = pendingConfirmationUsd.plus(statement.recordedUsd ?? 0);
         if (!statement.paidAt) {
-          pendingConfirmation = pendingConfirmation.plus(statement.recordedTotal);
           hasUnpaid = true;
           if (compareIsoDates(statement.dueDate, today) < 0) hasOverdue = true;
+        }
+        if (statement.debt) {
+          hasDebt = true;
+          debt.COP = debt.COP.plus(statement.debt.COP);
+          debt.USD = debt.USD.plus(statement.debt.USD);
         }
       }
       projected = projected.plus(statement.projectedTotal);
@@ -361,7 +456,7 @@ export function buildMonths(statements: MonthStatement[], today: IsoDate): Payme
     return {
       month, kind, status, statements: group,
       total: billed.plus(openRecorded).plus(projected),
-      billed, openRecorded, projected, pendingConfirmation,
+      billed, openRecorded, projected, pendingConfirmation, totalUsd, projectedUsd, pendingConfirmationUsd, usdEquivalentCop, debt: hasDebt ? debt : null,
       complete: unconvertedCharges.length === 0, unconvertedCharges,
       hasOpenStatements: group.some((statement) => compareIsoDates(statement.cutoffDate, today) >= 0),
       hasProjection, cards: [...cards.values()],
@@ -370,7 +465,8 @@ export function buildMonths(statements: MonthStatement[], today: IsoDate): Payme
   });
 }
 
-export function monthBreakdown(statements: MonthStatement[]) {
+/** Breakdown of the month's charges in one currency (D28, D33): pesos by default, dollars apart. */
+export function monthBreakdown(statements: MonthStatement[], currency: Currency = "COP") {
   const names: StatementConcept[] = ["single_purchases", "installments", "subscriptions", "cash_advances", "interest", "handling_fees", "insurance", "adjustments", "refunds", "payments"];
   const concepts = Object.fromEntries(names.map((name) => [name, new Decimal(0)])) as Record<StatementConcept, Decimal>;
   const categories = new Map<string | null, Decimal>();
@@ -379,14 +475,15 @@ export function monthBreakdown(statements: MonthStatement[]) {
   let estimatedInterest = false;
   for (const statement of statements) {
     for (const charge of statement.charges ?? []) {
-      if (charge.amountCop === null) continue;
+      const value = chargeAmountIn(charge, currency);
+      if (value === null) continue;
       if (charge.estimated) estimatedInterest = true;
       if (charge.concept === "payments") {
-        payments = payments.plus(charge.amountCop);
-        concepts.payments = concepts.payments.plus(charge.amountCop);
+        payments = payments.plus(value);
+        concepts.payments = concepts.payments.plus(value);
         continue;
       }
-      const amount = charge.concept === "refunds" ? charge.amountCop.negated() : charge.amountCop;
+      const amount = charge.concept === "refunds" ? value.negated() : value;
       concepts[charge.concept] = concepts[charge.concept].plus(amount);
       categories.set(charge.categoryId, (categories.get(charge.categoryId) ?? new Decimal(0)).plus(amount));
       total = total.plus(amount);
@@ -398,24 +495,27 @@ export function monthBreakdown(statements: MonthStatement[]) {
 export function overdueStatements(statements: MonthStatement[], today: IsoDate) {
   const months = new Map<string, MonthStatement[]>();
   let total = new Decimal(0);
+  let totalUsd = new Decimal(0);
   for (const statement of statements) {
     const month = paymentMonth(statement.dueDate);
     if (statement.origin !== "real" || statement.paidAt || month >= monthKey(today) || compareIsoDates(statement.dueDate, today) >= 0) continue;
     const group = months.get(month) ?? [];
     group.push(statement);
     months.set(month, group);
-    total = total.plus(statement.recordedTotal);
+    if (!currencyPaidAt(statement, "COP")) total = total.plus(statement.recordedTotal);
+    if (!currencyPaidAt(statement, "USD")) totalUsd = totalUsd.plus(statement.recordedUsd ?? 0);
   }
-  return { months, total };
+  return { months, total, totalUsd };
 }
 
 export function monthComparison(current: PaymentMonthSummary | undefined, previous: PaymentMonthSummary | undefined) {
   if (!current || !previous || current.kind === "future" || previous.kind === "future"
     || current.statements.length === 0 || previous.statements.length === 0
     || current.hasOpenStatements || previous.hasOpenStatements || current.hasProjection || previous.hasProjection
-    || !current.complete || !previous.complete
     || monthKey(addMonths(`${current.month}-01`, -1)) !== previous.month) {
     return { kind: "unavailable" as const };
   }
-  return { kind: "comparable" as const, ...compareMonths(current.total, previous.total) };
+  // D33: pesos and dollars are compared separately; a missing TRM no longer blocks the comparison.
+  const usd = current.totalUsd.isZero() && previous.totalUsd.isZero() ? null : compareMonths(current.totalUsd, previous.totalUsd);
+  return { kind: "comparable" as const, ...compareMonths(current.total, previous.total), usd };
 }

@@ -15,6 +15,9 @@ export const realTotalSchema = z.string().transform((value, ctx) => {
   }
 });
 
+/** Minimum payment and total debt copied from the bank statement, per currency (D33). Empty removes the value. */
+export const bankValuesSchema = z.object({ realMinimum: realTotalSchema, realTotal: realTotalSchema });
+
 export const statementPaymentDateSchema = z.string().refine(isValidIsoDate, "Ingresa una fecha válida.");
 
 const positiveMoney = (places: number, message: string) => z.string().transform((value, ctx) => {

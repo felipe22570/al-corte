@@ -39,12 +39,14 @@ describe("loadMonthOverview", () => {
     };
     const detail = await loadMonthDetail(source, "2026-11-14", "2026-12");
     expect(detail?.month.status).toBe("estimated");
-    expect(detail?.month.total.toString()).toBe("40000");
+    expect(detail?.month.total.isZero()).toBe(true);
+    expect(detail?.month.totalUsd.toString()).toBe("10");
+    expect(detail?.month.usdEquivalentCop.toString()).toBe("40000");
     expect(detail?.month.complete).toBe(true);
     expect(await loadMonthDetail(source, "2026-11-14", "2027-12")).toBeNull();
   });
 
-  it("updates only projections when the exchange rate changes", async () => {
+  it("updates only the COP reference of USD projections when the exchange rate changes (D33)", async () => {
     const source: MonthReadSource = {
       loadCards: async () => [{ id: "visa", cutoffDay: 25, paymentDay: 28, archived: false, handlingFee: new Decimal(0) }],
       loadStatements: async () => [{ id: "s", cardId: "visa", periodStart: "2026-10-26", cutoffDate: "2026-11-25", dueDate: "2026-11-28", paidAt: null }],
@@ -55,8 +57,11 @@ describe("loadMonthOverview", () => {
     };
     const before = await loadMonthDetail(source, "2026-11-14", "2026-11");
     const after = await loadMonthDetail({ ...source, loadFxRate: async () => new Decimal(5000) }, "2026-11-14", "2026-11");
-    expect(before?.month.total.toString()).toBe("70000");
-    expect(after?.month.total.toString()).toBe("80000");
+    expect(before?.month.total.toString()).toBe("30000");
+    expect(after?.month.total.toString()).toBe("30000");
+    expect(before?.month.usdEquivalentCop.toString()).toBe("40000");
+    expect(after?.month.usdEquivalentCop.toString()).toBe("50000");
+    expect(after?.month.totalUsd.toString()).toBe("10");
     expect(after?.month.pendingConfirmation.toString()).toBe("30000");
   });
 

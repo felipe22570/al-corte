@@ -19,7 +19,7 @@ describe("payment month detail", () => {
 
   it("shows an empty current month without saying it is paid", async () => {
     const [month] = buildMonths([], "2026-11-14");
-    state.detail = { month, previous: null, neighbors: { previous: null, next: null }, overdue: { months: new Map(), total: new Decimal(0) }, subscriptionNames: {} };
+    state.detail = { month, previous: null, neighbors: { previous: null, next: null }, overdue: { months: new Map(), total: new Decimal(0), totalUsd: new Decimal(0) }, subscriptionNames: {} };
     const html = renderToStaticMarkup(await MonthDetailPage({ params: Promise.resolve({ mes: "2026-11" }) }));
     expect(html).toContain("Sin extractos");
     expect(html).toContain("Compraste en noviembre");
@@ -32,7 +32,7 @@ describe("payment month detail", () => {
       { id: "two", cardId: "b", origin: "real", periodStart: "2026-10-01", cutoffDate: "2026-11-21", dueDate: "2026-11-29", paidAt: null, recordedTotal: new Decimal(200), projectedTotal: new Decimal(0), unconvertedCharges: [] },
       { cardId: "c", origin: "virtual", periodStart: "2026-10-01", cutoffDate: "2026-11-22", dueDate: "2026-11-30", paidAt: null, recordedTotal: new Decimal(0), projectedTotal: new Decimal(20), unconvertedCharges: [] },
     ], "2026-11-14");
-    state.detail = { month, previous: null, neighbors: { previous: null, next: null }, overdue: { months: new Map(), total: new Decimal(0) }, subscriptionNames: {} };
+    state.detail = { month, previous: null, neighbors: { previous: null, next: null }, overdue: { months: new Map(), total: new Decimal(0), totalUsd: new Decimal(0) }, subscriptionNames: {} };
     state.cards = ["a", "b", "c"].map((id) => ({ id, name: id, last4: "1234", color: "card-1" }));
     const html = renderToStaticMarkup(await MonthDetailPage({ params: Promise.resolve({ mes: "2026-11" }) }));
     expect(html.match(/Marcar como pagado ·/g)).toHaveLength(2);
@@ -51,21 +51,24 @@ describe("payment month detail", () => {
     await expect(MonthDetailPage({ params: Promise.resolve({ mes: "2020-01" }) })).rejects.toThrow("not found");
   });
 
-  it("identifies USD charges without TRM rather than presenting an estimated zero", async () => {
+  it("keeps USD charges in dollars without TRM and only flags the missing COP reference (D33)", async () => {
     const summaries = buildMonths([{
       cardId: "c", origin: "virtual", cutoffDate: "2026-12-20", dueDate: "2026-12-28", paidAt: null,
-      recordedTotal: new Decimal(0), projectedTotal: new Decimal(0),
+      recordedTotal: new Decimal(0), projectedTotal: new Decimal(0), projectedUsd: new Decimal("9.99"),
       unconvertedCharges: [{ subscriptionId: "sub", date: "2026-12-15", amountUsd: new Decimal("9.99") }],
     }], "2026-11-14");
     const month = summaries.find((item) => item.month === "2026-12");
-    state.detail = { month, previous: null, neighbors: { previous: "2026-11", next: null }, overdue: { months: new Map(), total: new Decimal(0) }, subscriptionNames: { sub: "Servicio" } };
+    state.detail = { month, previous: null, neighbors: { previous: "2026-11", next: null }, overdue: { months: new Map(), total: new Decimal(0), totalUsd: new Decimal(0) }, subscriptionNames: { sub: "Servicio" } };
     state.cards = [{ id: "c", name: "Visa", last4: "1234", color: "card-1" }];
     const html = renderToStaticMarkup(await MonthDetailPage({ params: Promise.resolve({ mes: "2026-12" }) }));
-    expect(html).toContain("Total conocido");
-    expect(html).toContain("Estimación incompleta");
+    expect(html).not.toContain("Total conocido");
+    expect(html).toContain("Falta la TRM");
     expect(html).toContain("US$ 9,99");
     expect(html).toContain("Servicio");
-    expect(html).toContain("Pendientes de conversión");
+    expect(html).toContain("Cargos en dólares por concepto");
+    const summary = html.slice(html.indexOf('aria-label="Resumen del mes"'), html.indexOf("</section>", html.indexOf('aria-label="Resumen del mes"')));
+    expect(summary).toContain("US$ 9,99");
+    expect(summary).not.toContain(">$0<");
     expect(html).not.toContain("Marcar como pagado");
   });
 
@@ -76,7 +79,7 @@ describe("payment month detail", () => {
         { id: "refund", origin: "real", concept: "refunds", categoryId: "food", amountCop: new Decimal(20) },
       ] },
     ], "2026-11-14");
-    state.detail = { month, previous, neighbors: { previous: "2026-09", next: "2026-11" }, overdue: { months: new Map(), total: new Decimal(0) }, subscriptionNames: {} };
+    state.detail = { month, previous, neighbors: { previous: "2026-09", next: "2026-11" }, overdue: { months: new Map(), total: new Decimal(0), totalUsd: new Decimal(0) }, subscriptionNames: {} };
     state.cards = [{ id: "c", name: "Visa", last4: "1234", color: "card-1" }];
     state.categories = [{ id: "food", name: "Mercado", icon: null }];
     const html = renderToStaticMarkup(await MonthDetailPage({ params: Promise.resolve({ mes: "2026-10" }) }));
@@ -93,7 +96,7 @@ describe("payment month detail", () => {
       { id: "p", cardId: "c", origin: "real", cutoffDate: "2026-08-15", dueDate: "2026-09-02", paidAt: "paid", recordedTotal: new Decimal(200000), projectedTotal: new Decimal(0), unconvertedCharges: [] },
       { id: "s", cardId: "c", origin: "real", cutoffDate: "2026-09-15", dueDate: "2026-10-02", paidAt: "paid", recordedTotal: new Decimal(220000), projectedTotal: new Decimal(0), unconvertedCharges: [] },
     ], "2026-11-14");
-    state.detail = { month, previous, neighbors: { previous: "2026-09", next: "2026-11" }, overdue: { months: new Map(), total: new Decimal(0) }, subscriptionNames: {} };
+    state.detail = { month, previous, neighbors: { previous: "2026-09", next: "2026-11" }, overdue: { months: new Map(), total: new Decimal(0), totalUsd: new Decimal(0) }, subscriptionNames: {} };
     state.cards = [{ id: "c", name: "Visa", last4: "1234", color: "card-1" }];
     const html = renderToStaticMarkup(await MonthDetailPage({ params: Promise.resolve({ mes: "2026-10" }) }));
     expect(html).toContain("10% más que septiembre · ");

@@ -41,8 +41,9 @@ describe.skipIf(!enabled)("month reads against local Supabase", () => {
         values ('${cardId}','${userId}','Visa sintética','Banco','Visa','1234',1000000,25,28,0,null),
                ('${archivedId}','${userId}','Archivada sintética','Banco','Visa','5678',1000000,25,28,0,now());
         insert into public.categories (id,user_id,name,icon) values ('${categoryId}','${userId}','Categoría sintética','tags');
-        insert into public.statements (id,user_id,card_id,period_start,cutoff_date,due_date,real_total)
-        values ('${statementId}','${userId}','${cardId}','2026-10-26','2026-11-25','2026-11-28',999999);
+        insert into public.statements (id,user_id,card_id,period_start,cutoff_date,due_date)
+        values ('${statementId}','${userId}','${cardId}','2026-10-26','2026-11-25','2026-11-28');
+        insert into public.statement_balances (user_id,statement_id,currency,real_total) values ('${userId}','${statementId}','COP',999999);
         insert into public.transactions (id,user_id,card_id,statement_id,category_id,type,date,amount,amount_cop,installments_count)
         values ('${purchaseId}','${userId}','${cardId}','${statementId}','${categoryId}','purchase','2026-11-10',200000,200000,2);
         insert into public.transactions (user_id,card_id,statement_id,type,date,amount,amount_cop)
@@ -69,7 +70,7 @@ describe.skipIf(!enabled)("month reads against local Supabase", () => {
       expect(monthBreakdown(detail!.month.statements).payments.toString()).toBe("10000");
       expect((await source.loadCategories()).some((category) => category.id === categoryId)).toBe(true);
       expect((await source.loadPurchaseMonthSpending("2026-11")).toString()).toBe("200000");
-      const { error } = await client.from("statements").update({ paid_at: "2026-11-14T12:00:00Z" }).eq("id", statementId);
+      const { error } = await client.from("statement_balances").upsert({ user_id: userId, statement_id: statementId, currency: "COP", paid_at: "2026-11-14T12:00:00Z" }, { onConflict: "statement_id,currency" });
       expect(error).toBeNull();
       const refreshedSource = createSupabaseMonthSource(client as never, userId);
       const [paid, paidCards] = await Promise.all([loadMonthOverview(refreshedSource, "2026-11-14"), refreshedSource.loadCardDetails()]);

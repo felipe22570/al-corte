@@ -4,14 +4,15 @@ import { ChevronDown } from "lucide-react";
 import { StatementConcept, type StatementConceptData } from "@/components/statement-concept";
 import { Disclosure, DisclosureContent, DisclosureSummary } from "@/components/ui/disclosure";
 
-export function StatementBreakdown({ concepts, payments }: { concepts: StatementConceptData[]; payments: StatementConceptData }) {
+/** `title` and `idSuffix` separate the peso and dollar breakdowns of one statement (D33). */
+export function StatementBreakdown({ concepts, payments, title = "Desglose", paymentsTitle = "Pagos", idSuffix = "" }: { concepts: StatementConceptData[]; payments: StatementConceptData; title?: string; paymentsTitle?: string; idSuffix?: string }) {
   const active = concepts.filter((concept) => concept.entries.length || !new Decimal(concept.total).isZero());
   const empty = concepts.filter((concept) => !concept.entries.length && new Decimal(concept.total).isZero());
 
   return (
     <div className="flex flex-col gap-6">
-      <section aria-labelledby="statement-breakdown-title" className="flex flex-col gap-3">
-        <h2 id="statement-breakdown-title" className="text-heading">Desglose</h2>
+      <section aria-labelledby={`statement-breakdown-title${idSuffix}`} className="flex flex-col gap-3">
+        <h2 id={`statement-breakdown-title${idSuffix}`} className="text-heading">{title}</h2>
         {active.length > 0 && (
           <div className="divide-y divide-border border-y border-border">
             <div aria-hidden="true" className="flex justify-between gap-3 py-2 pl-8 text-small text-muted-foreground"><span>Concepto</span><span>Total</span></div>
@@ -31,8 +32,8 @@ export function StatementBreakdown({ concepts, payments }: { concepts: Statement
           </Disclosure>
         )}
       </section>
-      <section aria-labelledby="statement-payments-title" className="flex flex-col gap-3">
-        <h2 id="statement-payments-title" className="text-heading">Pagos</h2>
+      <section aria-labelledby={`statement-payments-title${idSuffix}`} className="flex flex-col gap-3">
+        <h2 id={`statement-payments-title${idSuffix}`} className="text-heading">{paymentsTitle}</h2>
         <p className="text-small text-muted-foreground">Los pagos se muestran aparte y no cambian el total del extracto.</p>
         <div className="border-y border-border">
           <StatementConcept concept={payments} />

@@ -266,6 +266,91 @@ describe("projectSubscriptionCharges", () => {
   });
 });
 
+describe("saldos por moneda (D33)", () => {
+  const card = { id: "visa", cutoffDay: 15, paymentDay: 2, archived: false, handlingFee: new Decimal(0) };
+  const saved = { id: "s", cardId: "visa", periodStart: "2026-10-16", cutoffDate: "2026-11-15", dueDate: "2026-12-02", paidAt: null };
+  const input = {
+    cards: [card], subscriptions: [], today: "2026-12-01", fxRate: new Decimal(4000), statements: [saved],
+    movements: [
+      { id: "cop", statementId: "s", type: "purchase" as const, amountCop: new Decimal("100000"), amount: new Decimal("100000"), currency: "COP" as const, installmentsCount: 1, categoryId: "food", date: "2026-11-01" },
+      { id: "usd", statementId: "s", type: "purchase" as const, amountCop: new Decimal("32880"), amount: new Decimal("8.22"), currency: "USD" as const, fxRate: new Decimal(4000), installmentsCount: 1, categoryId: "apps", date: "2026-11-02" },
+    ],
+    installments: [{ id: "i", statementId: "s", categoryId: "apps", totalCop: new Decimal("4000"), total: new Decimal("1"), currency: "USD" as const }],
+  };
+
+  it("separa pesos y dólares y conserva el equivalente COP solo como referencia", () => {
+    const [statement] = projectStatements(input).statements;
+    expect(statement?.recordedTotal.toString()).toBe("100000");
+    expect(statement?.recordedUsd?.toString()).toBe("9.22");
+    expect(statement?.usdEquivalentCop?.toString()).toBe("36880");
+    const month = buildMonths(projectStatements(input).statements, input.today).find((m) => m.month === "2026-12")!;
+    expect(month.total.toString()).toBe("100000");
+    expect(month.totalUsd.toString()).toBe("9.22");
+    expect(monthBreakdown(month.statements, "USD").total.toString()).toBe("9.22");
+    expect(monthBreakdown(month.statements, "USD").categories.get("apps")?.toString()).toBe("9.22");
+    expect(monthBreakdown(month.statements).total.eq(month.total)).toBe(true);
+  });
+
+  it("marcar pagado el saldo en pesos no marca el de dólares", () => {
+    const projected = projectStatements({ ...input, statements: [{ ...saved, paidAt: null, paidByCurrency: { COP: "2026-12-01T05:00:00Z", USD: null } }] });
+    const [statement] = projected.statements;
+    expect(statement?.paidAt).toBeNull();
+    const month = buildMonths(projected.statements, input.today).find((m) => m.month === "2026-12")!;
+    expect(month.status).toBe("pending");
+    expect(month.pendingConfirmation.isZero()).toBe(true);
+    expect(month.pendingConfirmationUsd.toString()).toBe("9.22");
+    expect(confirmedPaymentTotal(month).toString()).toBe("100000");
+    const both = projectStatements({ ...input, statements: [{ ...saved, paidAt: null, paidByCurrency: { COP: "2026-12-01T05:00:00Z", USD: "2026-12-02T05:00:00Z" } }] });
+    expect(both.statements[0]?.paidAt).toBe("2026-12-02T05:00:00Z");
+  });
+
+  it("un extracto solo en pesos queda pagado con la marca en pesos", () => {
+    const projected = projectStatements({ ...input, installments: [], movements: [input.movements[0]!], statements: [{ ...saved, paidAt: null, paidByCurrency: { COP: "2026-12-01T05:00:00Z", USD: null } }] });
+    expect(projected.statements[0]?.paidAt).toBe("2026-12-01T05:00:00Z");
+  });
+
+  it("un mes solo en dólares no presenta $0 como lo que se paga", () => {
+    const projected = projectStatements({ ...input, movements: [input.movements[1]!], installments: [] });
+    const month = buildMonths(projected.statements, input.today).find((m) => m.month === "2026-12")!;
+    expect(month.total.isZero()).toBe(true);
+    expect(month.totalUsd.toString()).toBe("8.22");
+    expect(month.pendingConfirmationUsd.toString()).toBe("8.22");
+  });
+
+  it("calcula la deuda total por moneda con el capital pendiente del extracto", () => {
+    const projected = projectStatements({ ...input, statements: [{ ...saved, pendingPrincipal: { COP: new Decimal("2666939.29"), USD: new Decimal("145.04") } }] });
+    expect(projected.statements[0]?.debt?.COP.toString()).toBe("2766939.29");
+    expect(projected.statements[0]?.debt?.USD.toString()).toBe("154.26");
+    const month = buildMonths(projected.statements, input.today).find((m) => m.month === "2026-12")!;
+    expect(month.debt?.USD.toString()).toBe("154.26");
+    expect(buildMonths(projectStatements(input).statements, input.today).find((m) => m.month === "2026-12")?.debt).toBeNull();
+    const pesosOnly = projectStatements({ ...input, statements: [{ ...saved, pendingPrincipal: { COP: new Decimal("1000") } }] });
+    expect(pesosOnly.statements[0]?.debt?.USD.toString()).toBe("9.22");
+    const dollarsOnly = projectStatements({ ...input, statements: [{ ...saved, pendingPrincipal: { USD: new Decimal("1") } }] });
+    expect(dollarsOnly.statements[0]?.debt?.COP.toString()).toBe("100000");
+  });
+
+  it("suma los vencidos por moneda y compara dólares aparte", () => {
+    const projected = projectStatements({ ...input, today: "2026-12-10", statements: [{ ...saved, paidAt: null, paidByCurrency: { COP: "2026-12-01T05:00:00Z", USD: null } }] });
+    const overdue = overdueStatements(projected.statements, "2027-01-10");
+    expect(overdue.total.isZero()).toBe(true);
+    expect(overdue.totalUsd.toString()).toBe("9.22");
+    const usdPaid = projectStatements({ ...input, statements: [{ ...saved, paidAt: null, paidByCurrency: { COP: null, USD: "2026-12-01T05:00:00Z" } }] });
+    expect(overdueStatements(usdPaid.statements, "2027-01-10")).toMatchObject({ total: new Decimal("100000"), totalUsd: new Decimal(0) });
+    const base = { cardId: "visa", origin: "real" as const, unconvertedCharges: [], projectedTotal: new Decimal(0), recordedTotal: new Decimal(100), paidAt: "yes" };
+    const months = buildMonths([
+      { ...base, cutoffDate: "2026-09-15", dueDate: "2026-10-02", recordedUsd: new Decimal(10) },
+      { ...base, cutoffDate: "2026-10-15", dueDate: "2026-11-02", recordedUsd: new Decimal(15) },
+    ], "2026-11-20");
+    expect(monthComparison(months[1], months[0])).toMatchObject({ kind: "comparable" });
+    const comparison = monthComparison(months[1], months[0]);
+    expect(comparison.kind === "comparable" && comparison.usd?.diff.toString()).toBe("5");
+    const pesos = buildMonths([{ ...base, cutoffDate: "2026-09-15", dueDate: "2026-10-02" }, { ...base, cutoffDate: "2026-10-15", dueDate: "2026-11-02" }], "2026-11-20");
+    const onlyPesos = monthComparison(pesos[1], pesos[0]);
+    expect(onlyPesos.kind === "comparable" && onlyPesos.usd).toBeNull();
+  });
+});
+
 describe("projectStatements", () => {
   const card = { id: "visa", cutoffDay: 25, paymentDay: 28, archived: false, handlingFee: new Decimal(10000) };
   const subscription = {
@@ -278,7 +363,10 @@ describe("projectStatements", () => {
   it("projects current and future months with virtual handling fees", () => {
     const result = projectStatements(base);
     const current = result.statements.find((s) => s.dueDate === "2026-11-28");
-    expect(current?.projectedTotal.toString()).toBe("90000");
+    // D33: the USD subscription stays in dollars; only the handling fee is in pesos.
+    expect(current?.projectedTotal.toString()).toBe("10000");
+    expect(current?.projectedUsd?.toString()).toBe("20");
+    expect(current?.usdEquivalentCop?.toString()).toBe("80000");
     expect(current?.charges.map((c) => c.concept)).toEqual(["handling_fees", "subscriptions"]);
     expect(result.statements.filter((s) => paymentMonth(s.dueDate) > "2026-11")).toHaveLength(12);
   });
@@ -406,10 +494,14 @@ describe("projectStatements", () => {
     const movement = { id: "m", statementId: "s", type: "purchase" as const, source: "subscription" as const, amountCop: new Decimal(80000), amount: new Decimal(20), currency: "USD" as const, fxRate: new Decimal(4000), categoryId: "entertainment", subscriptionId: "sub", date: "2026-11-20" };
     const real = projectStatements({ ...options, statements: [saved], movements: [movement] });
     const changed = projectStatements({ ...options, statements: [saved], movements: [{ ...movement, amountCop: new Decimal(83000) }] });
-    const total = (statements: MonthStatement[]) => buildMonths(statements, options.today).find((m) => m.month === "2026-11")?.total.toString();
-    expect(total(projected.statements)).toBe("80000");
-    expect(total(real.statements)).toBe("80000");
-    expect(total(changed.statements)).toBe("83000");
+    const month = (statements: MonthStatement[]) => buildMonths(statements, options.today).find((m) => m.month === "2026-11")!;
+    for (const statements of [projected.statements, real.statements, changed.statements]) {
+      expect(month(statements).totalUsd.toString()).toBe("20");
+      expect(month(statements).total.isZero()).toBe(true);
+    }
+    expect(month(projected.statements).usdEquivalentCop.toString()).toBe("80000");
+    expect(month(real.statements).usdEquivalentCop.toString()).toBe("80000");
+    expect(month(changed.statements).usdEquivalentCop.toString()).toBe("83000");
     expect(real.statements.find((s) => s.id === "s")?.charges[0]?.fxRate?.toString()).toBe("4000");
     expect(projected.statements.find((s) => s.dueDate === "2026-11-28")?.charges[0]?.currency).toBe("USD");
   });
@@ -497,7 +589,10 @@ describe("projectStatements", () => {
       subscriptions: [subscription, { ...subscription, id: "other" }],
     });
     const current = buildMonths(result.statements, base.today).find((m) => m.kind === "current");
-    expect(current?.projected.toString()).toBe("160000");
+    expect(current?.projected.isZero()).toBe(true);
+    expect(current?.totalUsd.toString()).toBe("40");
+    expect(current?.projectedUsd.toString()).toBe("40");
+    expect(current?.usdEquivalentCop.toString()).toBe("160000");
   });
 
   it("deduplicates today's actual charge using its saved amount even with a new exchange rate", () => {
@@ -512,8 +607,10 @@ describe("projectStatements", () => {
       }],
     });
     const actual = result.statements.find((s) => s.id === "s");
-    expect(actual?.recordedTotal.toString()).toBe("76000");
-    expect(actual?.projectedTotal.toString()).toBe("0");
+    expect(actual?.recordedTotal.isZero()).toBe(true);
+    expect(actual?.recordedUsd?.toString()).toBe("20");
+    expect(actual?.projectedUsd?.isZero()).toBe(true);
+    expect(actual?.usdEquivalentCop?.toString()).toBe("76000");
     expect(actual?.charges[0]?.fxRate?.toString()).toBe("3800");
   });
 
@@ -661,7 +758,8 @@ describe("month aggregates", () => {
     expect(monthComparison(december, november).kind).toBe("unavailable");
     if (!october) throw new Error("Falta octubre");
     expect(monthComparison({ ...october, hasProjection: true }, september).kind).toBe("unavailable");
-    expect(monthComparison({ ...october, complete: false }, september).kind).toBe("unavailable");
+    // D33: a missing TRM only leaves the COP reference incomplete; it no longer blocks comparisons.
+    expect(monthComparison({ ...october, complete: false }, september).kind).toBe("comparable");
   });
 
   it("uses safe presentation for zero, negative, small and extreme comparison bases", () => {

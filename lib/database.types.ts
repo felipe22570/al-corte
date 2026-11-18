@@ -81,7 +81,7 @@ export type Database = {
       foreignKeyName: "installments_owner_statement_fk"
       columns: ["user_id","statement_id"]
 isOneToOne: false
-      referencedRelation: "statement_totals"
+      referencedRelation: "statement_currency_totals"
       referencedColumns: ["user_id","statement_id"]
     },{
       foreignKeyName: "installments_owner_statement_fk"
@@ -99,7 +99,7 @@ isOneToOne: false
       foreignKeyName: "installments_statement_id_fkey"
       columns: ["statement_id"]
 isOneToOne: false
-      referencedRelation: "statement_totals"
+      referencedRelation: "statement_currency_totals"
       referencedColumns: ["statement_id"]
     },{
       foreignKeyName: "installments_statement_id_fkey"
@@ -129,16 +129,54 @@ isOneToOne: false
                   Relationships: [
                     
                   ]
-                },"statements": {
+                },"statement_balances": {
                   Row: {
-                    "card_id": string,"created_at": string,"cutoff_date": string,"due_date": string,"id": string,"paid_at": string | null,"period_start": string,"real_total": number | null,"updated_at": string,"user_id": string
+                    "created_at": string,"currency": Database["public"]['Enums']["currency_code"],"id": string,"paid_at": string | null,"real_minimum": number | null,"real_total": number | null,"statement_id": string,"updated_at": string,"user_id": string
                   }
                   ComputedFields: never
                   Insert: {
-                    "card_id": string,"created_at"?: string,"cutoff_date": string,"due_date": string,"id"?: string,"paid_at"?: string | null,"period_start": string,"real_total"?: number | null,"updated_at"?: string,"user_id"?: string
+                    "created_at"?: string,"currency": Database["public"]['Enums']["currency_code"],"id"?: string,"paid_at"?: string | null,"real_minimum"?: number | null,"real_total"?: number | null,"statement_id": string,"updated_at"?: string,"user_id"?: string
                   }
                   Update: {
-                    "card_id"?: string,"created_at"?: string,"cutoff_date"?: string,"due_date"?: string,"id"?: string,"paid_at"?: string | null,"period_start"?: string,"real_total"?: number | null,"updated_at"?: string,"user_id"?: string
+                    "created_at"?: string,"currency"?: Database["public"]['Enums']["currency_code"],"id"?: string,"paid_at"?: string | null,"real_minimum"?: number | null,"real_total"?: number | null,"statement_id"?: string,"updated_at"?: string,"user_id"?: string
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "statement_balances_owner_statement_fk"
+      columns: ["user_id","statement_id"]
+isOneToOne: false
+      referencedRelation: "statement_currency_totals"
+      referencedColumns: ["user_id","statement_id"]
+    },{
+      foreignKeyName: "statement_balances_owner_statement_fk"
+      columns: ["user_id","statement_id"]
+isOneToOne: false
+      referencedRelation: "statements"
+      referencedColumns: ["user_id","id"]
+    },{
+      foreignKeyName: "statement_balances_statement_id_fkey"
+      columns: ["statement_id"]
+isOneToOne: false
+      referencedRelation: "statement_currency_totals"
+      referencedColumns: ["statement_id"]
+    },{
+      foreignKeyName: "statement_balances_statement_id_fkey"
+      columns: ["statement_id"]
+isOneToOne: false
+      referencedRelation: "statements"
+      referencedColumns: ["id"]
+    }
+                  ]
+                },"statements": {
+                  Row: {
+                    "card_id": string,"created_at": string,"cutoff_date": string,"due_date": string,"id": string,"period_start": string,"updated_at": string,"user_id": string
+                  }
+                  ComputedFields: never
+                  Insert: {
+                    "card_id": string,"created_at"?: string,"cutoff_date": string,"due_date": string,"id"?: string,"period_start": string,"updated_at"?: string,"user_id"?: string
+                  }
+                  Update: {
+                    "card_id"?: string,"created_at"?: string,"cutoff_date"?: string,"due_date"?: string,"id"?: string,"period_start"?: string,"updated_at"?: string,"user_id"?: string
                   }
                   Relationships: [
                     {
@@ -275,7 +313,7 @@ isOneToOne: false
       foreignKeyName: "transactions_owner_statement_fk"
       columns: ["user_id","card_id","statement_id"]
 isOneToOne: false
-      referencedRelation: "statement_totals"
+      referencedRelation: "statement_currency_totals"
       referencedColumns: ["user_id","card_id","statement_id"]
     },{
       foreignKeyName: "transactions_owner_statement_fk"
@@ -299,7 +337,7 @@ isOneToOne: false
       foreignKeyName: "transactions_statement_id_fkey"
       columns: ["statement_id"]
 isOneToOne: false
-      referencedRelation: "statement_totals"
+      referencedRelation: "statement_currency_totals"
       referencedColumns: ["statement_id"]
     },{
       foreignKeyName: "transactions_statement_id_fkey"
@@ -326,9 +364,9 @@ isOneToOne: false
                   Relationships: [
                     
                   ]
-                },"statement_totals": {
+                },"statement_currency_totals": {
                   Row: {
-                    "adjustments": number | null,"card_id": string,"cash_advances": number | null,"handling_fees": number | null,"installments": number | null,"insurance": number | null,"interest": number | null,"payments": number | null,"refunds": number | null,"single_purchases": number | null,"statement_id": string,"subscriptions": number | null,"total_calculated": number | null,"user_id": string
+                    "adjustments": number | null,"card_id": string,"cash_advances": number | null,"currency": Database["public"]['Enums']["currency_code"] | null,"handling_fees": number | null,"has_charges": boolean | null,"installments": number | null,"insurance": number | null,"interest": number | null,"payments": number | null,"pending_principal": number | null,"refunds": number | null,"single_purchases": number | null,"statement_id": string,"subscriptions": number | null,"total_calculated": number | null,"total_cop": number | null,"total_debt": number | null,"user_id": string
                   }
                   ComputedFields: never
                   Relationships: [

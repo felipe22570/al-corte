@@ -23,8 +23,8 @@ select is((select count(*) from public.installments), 0::bigint, 'B no ve cuotas
 select is((select count(*) from public.subscriptions), 0::bigint, 'B no ve suscripciones de A');
 with changed as (update public.cards set name = 'Otro' returning 1) select is((select count(*) from changed), 0::bigint, 'B no modifica tarjetas de A');
 with removed as (delete from public.cards returning 1) select is((select count(*) from removed), 0::bigint, 'B no borra tarjetas de A');
-with changed as (update public.statements set real_total = 1 returning 1) select is((select count(*) from changed), 0::bigint, 'B no modifica extractos de A');
-with changed as (update public.statements set paid_at = '2026-02-01T05:00:00Z' returning 1) select is((select count(*) from changed), 0::bigint, 'B no marca pagado el extracto de A');
+with changed as (update public.statements set due_date = '2026-03-06' returning 1) select is((select count(*) from changed), 0::bigint, 'B no modifica extractos de A');
+with changed as (update public.statement_balances set paid_at = '2026-02-01T05:00:00Z' returning 1) select is((select count(*) from changed), 0::bigint, 'B no marca pagado el extracto de A');
 with removed as (delete from public.statements returning 1) select is((select count(*) from removed), 0::bigint, 'B no borra extractos de A');
 with changed as (update public.transactions set note = 'otro' returning 1) select is((select count(*) from changed), 0::bigint, 'B no modifica movimientos de A');
 with removed as (delete from public.transactions returning 1) select is((select count(*) from removed), 0::bigint, 'B no borra movimientos de A');

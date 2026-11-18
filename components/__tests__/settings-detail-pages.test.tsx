@@ -15,14 +15,14 @@ vi.mock("@/lib/supabase/server", () => ({ createClient: async () => ({
         : table === "categories" ? [{ id: "food", name: "Restaurantes", icon: "utensils", archived_at: null }]
         : table === "card_balances" ? { available: "3750000", utilization: "0.25" }
         : table === "statements" ? [
-          { id: "open", period_start: "2026-10-16", cutoff_date: "2026-11-15", due_date: "2026-11-30", paid_at: null },
-          { id: "next", period_start: "2026-11-16", cutoff_date: "2026-12-15", due_date: "2026-12-30", paid_at: null },
+          { id: "open", period_start: "2026-10-16", cutoff_date: "2026-11-15", due_date: "2026-11-30" },
+          { id: "next", period_start: "2026-11-16", cutoff_date: "2026-12-15", due_date: "2026-12-30" },
         ]
-        : table === "statement_totals" ? [{ statement_id: "open", total_calculated: "1250000" }, { statement_id: "next", total_calculated: "240000" }] : [],
+        : table === "statement_currency_totals" ? [{ statement_id: "open", currency: "COP", has_charges: true, total_calculated: "1250000", total_cop: "1250000", pending_principal: "0", total_debt: "1250000" }, { statement_id: "next", currency: "COP", has_charges: true, total_calculated: "240000", total_cop: "240000", pending_principal: "0", total_debt: "240000" }] : [],
       error: null,
     };
     const query = {
-      select: () => query, eq: () => query, order: () => query, gt: () => query,
+      select: () => query, eq: () => query, order: () => query, gt: () => query, in: () => query, range: async () => result,
       maybeSingle: async () => ({ ...result, data: table === "cards" ? card : result.data }),
       then: (resolve: (value: typeof result) => void) => Promise.resolve(result).then(resolve),
     };

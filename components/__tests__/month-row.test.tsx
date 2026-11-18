@@ -51,19 +51,21 @@ describe("MonthRow", () => {
       expect(html).toContain(`${color} · •••• 1234`);
     }
   });
-  it("shows incomplete totals without inventing COP for USD charges", () => {
+  it("shows dollar charges apart without inventing COP when the TRM is missing (D33)", () => {
     const [month] = buildMonths([{
       cardId: "card", origin: "virtual", cutoffDate: "2026-11-25", dueDate: "2026-11-28", paidAt: null,
-      recordedTotal: new Decimal(0), projectedTotal: new Decimal(0),
+      recordedTotal: new Decimal(0), projectedTotal: new Decimal(0), projectedUsd: new Decimal("9.99"),
       unconvertedCharges: [{ subscriptionId: "sub", date: "2026-11-20", amountUsd: new Decimal("9.99") }],
     }], "2026-11-14");
     if (!month) throw new Error("Falta el mes");
     const html = renderToStaticMarkup(<MonthRow month={month} cards={[]} subscriptionNames={{ sub: "Servicio" }} today="2026-11-14" />);
-    expect(html).toContain("Total conocido");
+    expect(html).not.toContain("Total conocido");
+    expect(html).toContain("Total del mes");
     expect(html).toContain("US$ 9,99");
+    expect(html).not.toContain(">$0<");
+    expect(html).toContain("Falta la TRM para el equivalente en pesos");
     expect(html).toContain("Servicio");
     expect(html).not.toContain("Pagado");
-    expect(html).not.toContain("Cobros previstos: <span");
     expect(html).toContain('href="/meses/2026-11"');
   });
 

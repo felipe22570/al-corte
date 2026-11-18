@@ -16,8 +16,8 @@ select is((select count(*) from public.transactions where type = 'handling_fee')
 select is((select count(*) from public.installments where before_tracking and statement_id is null and interest = 0), 2::bigint, 'dos cuotas previas sin extracto ni interés');
 select is((select prior_installments from public.transactions where merchant = 'IKEA'), 2::smallint, 'guarda las cuotas previas');
 select is((select prior_principal_paid from public.transactions where merchant = 'IKEA'), 225930::numeric, 'guarda el capital previo');
-select is((select st.installments from public.statement_totals st join public.statements s on s.id = st.statement_id where s.cutoff_date = '2026-11-15'), 112965::numeric, 'el extracto solo suma la cuota k');
-select is((select sum(st.installments) from public.statement_totals st), 225930::numeric, 'las cuotas previas no entran en ningún extracto');
+select is((select st.installments from public.statement_currency_totals st join public.statements s on s.id = st.statement_id where s.cutoff_date = '2026-11-15'), 112965::numeric, 'el extracto solo suma la cuota k');
+select is((select sum(st.installments) from public.statement_currency_totals st), 225930::numeric, 'las cuotas previas no entran en ningún extracto');
 select is((select used from public.card_balances), 285930::numeric, 'el cupo cuenta solo el capital pendiente y el manejo');
 
 select lives_ok($sql$
