@@ -8,18 +8,20 @@ import { SubscriptionStatusActions } from "@/components/subscription-status-acti
 import { Disclosure, DisclosureContent, DisclosureSummary } from "@/components/ui/disclosure";
 import { addDays } from "@/lib/domain/dates";
 import { isTrialEndingSoon, nextChargeDate } from "@/lib/domain/subscriptions";
-import { formatDateShort } from "@/lib/format";
+import { formatDateShort, formatMoney } from "@/lib/format";
 import type { SubscriptionCard, SubscriptionCategory, SubscriptionRecord } from "@/lib/subscription-types";
 
 export type SubscriptionCharge = { id: string; subscription_id: string | null; date: string; amount: string; currency: "COP" | "USD" };
 
-export function SubscriptionList({ subscriptions, cards, activeCards, categories, charges, today }: {
+export function SubscriptionList({ subscriptions, cards, activeCards, categories, charges, today, installments = {} }: {
   subscriptions: SubscriptionRecord[];
   cards: SubscriptionCard[];
   activeCards: SubscriptionCard[];
   categories: SubscriptionCategory[];
   charges: SubscriptionCharge[];
   today: string;
+  /** First installment of each deferred subscription (D35), in its currency. */
+  installments?: Record<string, string>;
 }) {
   return <div className="divide-y divide-border rounded-xl border border-border bg-card">
     {subscriptions.map((item) => {
@@ -35,7 +37,13 @@ export function SubscriptionList({ subscriptions, cards, activeCards, categories
           {item.status === "paused" && <StatusBadge tone="neutral" text="Pausada" />}
           {trialEnding && <StatusBadge tone="warning" text={`Prueba hasta el ${formatDateShort(item.trialEndsAt!, today)}`} />}
         </div>
-        <span className="text-right"><Money value={item.amount} currency={item.currency} /></span>
+        <span className="flex flex-col items-end text-right">
+          {item.installmentsCount > 1 && installments[item.id] ? <>
+            <Money value={installments[item.id]!} currency={item.currency} />
+            <span className="text-small text-muted-foreground">por cuota · cobro de {formatMoney(item.amount, item.currency)} a {item.installmentsCount} cuotas</span>
+          </> : <Money value={item.amount} currency={item.currency} />}
+          {item.installmentsCount > 1 && !installments[item.id] && <span className="text-small text-muted-foreground">a {item.installmentsCount} cuotas</span>}
+        </span>
         <div className="flex min-w-0 flex-wrap items-start justify-end gap-1">
           <SubscriptionForm cards={activeCards} categories={categories} today={today} subscription={item} />
           <SubscriptionStatusActions id={item.id} status={item.status} name={item.name} />

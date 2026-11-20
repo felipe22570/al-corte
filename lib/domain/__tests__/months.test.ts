@@ -351,6 +351,75 @@ describe("saldos por moneda (D33)", () => {
   });
 });
 
+describe("suscripciones diferidas (R8, D35)", () => {
+  const card = { id: "visa", cutoffDay: 15, paymentDay: 2, archived: false, handlingFee: new Decimal(0), purchaseRateEa: new Decimal("0.2899"), amortizationMethod: "fixed_principal" as const, interestMode: "on_balance" as const };
+  const chatgpt = { id: "gpt", cardId: "visa", categoryId: "apps", amount: new Decimal("12.99"), currency: "USD" as const, startDate: "2026-01-01", frequency: "monthly" as const, billingDay: 20, status: "active" as const, installmentsCount: 36 };
+  const input = { cards: [card], statements: [], movements: [], installments: [], subscriptions: [chatgpt], today: "2026-11-19", fxRate: new Decimal(4000) };
+
+  it("acumula una cuota por cobro previsto y nunca suma el valor completo", () => {
+    const months = buildMonths(projectStatements(input).statements, input.today);
+    const installments = (month: string) => monthBreakdown(months.find((m) => m.month === month)!.statements, "USD").concepts.installments.toString();
+    // Charge of Nov 20 → statement Dec 15 (paid Jan 2); one installment is 12.99 / 36 = 0.36.
+    expect(installments("2027-01")).toBe("0.36");
+    expect(installments("2027-02")).toBe("0.72");
+    expect(installments("2027-03")).toBe("1.08");
+    expect(months.find((m) => m.month === "2027-01")?.totalUsd.toString()).toBe("0.36");
+    expect(months.find((m) => m.month === "2027-02")?.totalUsd.toString()).toBe("0.99");
+    expect(months.every((m) => m.totalUsd.lt("12.99"))).toBe(true);
+    const january = months.find((m) => m.month === "2027-01")!;
+    expect(monthBreakdown(january.statements, "USD").concepts.installments.toString()).toBe("0.36");
+    expect(monthBreakdown(january.statements, "USD").categories.get("apps")?.toString()).toBe("0.36");
+    expect(january.usdEquivalentCop.toString()).toBe("1440");
+  });
+
+  it("estima los intereses sobre saldo de las cuotas previstas en extractos virtuales", () => {
+    const statements = projectStatements(input).statements;
+    const february = statements.filter((s) => paymentMonth(s.dueDate) === "2027-02").flatMap((s) => s.charges);
+    const interest = february.filter((charge) => charge.concept === "interest");
+    // Pending at the start of the Jan 15 period: 12.63 of the Nov 20 charge (the Dec 20 charge is made within it).
+    expect(interest.map((charge) => [charge.origin, charge.estimated, charge.currency, charge.amount?.toString()])).toEqual([["projected", true, "USD", "0.27"]]);
+    const perInstallment = projectStatements({ ...input, cards: [{ ...card, interestMode: "per_installment" }] }).statements;
+    expect(perInstallment.flatMap((s) => s.charges).some((charge) => charge.concept === "interest")).toBe(false);
+    expect(perInstallment.filter((s) => paymentMonth(s.dueDate) === "2027-01").flatMap((s) => s.charges)[0]?.amount?.toString()).toBe("0.64");
+    expect(perInstallment.filter((s) => paymentMonth(s.dueDate) === "2027-02").flatMap((s) => s.charges).map((c) => c.amount?.toString())).toEqual(["0.63", "0.64"]);
+  });
+
+  it("no proyecta intereses estimados si el extracto real ya tiene intereses reales", () => {
+    const saved = { id: "s", cardId: "visa", periodStart: "2026-12-16", cutoffDate: "2027-01-15", dueDate: "2027-02-02", paidAt: null };
+    const statements = projectStatements({ ...input, statements: [saved], movements: [{ id: "real", statementId: "s", type: "interest", amountCop: new Decimal(1000), amount: new Decimal(1000), currency: "COP", categoryId: null, date: "2027-01-15" }] }).statements;
+    expect(statements.find((s) => s.id === "s")?.charges.filter((charge) => charge.concept === "interest").map((charge) => charge.estimated ?? false)).toEqual([false]);
+  });
+
+  it("sin TRM conserva los dólares de cada cuota y solo marca su equivalente como faltante", () => {
+    const months = buildMonths(projectStatements({ ...input, fxRate: null, cards: [{ ...card, interestMode: "per_installment" }] }).statements, input.today);
+    const january = months.find((m) => m.month === "2027-01")!;
+    expect(january.totalUsd.toString()).toBe("0.64");
+    expect(january.complete).toBe(false);
+    expect(january.unconvertedCharges).toEqual([{ subscriptionId: "gpt", date: "2026-11-20", amountUsd: new Decimal("0.64") }]);
+  });
+
+  it("proyecta cobros diferidos en pesos, con valores por defecto de la tarjeta y sin TRM en dólares", () => {
+    const pesos = { ...chatgpt, id: "cop", currency: "COP" as const, amount: new Decimal("300000"), installmentsCount: 3 };
+    const onBalance = projectStatements({ ...input, subscriptions: [pesos] }).statements;
+    const february = onBalance.filter((s) => paymentMonth(s.dueDate) === "2027-02");
+    expect(february.flatMap((s) => s.charges).filter((c) => c.concept === "interest").map((c) => [c.currency, c.amount?.toString()])).toEqual([["COP", "4288.07"]]);
+    expect(february[0]?.projectedTotal.toString()).toBe("204288.07");
+    const defaults = projectStatements({ ...input, subscriptions: [pesos], cards: [{ id: "visa", cutoffDay: 15, paymentDay: 2, archived: false, handlingFee: new Decimal(0), interestMode: "on_balance" }] }).statements;
+    expect(defaults.filter((s) => paymentMonth(s.dueDate) === "2027-02").flatMap((s) => s.charges).map((c) => c.amount?.toString())).toEqual(["100000", "100000"]);
+    const noRate = buildMonths(projectStatements({ ...input, fxRate: null }).statements, input.today).find((m) => m.month === "2027-02")!;
+    expect(noRate.totalUsd.toString()).toBe("0.99");
+    expect(noRate.complete).toBe(false);
+  });
+
+  it("no proyecta las cuotas de un cobro que ya es real", () => {
+    const real = { id: "charge", statementId: "s", type: "purchase" as const, source: "subscription" as const, amountCop: new Decimal(51960), amount: new Decimal("12.99"), currency: "USD" as const, installmentsCount: 36, categoryId: "apps", subscriptionId: "gpt", date: "2026-11-20" };
+    const saved = { id: "s", cardId: "visa", periodStart: "2026-11-16", cutoffDate: "2026-12-15", dueDate: "2027-01-02", paidAt: null };
+    const statements = projectStatements({ ...input, statements: [saved], movements: [real], installments: [{ id: "i1", statementId: "s", categoryId: "apps", totalCop: new Decimal(1440), total: new Decimal("0.36"), currency: "USD" }] }).statements;
+    expect(statements.flatMap((s) => s.charges).filter((charge) => charge.date === "2026-11-20" && charge.origin === "projected")).toEqual([]);
+    expect(buildMonths(statements, input.today).find((m) => m.month === "2027-01")?.totalUsd.toString()).toBe("0.36");
+  });
+});
+
 describe("projectStatements", () => {
   const card = { id: "visa", cutoffDay: 25, paymentDay: 28, archived: false, handlingFee: new Decimal(10000) };
   const subscription = {

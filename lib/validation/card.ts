@@ -34,6 +34,8 @@ export const cardSchema = z.object({
   cutoffDay: day, paymentDay: day, purchaseRateEa: rate, advanceRateEa: rate,
   amortizationMethod: z.enum(["fixed_principal", "french"], { error: "Elige un método de amortización." }),
   interestMode: z.enum(["per_installment", "on_balance"], { error: "Elige cómo cobra intereses tu banco." }).default("per_installment"),
+  // D34: installments the bank uses by default for USD purchases (36 at Bancolombia).
+  usdDefaultInstallments: z.coerce.number().int("Ingresa un número entero.").min(1, "Elige entre 1 y 36 cuotas.").max(36, "Elige entre 1 y 36 cuotas.").default(1),
   color: z.enum(CARD_COLORS, { error: "Elige un color de la lista." }),
 });
 export type CardInput = z.input<typeof cardSchema>;

@@ -2,6 +2,7 @@ import Decimal from "decimal.js";
 import type { CardColor } from "@/lib/card-colors";
 import { monthDateBounds, purchaseMonthSpending, type ProjectionInput } from "@/lib/domain/months";
 import { statementPaidAt } from "@/lib/domain/balances";
+import type { AmortizationMethod } from "@/lib/domain/installments";
 import type { InterestMode } from "@/lib/domain/interest";
 import type { Currency } from "@/lib/domain/money";
 import { fetchAllPages } from "@/lib/paginate";
@@ -9,12 +10,12 @@ import type { createClient } from "@/lib/supabase/server";
 import type { MonthReadSource } from "./months";
 
 type Client = Awaited<ReturnType<typeof createClient>>;
-type RawCard = { id: string; name: string; bank: string; last4: string; color: CardColor; archived_at: string | null; cutoff_day: number; payment_day: number; handling_fee: string; interest_mode: InterestMode };
+type RawCard = { id: string; name: string; bank: string; last4: string; color: CardColor; archived_at: string | null; cutoff_day: number; payment_day: number; handling_fee: string; interest_mode: InterestMode; purchase_rate_ea: string; amortization_method: AmortizationMethod };
 type RawBalance = { card_id: string; used: string; available: string; utilization: string };
 type RawStatement = { id: string; card_id: string; period_start: string; cutoff_date: string; due_date: string };
 type RawBalanceMark = { statement_id: string; currency: Currency; paid_at: string | null };
 type RawCurrencyTotal = { statement_id: string; currency: Currency; has_charges: boolean; pending_principal: string };
-type RawSubscription = { id: string; name: string; card_id: string; category_id: string | null; amount: string; currency: "COP" | "USD"; frequency: "monthly" | "yearly"; billing_day: number; start_date: string; trial_ends_at: string | null; status: "active" | "paused" | "cancelled" };
+type RawSubscription = { id: string; name: string; card_id: string; category_id: string | null; amount: string; currency: "COP" | "USD"; frequency: "monthly" | "yearly"; billing_day: number; start_date: string; trial_ends_at: string | null; status: "active" | "paused" | "cancelled"; installments_count: number };
 type Movement = ProjectionInput["movements"][number];
 type RawMovement = { id: string; statement_id: string; type: Movement["type"]; amount_cop: string; amount: string; currency: "COP" | "USD"; fx_rate: string | null; installments_count: number; source: Movement["source"]; category_id: string | null; subscription_id: string | null; date: string };
 type RawInstallment = { id: string; statement_id: string; transaction_id: string; total_cop: string; total: string; principal: string; balance_after: string };
@@ -23,6 +24,7 @@ type RawParent = { id: string; category_id: string | null; date: string; rate_ea
 export type MonthCardDetails = {
   id: string; name: string; bank: string; last4: string; color: CardColor; archived: boolean;
   cutoffDay: number; paymentDay: number; handlingFee: Decimal; interestMode?: InterestMode;
+  purchaseRateEa?: Decimal; amortizationMethod?: AmortizationMethod;
   used: Decimal; available: Decimal; utilization: Decimal;
 };
 
@@ -52,7 +54,7 @@ export function createSupabaseMonthSource(client: Client, userId: string): Month
   function loadCardDetails() {
     cardDetails ??= (async () => {
       const [cards, balances] = await Promise.all([
-        fetchAllPages((from, to) => client.from("cards").select("id,name,bank,last4,color,archived_at,cutoff_day,payment_day,handling_fee::text,interest_mode").eq("user_id", userId).order("id").range(from, to)),
+        fetchAllPages((from, to) => client.from("cards").select("id,name,bank,last4,color,archived_at,cutoff_day,payment_day,handling_fee::text,interest_mode,purchase_rate_ea::text,amortization_method").eq("user_id", userId).order("id").range(from, to)),
         fetchAllPages((from, to) => client.from("card_balances").select("card_id,used::text,available::text,utilization::text").eq("user_id", userId).order("card_id").range(from, to)),
       ]);
       const byCard = new Map((balances as unknown as RawBalance[]).map((balance) => [balance.card_id, balance]));
@@ -62,7 +64,8 @@ export function createSupabaseMonthSource(client: Client, userId: string): Month
         return {
           id: card.id, name: card.name, bank: card.bank, last4: card.last4, color: card.color,
           archived: card.archived_at !== null, cutoffDay: card.cutoff_day, paymentDay: card.payment_day,
-          handlingFee: new Decimal(card.handling_fee), interestMode: card.interest_mode, used: new Decimal(balance.used),
+          handlingFee: new Decimal(card.handling_fee), interestMode: card.interest_mode,
+          purchaseRateEa: new Decimal(card.purchase_rate_ea), amortizationMethod: card.amortization_method, used: new Decimal(balance.used),
           available: new Decimal(balance.available), utilization: new Decimal(balance.utilization),
         };
       });
@@ -105,10 +108,10 @@ export function createSupabaseMonthSource(client: Client, userId: string): Month
       });
     },
     async loadSubscriptions() {
-      const rows = await fetchAllPages((from, to) => client.from("subscriptions").select("id,name,card_id,category_id,amount::text,currency,frequency,billing_day,start_date,trial_ends_at,status").eq("user_id", userId).order("id").range(from, to));
+      const rows = await fetchAllPages((from, to) => client.from("subscriptions").select("id,name,card_id,category_id,amount::text,currency,frequency,billing_day,start_date,trial_ends_at,status,installments_count").eq("user_id", userId).order("id").range(from, to));
       return (rows as unknown as RawSubscription[]).map((s) => ({
         id: s.id, name: s.name, cardId: s.card_id, categoryId: s.category_id, amount: new Decimal(s.amount), currency: s.currency,
-        frequency: s.frequency, billingDay: s.billing_day, startDate: s.start_date, trialEndsAt: s.trial_ends_at, status: s.status,
+        frequency: s.frequency, billingDay: s.billing_day, startDate: s.start_date, trialEndsAt: s.trial_ends_at, status: s.status, installmentsCount: s.installments_count,
       }));
     },
     async loadFxRate() {

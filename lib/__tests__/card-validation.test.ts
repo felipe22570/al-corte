@@ -21,3 +21,8 @@ it("usa intereses por cuota por defecto y acepta intereses sobre saldo (D32)", (
   expect(cardSchema.parse({ ...card, interestMode: "on_balance" }).interestMode).toBe("on_balance");
   expect(cardSchema.safeParse({ ...card, interestMode: "diario" }).success).toBe(false);
 });
+it("acepta cuotas por defecto en USD entre 1 y 36 (D34)", () => {
+  expect(cardSchema.parse(card).usdDefaultInstallments).toBe(1);
+  expect(cardSchema.parse({ ...card, usdDefaultInstallments: "36" }).usdDefaultInstallments).toBe(36);
+  expect(cardSchema.safeParse({ ...card, usdDefaultInstallments: "37" }).success).toBe(false);
+});

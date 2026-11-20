@@ -10,7 +10,7 @@ function databaseFields(card: ValidCard) {
     name: card.name, bank: card.bank, network: card.network, last4: card.last4,
     credit_limit: card.creditLimit, advance_fee: card.advanceFee, handling_fee: card.handlingFee,
     cutoff_day: card.cutoffDay, payment_day: card.paymentDay, purchase_rate_ea: card.purchaseRateEa,
-    advance_rate_ea: card.advanceRateEa, amortization_method: card.amortizationMethod, interest_mode: card.interestMode, color: card.color,
+    advance_rate_ea: card.advanceRateEa, amortization_method: card.amortizationMethod, interest_mode: card.interestMode, usd_default_installments: card.usdDefaultInstallments, color: card.color,
   };
 }
 

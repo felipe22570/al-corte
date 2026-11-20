@@ -25,14 +25,14 @@ export type Database = {
           Tables: {
             "cards": {
                   Row: {
-                    "advance_fee": number,"advance_rate_ea": number,"amortization_method": Database["public"]['Enums']["amortization_method"],"archived_at": string | null,"bank": string,"color": string,"created_at": string,"credit_limit": number,"cutoff_day": number,"handling_fee": number,"id": string,"interest_mode": Database["public"]['Enums']["interest_mode"],"last4": string,"name": string,"network": string,"payment_day": number,"purchase_rate_ea": number,"updated_at": string,"user_id": string
+                    "advance_fee": number,"advance_rate_ea": number,"amortization_method": Database["public"]['Enums']["amortization_method"],"archived_at": string | null,"bank": string,"color": string,"created_at": string,"credit_limit": number,"cutoff_day": number,"handling_fee": number,"id": string,"interest_mode": Database["public"]['Enums']["interest_mode"],"last4": string,"name": string,"network": string,"payment_day": number,"purchase_rate_ea": number,"updated_at": string,"usd_default_installments": number,"user_id": string
                   }
                   ComputedFields: never
                   Insert: {
-                    "advance_fee"?: number,"advance_rate_ea"?: number,"amortization_method"?: Database["public"]['Enums']["amortization_method"],"archived_at"?: string | null,"bank": string,"color"?: string,"created_at"?: string,"credit_limit": number,"cutoff_day": number,"handling_fee"?: number,"id"?: string,"interest_mode"?: Database["public"]['Enums']["interest_mode"],"last4": string,"name": string,"network": string,"payment_day": number,"purchase_rate_ea"?: number,"updated_at"?: string,"user_id"?: string
+                    "advance_fee"?: number,"advance_rate_ea"?: number,"amortization_method"?: Database["public"]['Enums']["amortization_method"],"archived_at"?: string | null,"bank": string,"color"?: string,"created_at"?: string,"credit_limit": number,"cutoff_day": number,"handling_fee"?: number,"id"?: string,"interest_mode"?: Database["public"]['Enums']["interest_mode"],"last4": string,"name": string,"network": string,"payment_day": number,"purchase_rate_ea"?: number,"updated_at"?: string,"usd_default_installments"?: number,"user_id"?: string
                   }
                   Update: {
-                    "advance_fee"?: number,"advance_rate_ea"?: number,"amortization_method"?: Database["public"]['Enums']["amortization_method"],"archived_at"?: string | null,"bank"?: string,"color"?: string,"created_at"?: string,"credit_limit"?: number,"cutoff_day"?: number,"handling_fee"?: number,"id"?: string,"interest_mode"?: Database["public"]['Enums']["interest_mode"],"last4"?: string,"name"?: string,"network"?: string,"payment_day"?: number,"purchase_rate_ea"?: number,"updated_at"?: string,"user_id"?: string
+                    "advance_fee"?: number,"advance_rate_ea"?: number,"amortization_method"?: Database["public"]['Enums']["amortization_method"],"archived_at"?: string | null,"bank"?: string,"color"?: string,"created_at"?: string,"credit_limit"?: number,"cutoff_day"?: number,"handling_fee"?: number,"id"?: string,"interest_mode"?: Database["public"]['Enums']["interest_mode"],"last4"?: string,"name"?: string,"network"?: string,"payment_day"?: number,"purchase_rate_ea"?: number,"updated_at"?: string,"usd_default_installments"?: number,"user_id"?: string
                   }
                   Relationships: [
                     
@@ -207,14 +207,14 @@ isOneToOne: false
                   ]
                 },"subscriptions": {
                   Row: {
-                    "amount": number,"billing_day": number,"card_id": string,"category_id": string | null,"created_at": string,"currency": Database["public"]['Enums']["currency_code"],"frequency": Database["public"]['Enums']["subscription_frequency"],"id": string,"last_charged_amount": number | null,"name": string,"start_date": string,"status": Database["public"]['Enums']["subscription_status"],"trial_ends_at": string | null,"updated_at": string,"user_id": string
+                    "amount": number,"billing_day": number,"card_id": string,"category_id": string | null,"created_at": string,"currency": Database["public"]['Enums']["currency_code"],"frequency": Database["public"]['Enums']["subscription_frequency"],"id": string,"installments_count": number,"last_charged_amount": number | null,"name": string,"start_date": string,"status": Database["public"]['Enums']["subscription_status"],"trial_ends_at": string | null,"updated_at": string,"user_id": string
                   }
                   ComputedFields: never
                   Insert: {
-                    "amount": number,"billing_day": number,"card_id": string,"category_id"?: string | null,"created_at"?: string,"currency"?: Database["public"]['Enums']["currency_code"],"frequency": Database["public"]['Enums']["subscription_frequency"],"id"?: string,"last_charged_amount"?: number | null,"name": string,"start_date": string,"status"?: Database["public"]['Enums']["subscription_status"],"trial_ends_at"?: string | null,"updated_at"?: string,"user_id"?: string
+                    "amount": number,"billing_day": number,"card_id": string,"category_id"?: string | null,"created_at"?: string,"currency"?: Database["public"]['Enums']["currency_code"],"frequency": Database["public"]['Enums']["subscription_frequency"],"id"?: string,"installments_count"?: number,"last_charged_amount"?: number | null,"name": string,"start_date": string,"status"?: Database["public"]['Enums']["subscription_status"],"trial_ends_at"?: string | null,"updated_at"?: string,"user_id"?: string
                   }
                   Update: {
-                    "amount"?: number,"billing_day"?: number,"card_id"?: string,"category_id"?: string | null,"created_at"?: string,"currency"?: Database["public"]['Enums']["currency_code"],"frequency"?: Database["public"]['Enums']["subscription_frequency"],"id"?: string,"last_charged_amount"?: number | null,"name"?: string,"start_date"?: string,"status"?: Database["public"]['Enums']["subscription_status"],"trial_ends_at"?: string | null,"updated_at"?: string,"user_id"?: string
+                    "amount"?: number,"billing_day"?: number,"card_id"?: string,"category_id"?: string | null,"created_at"?: string,"currency"?: Database["public"]['Enums']["currency_code"],"frequency"?: Database["public"]['Enums']["subscription_frequency"],"id"?: string,"installments_count"?: number,"last_charged_amount"?: number | null,"name"?: string,"start_date"?: string,"status"?: Database["public"]['Enums']["subscription_status"],"trial_ends_at"?: string | null,"updated_at"?: string,"user_id"?: string
                   }
                   Relationships: [
                     {

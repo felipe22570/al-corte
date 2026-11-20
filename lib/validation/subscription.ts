@@ -24,6 +24,14 @@ export const subscriptionSchema = z.object({
   billingDay: z.coerce.number().int().min(1, "Elige un día entre 1 y 31.").max(31, "Elige un día entre 1 y 31."),
   startDate: z.string().refine(isValidIsoDate, "Ingresa una fecha válida."),
   trialEndsAt: optionalDate,
+  // D35: each charge is registered as a purchase in these installments.
+  installmentsCount: z.coerce.number().int("Ingresa un número entero.").min(1, "Elige entre 1 y 36 cuotas.").max(36, "Elige entre 1 y 36 cuotas.").default(1),
+}).superRefine((value, ctx) => {
+  // Same rule as the database: with fixed principal every installment but the last is round(amount / N, 2) and the last stays positive.
+  const installment = new Decimal(value.amount).div(value.installmentsCount).toDecimalPlaces(2, Decimal.ROUND_HALF_UP);
+  if (value.installmentsCount > 1 && (!installment.gt(0) || !installment.times(value.installmentsCount - 1).lt(value.amount))) {
+    ctx.addIssue({ code: "custom", path: ["installmentsCount"], message: "El valor es muy pequeño para esa cantidad de cuotas." });
+  }
 });
 export type SubscriptionInput = z.input<typeof subscriptionSchema>;
 export type ValidSubscription = z.output<typeof subscriptionSchema>;

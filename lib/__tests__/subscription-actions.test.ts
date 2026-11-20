@@ -28,7 +28,7 @@ it("creates the subscription and immediately generates today's charge", async ()
   const { card, subscriptions, rpc } = setup(1);
   expect(await createSubscription(input)).toEqual({ ok: true, id, warning: null });
   expect(card.eq).toHaveBeenCalledWith("user_id", "owner");
-  expect(subscriptions.insert).toHaveBeenCalledWith(expect.objectContaining({ user_id: "owner", amount: "100000" }));
+  expect(subscriptions.insert).toHaveBeenCalledWith(expect.objectContaining({ user_id: "owner", amount: "100000", installments_count: 1 }));
   expect(rpc).toHaveBeenCalledWith("generate_charges_for_subscription", { p_id: id });
   expect(mocks.revalidatePath).toHaveBeenCalledWith("/meses/[mes]", "page");
 });

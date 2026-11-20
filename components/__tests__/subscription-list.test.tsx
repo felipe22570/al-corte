@@ -6,7 +6,7 @@ import type { SubscriptionRecord } from "@/lib/subscription-types";
 vi.mock("@/components/subscription-form", () => ({ SubscriptionForm: () => <button>Editar</button> }));
 vi.mock("@/components/subscription-status-actions", () => ({ SubscriptionStatusActions: () => <button>Más opciones</button> }));
 
-const subscription: SubscriptionRecord = { id: "music", name: "Música", cardId: "visa", categoryId: null, amount: "15990", currency: "COP", frequency: "monthly", billingDay: 15, startDate: "2026-10-15", trialEndsAt: null, status: "active" };
+const subscription: SubscriptionRecord = { id: "music", name: "Música", cardId: "visa", categoryId: null, amount: "15990", currency: "COP", frequency: "monthly", billingDay: 15, startDate: "2026-10-15", trialEndsAt: null, status: "active", installmentsCount: 1 };
 const cards = [{ id: "visa", name: "Visa", color: "card-1" as const, last4: "1234" }];
 function render(item: SubscriptionRecord, charges: SubscriptionCharge[] = []) {
   return renderToStaticMarkup(<SubscriptionList subscriptions={[item]} cards={cards} activeCards={cards} categories={[]} charges={charges} today="2026-11-12" />);
@@ -16,7 +16,7 @@ describe("compact subscription list", () => {
   it("keeps the name, card, frequency and next charge with a right-aligned amount and visible edit", () => {
     const html = render(subscription);
     for (const text of ["Música", "Visa · •••• 1234", "Mensual", "próximo cobro 15 nov", "$15.990", "Editar", "Más opciones"]) expect(html).toContain(text);
-    expect(html).toContain('class="text-right"');
+    expect(html).toContain('class="flex flex-col items-end text-right"');
     expect(html).toContain("minmax(0,1fr)");
     expect(html).toContain("grid-cols-1");
     expect(html).not.toContain("grid-cols-[minmax(0,1fr)_auto]");
@@ -48,5 +48,15 @@ describe("compact subscription list", () => {
   it("does not project a second charge today when one already exists", () => {
     const html = render({ ...subscription, billingDay: 12 }, [{ id: "charge", subscription_id: "music", date: "2026-11-12", amount: "15990", currency: "COP" }]);
     expect(html).toContain("próximo cobro 12 dic");
+  });
+});
+
+describe("suscripciones diferidas (D35)", () => {
+  it("muestra la cuota de cada cobro y, aparte, el valor del cobro", () => {
+    const deferred = { ...subscription, currency: "USD" as const, amount: "12.99", installmentsCount: 36 };
+    const html = renderToStaticMarkup(<SubscriptionList subscriptions={[deferred]} cards={cards} activeCards={cards} categories={[]} charges={[]} today="2026-11-12" installments={{ music: "0.36" }} />);
+    expect(html).toContain("US$ 0,36");
+    expect(html).toContain("por cuota · cobro de US$ 12,99 a 36 cuotas");
+    expect(renderToStaticMarkup(<SubscriptionList subscriptions={[deferred]} cards={cards} activeCards={cards} categories={[]} charges={[]} today="2026-11-12" />)).toContain("a 36 cuotas");
   });
 });

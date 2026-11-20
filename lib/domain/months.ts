@@ -1,6 +1,7 @@
 import Decimal from "decimal.js";
 import { addDays, addMonths, compareIsoDates, daysInMonth, monthKey, parseIsoDate, type IsoDate } from "./dates";
 import { statementPaidAt } from "./balances";
+import { buildInstallmentPlan, type AmortizationMethod } from "./installments";
 import { estimateBalanceInterest, type BalanceInterestInstallment, type InterestMode } from "./interest";
 import { toCop, type Currency } from "./money";
 import { statementPeriod, shiftStatement } from "./statements";
@@ -168,6 +169,8 @@ export type MonthCharge = {
 
 type ProjectionCard = {
   id: string; cutoffDay: number; paymentDay: number; archived: boolean; handlingFee: Decimal; interestMode?: InterestMode;
+  /** Terms for projected deferred subscription charges (D35); 0 % and fixed principal when missing. */
+  purchaseRateEa?: Decimal; amortizationMethod?: AmortizationMethod;
 };
 type SavedStatement = {
   id: string; cardId: string; periodStart: IsoDate; cutoffDate: IsoDate; dueDate: IsoDate;
@@ -190,6 +193,8 @@ type Installment = {
 };
 type ProjectionSubscription = Omit<ProjectableSubscription, "cardArchived"> & {
   id: string; cardId: string; categoryId: string | null; amount: Decimal; currency: Currency;
+  /** Each charge is a purchase in this many installments (D35); 1 when missing. */
+  installmentsCount?: number;
 };
 export type ProjectionInput = {
   cards: ProjectionCard[]; statements: SavedStatement[]; movements: Movement[]; installments: Installment[];
@@ -293,6 +298,20 @@ export function projectStatements(input: ProjectionInput): { statements: Project
     return statement;
   }
 
+  const projectedInterestBasis = new Map<ProjectedStatement, BalanceInterestInstallment[]>();
+  /** Adds a projected subscription charge or installment; dollars stay in dollars and only lack their COP reference without TRM (D33). */
+  function addProjected(statement: ProjectedStatement, charge: { id: string; concept: StatementConcept; subscription: ProjectionSubscription; date: IsoDate; amount: Decimal; amountCop: Decimal | null }) {
+    const { subscription } = charge;
+    statement.charges.push({ id: charge.id, origin: "projected", concept: charge.concept, categoryId: subscription.categoryId, amountCop: charge.amountCop,
+      amount: charge.amount, currency: subscription.currency, fxRate: subscription.currency === "USD" ? input.fxRate : null, subscriptionId: subscription.id, date: charge.date });
+    if (subscription.currency === "COP") statement.projectedTotal = statement.projectedTotal.plus(charge.amount);
+    else {
+      statement.projectedUsd = statement.projectedUsd.plus(charge.amount);
+      if (charge.amountCop) statement.usdEquivalentCop = statement.usdEquivalentCop.plus(charge.amountCop);
+      else statement.unconvertedCharges.push({ subscriptionId: subscription.id, date: charge.date, amountUsd: charge.amount });
+    }
+  }
+
   for (const card of input.cards) {
     if (card.archived) continue;
     if (card.handlingFee.gt(0)) {
@@ -306,21 +325,48 @@ export function projectStatements(input: ProjectionInput): { statements: Project
       const dates = projectSubscriptionCharges({ ...subscription, cardArchived: card.archived }, input.today, endDate);
       for (const date of dates) {
         if (realChargeKeys.has(`${subscription.id}:${date}`)) continue;
-        const statement = getStatement(card, date);
-        if (!statement) continue;
-        const amountCop = subscription.currency === "USD"
-          ? input.fxRate === null ? null : toCop(subscription.amount, "USD", input.fxRate)
-          : toCop(subscription.amount, "COP");
-        statement.charges.push({ id: `subscription:${subscription.id}:${date}`, origin: "projected", concept: "subscriptions",
-          categoryId: subscription.categoryId, amountCop, amount: subscription.amount, currency: subscription.currency,
-          fxRate: subscription.currency === "USD" ? input.fxRate : null, subscriptionId: subscription.id, date });
-        // D33: dollar projections stay in dollars; without TRM only their COP reference is missing.
-        if (subscription.currency === "COP") statement.projectedTotal = statement.projectedTotal.plus(subscription.amount);
-        else {
-          statement.projectedUsd = statement.projectedUsd.plus(subscription.amount);
-          if (amountCop) statement.usdEquivalentCop = statement.usdEquivalentCop.plus(amountCop);
-          else statement.unconvertedCharges.push({ subscriptionId: subscription.id, date, amountUsd: subscription.amount });
+        const count = subscription.installmentsCount ?? 1;
+        if (count === 1) {
+          const statement = getStatement(card, date);
+          if (statement) addProjected(statement, { id: `subscription:${subscription.id}:${date}`, concept: "subscriptions", subscription, date, amount: subscription.amount,
+            amountCop: subscription.currency === "USD" ? input.fxRate === null ? null : toCop(subscription.amount, "USD", input.fxRate) : subscription.amount });
+          continue;
         }
+        // D35: a deferred charge adds one installment to each following statement within the horizon, never its full value.
+        const plan = buildInstallmentPlan({
+          principal: subscription.amount, count, annualRateEa: card.purchaseRateEa ?? new Decimal(0), method: card.amortizationMethod ?? "fixed_principal",
+          interestFree: false, currency: subscription.currency, fxRate: subscription.currency === "USD" ? input.fxRate ?? new Decimal(1) : undefined,
+          cutoffDay: card.cutoffDay, purchaseDate: date, interestMode: card.interestMode,
+        });
+        for (const row of plan.rows) {
+          const statement = getStatement(card, row.cutoffDate!);
+          if (!statement) continue;
+          addProjected(statement, { id: `subscription:${subscription.id}:${date}:${row.number}`, concept: "installments", subscription, date, amount: row.total,
+            amountCop: subscription.currency === "USD" && input.fxRate === null ? null : row.totalCop });
+          if (card.interestMode === "on_balance") {
+            const bases = projectedInterestBasis.get(statement) ?? [];
+            bases.push({ principal: row.principal, balanceAfter: row.balanceAfter, purchaseDate: date, rateEa: card.purchaseRateEa ?? null, interestFree: false,
+              currency: subscription.currency, fxRate: subscription.currency === "USD" ? input.fxRate ?? new Decimal(1) : null });
+            projectedInterestBasis.set(statement, bases);
+          }
+        }
+      }
+    }
+  }
+  // D32: projected installments of on-balance cards carry their interest as an estimate, unless the real interest is registered.
+  for (const [statement, bases] of projectedInterestBasis) {
+    if (statement.charges.some((charge) => charge.concept === "interest" && !charge.estimated)) continue;
+    const estimate = estimateBalanceInterest(bases, statement.periodStart!);
+    for (const currency of CURRENCIES) {
+      const amount = estimate.byCurrency[currency];
+      if (amount.isZero()) continue;
+      const amountCop = currency === "USD" && input.fxRate === null ? null : estimate.copByCurrency[currency];
+      statement.charges.push({ id: `interest:projected:${statement.cardId}:${statement.cutoffDate}:${currency}`, origin: "projected", concept: "interest",
+        categoryId: null, amount, currency, amountCop, estimated: true });
+      if (currency === "COP") statement.projectedTotal = statement.projectedTotal.plus(amount);
+      else {
+        statement.projectedUsd = statement.projectedUsd.plus(amount);
+        if (amountCop) statement.usdEquivalentCop = statement.usdEquivalentCop.plus(amountCop);
       }
     }
   }

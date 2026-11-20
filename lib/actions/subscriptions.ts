@@ -8,7 +8,7 @@ import { createClient } from "@/lib/supabase/server";
 import { subscriptionSchema, type ValidSubscription } from "@/lib/validation/subscription";
 
 function fields(value: ValidSubscription) {
-  return { name: value.name, card_id: value.cardId, category_id: value.categoryId, amount: value.amount, currency: value.currency, frequency: value.frequency, billing_day: value.billingDay, start_date: value.startDate, trial_ends_at: value.trialEndsAt };
+  return { name: value.name, card_id: value.cardId, category_id: value.categoryId, amount: value.amount, currency: value.currency, frequency: value.frequency, billing_day: value.billingDay, start_date: value.startDate, trial_ends_at: value.trialEndsAt, installments_count: value.installmentsCount };
 }
 
 export async function createSubscription(input: unknown) {

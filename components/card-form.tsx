@@ -27,6 +27,7 @@ const fields: Array<{ name: FieldPath<CardInput>; label: string; inputMode?: "de
   { name: "advanceRateEa", label: "Tasa de avances (% E.A.)", inputMode: "decimal" },
   { name: "advanceFee", label: "Comisión por avance", inputMode: "decimal" },
   { name: "handlingFee", label: "Cuota de manejo mensual", inputMode: "decimal" },
+  { name: "usdDefaultInstallments", label: "Cuotas por defecto en USD", inputMode: "numeric" },
 ];
 const inputValue = (value: string) => value.replace(".", ",");
 
@@ -42,7 +43,7 @@ export function CardForm({ card, usedColors }: { card?: CardRecord; usedColors: 
     cutoffDay: card?.cutoffDay ?? "", paymentDay: card?.paymentDay ?? "",
     purchaseRateEa: card ? inputValue(new Decimal(card.purchaseRateEa).times(100).toFixed()) : "0",
     advanceRateEa: card ? inputValue(new Decimal(card.advanceRateEa).times(100).toFixed()) : "0",
-    amortizationMethod: card?.amortizationMethod ?? "fixed_principal", interestMode: card?.interestMode ?? "per_installment", color: card?.color ?? preferredColor,
+    amortizationMethod: card?.amortizationMethod ?? "fixed_principal", interestMode: card?.interestMode ?? "per_installment", usdDefaultInstallments: card?.usdDefaultInstallments ?? 1, color: card?.color ?? preferredColor,
   };
   const form = useForm<CardInput>({
     resolver: zodResolver(cardSchema, undefined, { raw: true }),
