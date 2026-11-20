@@ -23,7 +23,7 @@ export type MonthReadSource = {
   loadStatements(): Promise<Statement[]>;
   loadSubscriptions(): Promise<Subscription[]>;
   loadFxRate(): Promise<ProjectionInput["fxRate"]>;
-  loadCharges(statementIds: string[]): Promise<{ movements: Movement[]; installments: Installment[] }>;
+  loadCharges(statementIds: string[]): Promise<{ movements: Movement[]; installments: Installment[]; prepaymentBases?: ProjectionInput["prepaymentBases"] }>;
   loadSubscriptionMovements(today: IsoDate): Promise<Movement[]>;
 };
 
@@ -42,7 +42,7 @@ export async function loadMonthDetail(source: MonthReadSource, today: IsoDate, r
   }).map((statement) => statement.id);
   const charges = await source.loadCharges(chargeIds);
   const movements = [...new Map([...charges.movements, ...subscriptionMovements].map((movement) => [movement.id, movement])).values()];
-  const projected = projectStatements({ cards, statements, movements, installments: charges.installments, subscriptions, fxRate, today });
+  const projected = projectStatements({ cards, statements, movements, installments: charges.installments, prepaymentBases: charges.prepaymentBases, subscriptions, fxRate, today });
   const summaries = buildMonths(projected.statements, today);
   const available = availablePaymentMonths(today, statements.map((statement) => statement.dueDate), summaries.filter((month) => month.kind === "future").map((month) => month.month));
   const index = available.indexOf(target);
@@ -72,7 +72,7 @@ export async function loadMonthOverview(
     .map((statement) => statement.id);
   const charges = await source.loadCharges(chargeIds);
   const movements = [...new Map([...charges.movements, ...subscriptionMovements].map((movement) => [movement.id, movement])).values()];
-  const projected = projectStatements({ cards, statements: scope.statements, movements, installments: charges.installments, subscriptions, fxRate, today });
+  const projected = projectStatements({ cards, statements: scope.statements, movements, installments: charges.installments, prepaymentBases: charges.prepaymentBases, subscriptions, fxRate, today });
   const months = buildMonths(projected.statements, today);
   const current = months.find((month) => month.kind === "current");
   if (!current) throw new Error("No pudimos calcular el mes actual.");

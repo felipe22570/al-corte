@@ -11,6 +11,8 @@ export type TransactionPlanInput = {
   cardId: string; type: "purchase" | "cash_advance" | "payment" | "handling_fee" | "interest" | "insurance" | "refund" | "adjustment";
   date: IsoDate; amount: string; currency: Currency; fxRate?: string | null; installmentsCount: number;
   interestFree: boolean; categoryId: string | null; merchant: string; note: string;
+  /** R9: international purchase or advance; true by default in USD. */
+  isInternational?: boolean;
   inProgress?: TransactionInProgress | null;
 };
 export type TransactionCard = { id: string; cutoffDay: number; paymentDay: number; purchaseRateEa: string; advanceRateEa: string; advanceFee: string; amortizationMethod: AmortizationMethod; interestMode?: InterestMode };
@@ -48,6 +50,7 @@ export function buildTransactionPlan(input: TransactionPlanInput, card: Transact
       rate_ea_applied: isPurchase || isAdvance ? rate : null, installments,
       prior_installments: plan.priorInstallments, prior_principal_paid: plan.priorPrincipalPaid.toFixed(),
       original_installments_count: plan.originalCount, tracked_from_cutoff: inProgress?.trackedFromCutoff ?? null,
+      is_international: (isPurchase || isAdvance) && (input.isInternational ?? input.currency === "USD"),
     },
   };
 }

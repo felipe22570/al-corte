@@ -112,6 +112,11 @@ export function addDays(date: IsoDate, days: number): IsoDate {
   return formatIsoDate(target.year, target.month, target.day);
 }
 
+/** Calendar days from `first` to `second`; negative when `second` is earlier. */
+export function daysBetween(first: IsoDate, second: IsoDate): number {
+  return daysFromCivil(parseIsoDate(second)) - daysFromCivil(parseIsoDate(first));
+}
+
 export function compareIsoDates(first: IsoDate, second: IsoDate): -1 | 0 | 1 {
   const firstDays = daysFromCivil(parseIsoDate(first));
   const secondDays = daysFromCivil(parseIsoDate(second));

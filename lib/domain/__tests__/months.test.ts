@@ -500,6 +500,24 @@ describe("projectStatements", () => {
       expect(monthBreakdown(result.statements).estimatedInterest).toBe(false);
     });
 
+    it("prorratea por días un abono hecho dentro del periodo (R9)", () => {
+      const cards = [{ ...card, handlingFee: new Decimal(0), interestMode: "on_balance" as const }];
+      // Abono de $225.930 el 10 de noviembre: la cuota se rehízo sobre el saldo reducido y el abono pesa 15 de 31 días.
+      const reduced = { ...input, installments: [{ ...input.installments[0]!, interestBasis: { ...basis, balanceAfter: new Decimal(0) } }] };
+      const prepaymentBases = [
+        { statementId: "s", date: "2026-11-10", basis: { ...basis, principal: new Decimal("225930"), balanceAfter: new Decimal(0) } },
+        { statementId: "otro", date: "2026-11-10", basis },
+      ];
+      const full = projectStatements({ ...input, cards }).statements[0]!.charges.find((charge) => charge.estimated)!.amount!;
+      const withoutPrepayment = projectStatements({ ...reduced, cards }).statements[0]!.charges.find((charge) => charge.estimated)!.amount!;
+      const prorated = projectStatements({ ...reduced, cards, prepaymentBases }).statements[0]!.charges.find((charge) => charge.estimated)!.amount!;
+      expect(prorated.gt(withoutPrepayment) && prorated.lt(full)).toBe(true);
+      expect(prorated.minus(withoutPrepayment).toNumber()).toBeCloseTo(full.minus(withoutPrepayment).times(15).div(31).toNumber(), 1);
+      // Liquidated purchase: no installment left in the statement, only the days before the payment accrue interest.
+      const settled = projectStatements({ ...input, installments: [], cards, prepaymentBases }).statements[0]!.charges.find((charge) => charge.estimated)!.amount!;
+      expect(settled.gt(0) && settled.lt(full)).toBe(true);
+    });
+
     it("no estima en tarjetas por cuota ni sin capital con interés", () => {
       const perInstallment = projectStatements({ ...input, cards: [{ ...card, handlingFee: new Decimal(0), interestMode: "per_installment" }] });
       expect(perInstallment.statements[0]?.recordedTotal.toString()).toBe("112965");

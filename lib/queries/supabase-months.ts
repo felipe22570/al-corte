@@ -8,6 +8,7 @@ import type { Currency } from "@/lib/domain/money";
 import { fetchAllPages } from "@/lib/paginate";
 import type { createClient } from "@/lib/supabase/server";
 import type { MonthReadSource } from "./months";
+import { loadPrepaidAmounts, loadPrepaymentBases, netOfPrepayments } from "./prepayments";
 
 type Client = Awaited<ReturnType<typeof createClient>>;
 type RawCard = { id: string; name: string; bank: string; last4: string; color: CardColor; archived_at: string | null; cutoff_day: number; payment_day: number; handling_fee: string; interest_mode: InterestMode; purchase_rate_ea: string; amortization_method: AmortizationMethod };
@@ -126,20 +127,27 @@ export function createSupabaseMonthSource(client: Client, userId: string): Month
     },
     async loadSubscriptionMovements(today) {
       const rows = await fetchAllPages((from, to) => client.from("transactions").select(movementFields).eq("user_id", userId).not("subscription_id", "is", null).gte("date", today).order("id").range(from, to));
-      return (rows as unknown as RawMovement[]).map(mapMovement);
+      const movements = (rows as unknown as RawMovement[]).map(mapMovement);
+      return movements.length ? netOfPrepayments(movements, await loadPrepaidAmounts(client, userId, movements.map((movement) => movement.id))) : movements;
     },
     async loadCharges(statementIds) {
+      if (!statementIds.length) return { movements: [], installments: [] };
       const groups = batches(statementIds);
-      const [movements, installments] = await Promise.all([
+      const [movements, installments, prepaymentBases] = await Promise.all([
         Promise.all(groups.map((ids) => fetchAllPages((from, to) => client.from("transactions").select(movementFields).eq("user_id", userId).in("statement_id", ids).order("id").range(from, to)))),
         Promise.all(groups.map((ids) => fetchAllPages((from, to) => client.from("installments").select("id,statement_id,transaction_id,total_cop::text,total::text,principal::text,balance_after::text").eq("user_id", userId).in("statement_id", ids).order("id").range(from, to)))),
+        loadPrepaymentBases(client, userId, statementIds),
       ]);
       const rows = installments.flat() as unknown as RawInstallment[];
+      const loaded = (movements.flat() as unknown as RawMovement[]).map(mapMovement);
+      // R9: a single-installment charge counts what is left after its prepayments.
+      const singleIds = loaded.filter((movement) => movement.installmentsCount === 1 && movement.type !== "payment" && movement.type !== "refund").map((movement) => movement.id);
       const transactionIds = [...new Set(rows.map((item) => item.transaction_id))];
-      const parents = await Promise.all(batches(transactionIds).map((ids) => fetchAllPages((from, to) => client.from("transactions").select("id,category_id,date,rate_ea_applied::text,interest_free,currency,fx_rate::text").eq("user_id", userId).in("id", ids).order("id").range(from, to))));
+      const [parents, prepaid] = await Promise.all([Promise.all(batches(transactionIds).map((ids) => fetchAllPages((from, to) => client.from("transactions").select("id,category_id,date,rate_ea_applied::text,interest_free,currency,fx_rate::text").eq("user_id", userId).in("id", ids).order("id").range(from, to)))), singleIds.length ? loadPrepaidAmounts(client, userId, singleIds) : Promise.resolve(new Map())]);
       const purchases = new Map((parents.flat() as unknown as RawParent[]).map((parent) => [parent.id, parent]));
       return {
-        movements: (movements.flat() as unknown as RawMovement[]).map(mapMovement),
+        movements: netOfPrepayments(loaded, prepaid),
+        prepaymentBases,
         installments: rows.map((item) => {
           const purchase = purchases.get(item.transaction_id);
           if (!purchase) throw new Error("No pudimos consultar la categoría de una cuota.");

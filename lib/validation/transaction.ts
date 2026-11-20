@@ -47,6 +47,8 @@ export const transactionSchema = z.object({
   fxRate,
   installmentsCount: z.coerce.number().int("Ingresa un número entero.").min(1, "Elige entre 1 y 36 cuotas.").max(36, "Elige entre 1 y 36 cuotas."),
   interestFree: z.boolean().default(false),
+  // R9: classifies purchases and advances in Bancolombia's prepayment order; true by default in USD.
+  isInternational: z.boolean().optional(),
   categoryId: z.union([z.uuid("Elige una categoría válida."), z.literal("")]).default("").transform((value) => value || null),
   merchant: z.string().trim().max(200, "Usa máximo 200 caracteres.").default(""),
   note: z.string().trim().max(1000, "Usa máximo 1.000 caracteres.").default(""),
@@ -59,6 +61,7 @@ export const transactionSchema = z.object({
   if (value.currency === "USD" && !value.fxRate) ctx.addIssue({ code: "custom", path: ["fxRate"], message: "Ingresa la TRM para movimientos en dólares." });
   if (value.currency === "COP" && value.fxRate) ctx.addIssue({ code: "custom", path: ["fxRate"], message: "La TRM solo aplica a movimientos en dólares." });
   if (value.type !== "purchase" && value.type !== "cash_advance" && value.installmentsCount !== 1) ctx.addIssue({ code: "custom", path: ["installmentsCount"], message: "Solo las compras y los avances pueden tener cuotas." });
+  if (value.type !== "purchase" && value.type !== "cash_advance" && value.isInternational) ctx.addIssue({ code: "custom", path: ["isInternational"], message: "Solo las compras y los avances pueden ser internacionales." });
   if (value.type !== "purchase" && value.interestFree) ctx.addIssue({ code: "custom", path: ["interestFree"], message: "La opción sin intereses solo aplica a compras." });
   if (!value.inProgress) return;
   if ((value.type !== "purchase" && value.type !== "cash_advance") || value.installmentsCount < 2) {
@@ -82,3 +85,10 @@ export const transactionSchema = z.object({
 
 export type TransactionInput = z.input<typeof transactionSchema>;
 export type ValidTransaction = z.output<typeof transactionSchema>;
+
+/** Fields that can change in a movement with prepayments or a typed payment (R9): its plan or allocation stays. */
+export const transactionDetailsSchema = z.object({
+  categoryId: z.union([z.uuid("Elige una categoría válida."), z.literal("")]).default("").transform((value) => value || null),
+  merchant: z.string().trim().max(200, "Usa máximo 200 caracteres.").default(""),
+  note: z.string().trim().max(1000, "Usa máximo 1.000 caracteres.").default(""),
+});

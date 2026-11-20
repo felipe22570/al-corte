@@ -25,14 +25,14 @@ export type Database = {
           Tables: {
             "cards": {
                   Row: {
-                    "advance_fee": number,"advance_rate_ea": number,"amortization_method": Database["public"]['Enums']["amortization_method"],"archived_at": string | null,"bank": string,"color": string,"created_at": string,"credit_limit": number,"cutoff_day": number,"handling_fee": number,"id": string,"interest_mode": Database["public"]['Enums']["interest_mode"],"last4": string,"name": string,"network": string,"payment_day": number,"purchase_rate_ea": number,"updated_at": string,"usd_default_installments": number,"user_id": string
+                    "advance_fee": number,"advance_rate_ea": number,"amortization_method": Database["public"]['Enums']["amortization_method"],"archived_at": string | null,"bank": string,"color": string,"created_at": string,"credit_limit": number,"cutoff_day": number,"handling_fee": number,"id": string,"interest_mode": Database["public"]['Enums']["interest_mode"],"last4": string,"name": string,"network": string,"payment_allocation_rule": Database["public"]['Enums']["payment_allocation_rule"],"payment_day": number,"purchase_rate_ea": number,"updated_at": string,"usd_default_installments": number,"user_id": string
                   }
                   ComputedFields: never
                   Insert: {
-                    "advance_fee"?: number,"advance_rate_ea"?: number,"amortization_method"?: Database["public"]['Enums']["amortization_method"],"archived_at"?: string | null,"bank": string,"color"?: string,"created_at"?: string,"credit_limit": number,"cutoff_day": number,"handling_fee"?: number,"id"?: string,"interest_mode"?: Database["public"]['Enums']["interest_mode"],"last4": string,"name": string,"network": string,"payment_day": number,"purchase_rate_ea"?: number,"updated_at"?: string,"usd_default_installments"?: number,"user_id"?: string
+                    "advance_fee"?: number,"advance_rate_ea"?: number,"amortization_method"?: Database["public"]['Enums']["amortization_method"],"archived_at"?: string | null,"bank": string,"color"?: string,"created_at"?: string,"credit_limit": number,"cutoff_day": number,"handling_fee"?: number,"id"?: string,"interest_mode"?: Database["public"]['Enums']["interest_mode"],"last4": string,"name": string,"network": string,"payment_allocation_rule"?: Database["public"]['Enums']["payment_allocation_rule"],"payment_day": number,"purchase_rate_ea"?: number,"updated_at"?: string,"usd_default_installments"?: number,"user_id"?: string
                   }
                   Update: {
-                    "advance_fee"?: number,"advance_rate_ea"?: number,"amortization_method"?: Database["public"]['Enums']["amortization_method"],"archived_at"?: string | null,"bank"?: string,"color"?: string,"created_at"?: string,"credit_limit"?: number,"cutoff_day"?: number,"handling_fee"?: number,"id"?: string,"interest_mode"?: Database["public"]['Enums']["interest_mode"],"last4"?: string,"name"?: string,"network"?: string,"payment_day"?: number,"purchase_rate_ea"?: number,"updated_at"?: string,"usd_default_installments"?: number,"user_id"?: string
+                    "advance_fee"?: number,"advance_rate_ea"?: number,"amortization_method"?: Database["public"]['Enums']["amortization_method"],"archived_at"?: string | null,"bank"?: string,"color"?: string,"created_at"?: string,"credit_limit"?: number,"cutoff_day"?: number,"handling_fee"?: number,"id"?: string,"interest_mode"?: Database["public"]['Enums']["interest_mode"],"last4"?: string,"name"?: string,"network"?: string,"payment_allocation_rule"?: Database["public"]['Enums']["payment_allocation_rule"],"payment_day"?: number,"purchase_rate_ea"?: number,"updated_at"?: string,"usd_default_installments"?: number,"user_id"?: string
                   }
                   Relationships: [
                     
@@ -128,6 +128,32 @@ isOneToOne: false
                   }
                   Relationships: [
                     
+                  ]
+                },"principal_prepayments": {
+                  Row: {
+                    "amount": number,"amount_cop": number,"assumed": boolean,"created_at": string,"effect": Database["public"]['Enums']["prepayment_effect"],"id": string,"payment_id": string,"replaced_from_number": number | null,"replaced_installments": Json | null,"transaction_id": string,"user_id": string
+                  }
+                  ComputedFields: never
+                  Insert: {
+                    "amount": number,"amount_cop": number,"assumed"?: boolean,"created_at"?: string,"effect"?: Database["public"]['Enums']["prepayment_effect"],"id"?: string,"payment_id": string,"replaced_from_number"?: number | null,"replaced_installments"?: Json | null,"transaction_id": string,"user_id"?: string
+                  }
+                  Update: {
+                    "amount"?: number,"amount_cop"?: number,"assumed"?: boolean,"created_at"?: string,"effect"?: Database["public"]['Enums']["prepayment_effect"],"id"?: string,"payment_id"?: string,"replaced_from_number"?: number | null,"replaced_installments"?: Json | null,"transaction_id"?: string,"user_id"?: string
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "principal_prepayments_owner_payment_fk"
+      columns: ["user_id","payment_id"]
+isOneToOne: false
+      referencedRelation: "transactions"
+      referencedColumns: ["user_id","id"]
+    },{
+      foreignKeyName: "principal_prepayments_owner_transaction_fk"
+      columns: ["user_id","transaction_id"]
+isOneToOne: false
+      referencedRelation: "transactions"
+      referencedColumns: ["user_id","id"]
+    }
                   ]
                 },"statement_balances": {
                   Row: {
@@ -257,14 +283,14 @@ isOneToOne: false
                   ]
                 },"transactions": {
                   Row: {
-                    "amount": number,"amount_cop": number,"card_id": string,"category_id": string | null,"created_at": string,"currency": Database["public"]['Enums']["currency_code"],"date": string,"fx_rate": number | null,"id": string,"installments_count": number,"interest_free": boolean,"merchant": string | null,"note": string | null,"original_installments_count": number | null,"parent_id": string | null,"prior_installments": number,"prior_principal_paid": number,"rate_ea_applied": number | null,"source": Database["public"]['Enums']["transaction_source"],"statement_id": string,"subscription_id": string | null,"type": Database["public"]['Enums']["transaction_type"],"updated_at": string,"user_id": string,"verified": boolean
+                    "amount": number,"amount_cop": number,"card_id": string,"category_id": string | null,"created_at": string,"currency": Database["public"]['Enums']["currency_code"],"date": string,"fx_rate": number | null,"id": string,"installments_count": number,"interest_free": boolean,"is_international": boolean,"merchant": string | null,"note": string | null,"original_installments_count": number | null,"paid_statement_id": string | null,"parent_id": string | null,"payment_kind": Database["public"]['Enums']["payment_kind"] | null,"prior_installments": number,"prior_principal_paid": number,"rate_ea_applied": number | null,"source": Database["public"]['Enums']["transaction_source"],"statement_id": string,"subscription_id": string | null,"type": Database["public"]['Enums']["transaction_type"],"updated_at": string,"user_id": string,"verified": boolean
                   }
                   ComputedFields: never
                   Insert: {
-                    "amount": number,"amount_cop": number,"card_id": string,"category_id"?: string | null,"created_at"?: string,"currency"?: Database["public"]['Enums']["currency_code"],"date": string,"fx_rate"?: number | null,"id"?: string,"installments_count"?: number,"interest_free"?: boolean,"merchant"?: string | null,"note"?: string | null,"original_installments_count"?: number | null,"parent_id"?: string | null,"prior_installments"?: number,"prior_principal_paid"?: number,"rate_ea_applied"?: number | null,"source"?: Database["public"]['Enums']["transaction_source"],"statement_id": string,"subscription_id"?: string | null,"type": Database["public"]['Enums']["transaction_type"],"updated_at"?: string,"user_id"?: string,"verified"?: boolean
+                    "amount": number,"amount_cop": number,"card_id": string,"category_id"?: string | null,"created_at"?: string,"currency"?: Database["public"]['Enums']["currency_code"],"date": string,"fx_rate"?: number | null,"id"?: string,"installments_count"?: number,"interest_free"?: boolean,"is_international": boolean,"merchant"?: string | null,"note"?: string | null,"original_installments_count"?: number | null,"paid_statement_id"?: string | null,"parent_id"?: string | null,"payment_kind"?: Database["public"]['Enums']["payment_kind"] | null,"prior_installments"?: number,"prior_principal_paid"?: number,"rate_ea_applied"?: number | null,"source"?: Database["public"]['Enums']["transaction_source"],"statement_id": string,"subscription_id"?: string | null,"type": Database["public"]['Enums']["transaction_type"],"updated_at"?: string,"user_id"?: string,"verified"?: boolean
                   }
                   Update: {
-                    "amount"?: number,"amount_cop"?: number,"card_id"?: string,"category_id"?: string | null,"created_at"?: string,"currency"?: Database["public"]['Enums']["currency_code"],"date"?: string,"fx_rate"?: number | null,"id"?: string,"installments_count"?: number,"interest_free"?: boolean,"merchant"?: string | null,"note"?: string | null,"original_installments_count"?: number | null,"parent_id"?: string | null,"prior_installments"?: number,"prior_principal_paid"?: number,"rate_ea_applied"?: number | null,"source"?: Database["public"]['Enums']["transaction_source"],"statement_id"?: string,"subscription_id"?: string | null,"type"?: Database["public"]['Enums']["transaction_type"],"updated_at"?: string,"user_id"?: string,"verified"?: boolean
+                    "amount"?: number,"amount_cop"?: number,"card_id"?: string,"category_id"?: string | null,"created_at"?: string,"currency"?: Database["public"]['Enums']["currency_code"],"date"?: string,"fx_rate"?: number | null,"id"?: string,"installments_count"?: number,"interest_free"?: boolean,"is_international"?: boolean,"merchant"?: string | null,"note"?: string | null,"original_installments_count"?: number | null,"paid_statement_id"?: string | null,"parent_id"?: string | null,"payment_kind"?: Database["public"]['Enums']["payment_kind"] | null,"prior_installments"?: number,"prior_principal_paid"?: number,"rate_ea_applied"?: number | null,"source"?: Database["public"]['Enums']["transaction_source"],"statement_id"?: string,"subscription_id"?: string | null,"type"?: Database["public"]['Enums']["transaction_type"],"updated_at"?: string,"user_id"?: string,"verified"?: boolean
                   }
                   Relationships: [
                     {
@@ -303,6 +329,18 @@ isOneToOne: false
 isOneToOne: false
       referencedRelation: "categories"
       referencedColumns: ["user_id","id"]
+    },{
+      foreignKeyName: "transactions_owner_paid_statement_fk"
+      columns: ["user_id","card_id","paid_statement_id"]
+isOneToOne: false
+      referencedRelation: "statement_currency_totals"
+      referencedColumns: ["user_id","card_id","statement_id"]
+    },{
+      foreignKeyName: "transactions_owner_paid_statement_fk"
+      columns: ["user_id","card_id","paid_statement_id"]
+isOneToOne: false
+      referencedRelation: "statements"
+      referencedColumns: ["user_id","card_id","id"]
     },{
       foreignKeyName: "transactions_owner_parent_fk"
       columns: ["user_id","parent_id"]
@@ -420,6 +458,9 @@ isOneToOne: false
 "generate_subscription_charges":
 { Args: { "p_today"?: string }; Returns: number
                            },
+"register_payment":
+{ Args: { "p_payload": Json }; Returns: string
+                           },
 "statement_cutoff_for":
 { Args: { "cutoff_day": number,"d": string }; Returns: string
                            },
@@ -429,12 +470,15 @@ isOneToOne: false
 "statement_period_start":
 { Args: { "cutoff_date": string,"cutoff_day": number }; Returns: string
                            },
+"update_transaction_details":
+{ Args: { "p_id": string,"p_payload": Json }; Returns: string
+                           },
 "update_transaction_with_installments":
 { Args: { "p_id": string,"p_payload": Json }; Returns: string
                            }
           }
           Enums: {
-            "amortization_method": "fixed_principal"|"french","currency_code": "COP"|"USD","interest_mode": "per_installment"|"on_balance","subscription_frequency": "monthly"|"yearly","subscription_status": "active"|"paused"|"cancelled","transaction_source": "manual"|"subscription"|"import"|"email"|"system","transaction_type": "purchase"|"cash_advance"|"advance_fee"|"payment"|"handling_fee"|"interest"|"insurance"|"refund"|"adjustment"
+            "amortization_method": "fixed_principal"|"french","currency_code": "COP"|"USD","interest_mode": "per_installment"|"on_balance","payment_allocation_rule": "bancolombia_priority"|"oldest_first"|"directed","payment_kind": "minimum"|"total"|"other","prepayment_effect": "reduce_term"|"reduce_installment","subscription_frequency": "monthly"|"yearly","subscription_status": "active"|"paused"|"cancelled","transaction_source": "manual"|"subscription"|"import"|"email"|"system","transaction_type": "purchase"|"cash_advance"|"advance_fee"|"payment"|"handling_fee"|"interest"|"insurance"|"refund"|"adjustment"
           }
           CompositeTypes: {
             [_ in never]: never
@@ -554,7 +598,7 @@ export const Constants = {
           }
         },"public": {
           Enums: {
-            "amortization_method": ["fixed_principal", "french"],"currency_code": ["COP", "USD"],"interest_mode": ["per_installment", "on_balance"],"subscription_frequency": ["monthly", "yearly"],"subscription_status": ["active", "paused", "cancelled"],"transaction_source": ["manual", "subscription", "import", "email", "system"],"transaction_type": ["purchase", "cash_advance", "advance_fee", "payment", "handling_fee", "interest", "insurance", "refund", "adjustment"]
+            "amortization_method": ["fixed_principal", "french"],"currency_code": ["COP", "USD"],"interest_mode": ["per_installment", "on_balance"],"payment_allocation_rule": ["bancolombia_priority", "oldest_first", "directed"],"payment_kind": ["minimum", "total", "other"],"prepayment_effect": ["reduce_term", "reduce_installment"],"subscription_frequency": ["monthly", "yearly"],"subscription_status": ["active", "paused", "cancelled"],"transaction_source": ["manual", "subscription", "import", "email", "system"],"transaction_type": ["purchase", "cash_advance", "advance_fee", "payment", "handling_fee", "interest", "insurance", "refund", "adjustment"]
           }
         }
 } as const

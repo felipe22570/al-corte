@@ -3,6 +3,7 @@ import { describe, expect, it, vi } from "vitest";
 import {
   TIME_ZONE,
   addDays,
+  daysBetween,
   addMonths,
   clampDay,
   compareIsoDates,
@@ -62,6 +63,8 @@ describe("dates", () => {
     expect(addDays("2027-01-01", -1)).toBe("2026-12-31");
     expect(addDays("2028-02-28", 1)).toBe("2028-02-29");
     expect(() => addDays("2026-03-16", 0.5)).toThrow("Número de días inválido");
+    expect(daysBetween("2026-10-16", "2026-11-15")).toBe(30);
+    expect(daysBetween("2028-03-01", "2028-02-28")).toBe(-2);
   });
 
   it("compares ISO dates chronologically", () => {

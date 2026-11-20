@@ -24,6 +24,13 @@ describe("transaction plan", () => {
     expect(result.payload.rate_ea_applied).toBe("0.18");
     expect(result.totalInterest).not.toBe(buildTransactionPlan({ ...base, installmentsCount: 6 }, card).totalInterest);
   });
+  it("clasifica compras y avances internacionales para la prioridad de abonos (R9)", () => {
+    expect(buildTransactionPlan(base, card).payload.is_international).toBe(false);
+    expect(buildTransactionPlan({ ...base, currency: "USD", fxRate: "4000", amount: "10" }, card).payload.is_international).toBe(true);
+    expect(buildTransactionPlan({ ...base, isInternational: true }, card).payload.is_international).toBe(true);
+    expect(buildTransactionPlan({ ...base, type: "cash_advance", currency: "USD", fxRate: "4000", amount: "10", isInternational: false }, card).payload.is_international).toBe(false);
+    expect(buildTransactionPlan({ ...base, type: "payment", currency: "USD", fxRate: "4000", amount: "10" }, card).payload.is_international).toBe(false);
+  });
   it("usa la tasa vigente al cambiar tarjeta o tipo", () => {
     expect(buildTransactionPlan(base, card, { cardId: "other", type: "purchase", rateEaApplied: "0.18" }).payload.rate_ea_applied).toBe("0.28");
     expect(buildTransactionPlan({ ...base, type: "cash_advance" }, card, { cardId: "card-a", type: "purchase", rateEaApplied: "0.18" }).payload.rate_ea_applied).toBe("0.36");

@@ -10,6 +10,11 @@ export type InterestMode = "per_installment" | "on_balance";
 export type BalanceInterestInstallment = {
   principal: Decimal; balanceAfter: Decimal; purchaseDate: IsoDate; rateEa: Decimal | null; interestFree: boolean;
   currency: Currency; fxRate: Decimal | null;
+  /**
+   * Share of the period the principal was pending, 1 when missing. A prepayment made during the period (R9) enters as
+   * its own basis, with its amount as principal and the share of days before its date: the estimate prorates by days.
+   */
+  weight?: Decimal;
 };
 
 /**
@@ -24,7 +29,7 @@ export function estimateBalanceInterest(installments: BalanceInterestInstallment
   let amountCop = new Decimal(0);
   for (const installment of installments) {
     if (installment.interestFree || !installment.rateEa?.gt(0) || compareIsoDates(installment.purchaseDate, periodStart) >= 0) continue;
-    const pending = installment.principal.plus(installment.balanceAfter);
+    const pending = installment.principal.plus(installment.balanceAfter).times(installment.weight ?? 1);
     const interest = roundMoney(pending.times(monthlyRateFromEA(installment.rateEa)), installment.currency);
     byCurrency[installment.currency] = byCurrency[installment.currency].plus(interest);
     const cop = toCop(interest, installment.currency, installment.fxRate ?? undefined);

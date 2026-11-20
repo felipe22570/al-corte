@@ -11,7 +11,7 @@ export type InstallmentRow = { number: number; principal: Decimal; interest: Dec
 /** Copied from the last bank statement (D49): installment k already billed there and, optionally, the balance left after it. */
 export type InProgressInput = { currentInstallment: number; balanceAfter?: Decimal | null; trackedFromCutoff: IsoDate };
 type Input = { principal: Decimal; count: number; annualRateEa: Decimal; method: AmortizationMethod; interestFree: boolean; currency: Currency; fxRate?: Decimal; cutoffDay: number; purchaseDate: IsoDate; inProgress?: InProgressInput | null; interestMode?: InterestMode };
-type ScheduleItem = { principal: Decimal; interest: Decimal; beforeTracking: boolean };
+export type ScheduleItem = { principal: Decimal; interest: Decimal; beforeTracking: boolean };
 
 /** New purchases are limited to 36 installments (D15); effective plans of in-progress purchases, to 72 (D50). */
 export const MAX_NEW_INSTALLMENTS = 36;
@@ -19,23 +19,28 @@ export const MAX_PLAN_INSTALLMENTS = 72;
 const ZERO = new Decimal(0);
 const sum = (values: Decimal[]) => values.reduce((total, value) => total.plus(value), ZERO);
 
-function standardSchedule(input: Input, rate: Decimal): ScheduleItem[] {
-  const payment = input.method === "french" && !rate.isZero() ? roundMoney(input.principal.times(rate).div(new Decimal(1).minus(new Decimal(1).plus(rate).pow(-input.count))), input.currency) : null;
-  const regularPrincipal = roundMoney(input.principal.div(input.count), input.currency);
-  let balance = new Decimal(input.principal);
+/** Regular plan of `count` installments over `principal` (R2): fixed principal or French, the last one absorbing the rounding. */
+export function amortize(principal: Decimal, count: number, rate: Decimal, method: AmortizationMethod, currency: Currency): ScheduleItem[] {
+  const payment = method === "french" && !rate.isZero() ? roundMoney(principal.times(rate).div(new Decimal(1).minus(new Decimal(1).plus(rate).pow(-count))), currency) : null;
+  const regularPrincipal = roundMoney(principal.div(count), currency);
+  let balance = new Decimal(principal);
   const items: ScheduleItem[] = [];
-  for (let index = 1; index <= input.count; index += 1) {
-    const interest = roundMoney(balance.times(rate), input.currency);
-    const principal = index === input.count ? balance : payment ? payment.minus(interest) : regularPrincipal;
-    balance = balance.minus(principal);
-    if (principal.isNegative() || balance.isNegative()) throw new Error("El valor es muy pequeño para esa cantidad de cuotas.");
-    items.push({ principal, interest, beforeTracking: false });
+  for (let index = 1; index <= count; index += 1) {
+    const interest = roundMoney(balance.times(rate), currency);
+    const itemPrincipal = index === count ? balance : payment ? payment.minus(interest) : regularPrincipal;
+    balance = balance.minus(itemPrincipal);
+    if (itemPrincipal.isNegative() || balance.isNegative()) throw new Error("El valor es muy pequeño para esa cantidad de cuotas.");
+    items.push({ principal: itemPrincipal, interest, beforeTracking: false });
   }
   return items;
 }
 
-/** Fixed-principal remainder after a prepayment: same installment, fewer installments, last one for the rest (D31). */
-function shortenedSchedule(balance: Decimal, installment: Decimal, rate: Decimal, currency: Currency): ScheduleItem[] {
+function standardSchedule(input: Input, rate: Decimal): ScheduleItem[] {
+  return amortize(input.principal, input.count, rate, input.method, input.currency);
+}
+
+/** Fixed-principal remainder after a prepayment: same installment, fewer installments, last one for the rest (D31, R9). */
+export function shortenedSchedule(balance: Decimal, installment: Decimal, rate: Decimal, currency: Currency): ScheduleItem[] {
   const items: ScheduleItem[] = [];
   let remaining = balance;
   while (remaining.gt(0)) {

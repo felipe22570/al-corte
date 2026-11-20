@@ -4,7 +4,7 @@ import { z } from "zod";
 import { revalidateFinancialViews } from "@/lib/revalidate-views";
 import { buildTransactionPlan, type TransactionCard } from "@/lib/domain/transaction-plan";
 import { createClient } from "@/lib/supabase/server";
-import { transactionSchema, transactionTypeSchema } from "@/lib/validation/transaction";
+import { transactionDetailsSchema, transactionSchema, transactionTypeSchema } from "@/lib/validation/transaction";
 
 type RawCard = { id: string; cutoff_day: number; payment_day: number; purchase_rate_ea: string; advance_rate_ea: string; advance_fee: string; amortization_method: "fixed_principal" | "french"; interest_mode: "per_installment" | "on_balance" };
 
@@ -39,6 +39,8 @@ export async function deleteTransaction(id: unknown) {
   if (readError || !data) return { ok: false as const, error: "El movimiento ya no está disponible." };
   if (data.type === "advance_fee" && data.parent_id) return { ok: false as const, error: "Borra la comisión desde su avance." };
   const { data: deleted, error } = await supabase.from("transactions").delete().eq("id", id).eq("user_id", user.id).select("id").maybeSingle();
+  // R9: prepayments are undone last in, first out; the database restores the installments they replaced.
+  if (error?.message.includes("pago más reciente")) return { ok: false as const, error: "Este pago abonó a compras que recibieron otro abono después. Borra primero el pago más reciente." };
   if (error || !deleted) return { ok: false as const, error: "No pudimos borrar el movimiento. Intenta de nuevo." };
   revalidateFinancialViews();
   return { ok: true as const };
@@ -66,6 +68,21 @@ export async function updateTransaction(id: unknown, input: unknown) {
     payload = buildTransactionPlan(parsed.data, card, originalType.success ? { cardId: original.card_id, type: originalType.data, rateEaApplied: original.rate_ea_applied } : undefined).payload;
   } catch { return { ok: false as const, error: "No pudimos calcular las cuotas. Revisa el valor y la cantidad." }; }
   const { error } = await supabase.rpc("update_transaction_with_installments", { p_id: id, p_payload: payload });
+  if (error?.message.includes("abonos a capital")) return { ok: false as const, error: "Este movimiento tiene abonos a capital. Solo puedes cambiar categoría, comercio y nota." };
+  if (error) return { ok: false as const, error: "No pudimos actualizar el movimiento. Revisa los datos e intenta de nuevo." };
+  revalidateFinancialViews();
+  return { ok: true as const, id };
+}
+
+/** Category, merchant and note of a movement with prepayments or a typed payment, whose plan cannot be regenerated (R9). */
+export async function updateTransactionDetails(id: unknown, input: unknown) {
+  if (!z.uuid().safeParse(id).success || typeof id !== "string") return { ok: false as const, error: "Movimiento no válido." };
+  const parsed = transactionDetailsSchema.safeParse(input);
+  if (!parsed.success) return { ok: false as const, error: "Revisa los datos del movimiento.", errors: z.flattenError(parsed.error).fieldErrors };
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return { ok: false as const, error: "Inicia sesión para editar el movimiento." };
+  const { error } = await supabase.rpc("update_transaction_details", { p_id: id, p_payload: { category_id: parsed.data.categoryId, merchant: parsed.data.merchant, note: parsed.data.note } });
   if (error) return { ok: false as const, error: "No pudimos actualizar el movimiento. Revisa los datos e intenta de nuevo." };
   revalidateFinancialViews();
   return { ok: true as const, id };

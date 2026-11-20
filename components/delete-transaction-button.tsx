@@ -5,13 +5,14 @@ import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { deleteTransaction } from "@/lib/actions/transactions";
 
-export function DeleteTransactionButton({ id, installments, childrenCount }: { id: string; installments: number; childrenCount: number }) {
+export function DeleteTransactionButton({ id, installments, childrenCount, prepayments = 0 }: { id: string; installments: number; childrenCount: number; /** Prepayments this payment made (R9): deleting it restores the installments they replaced. */ prepayments?: number }) {
   const router = useRouter();
   const [error, setError] = useState("");
   const [busy, setBusy] = useState(false);
   async function remove() {
     const details = [installments ? `${installments} ${installments === 1 ? "cuota" : "cuotas"}` : "", childrenCount ? `${childrenCount} ${childrenCount === 1 ? "movimiento asociado" : "movimientos asociados"}` : ""].filter(Boolean);
-    if (!window.confirm(`Se borra el movimiento${details.length ? ` y ${details.join(" y ")}` : ""}. ¿Quieres continuar?`)) return;
+    const undo = prepayments ? ` Se deshacen ${prepayments === 1 ? "su abono" : `sus ${prepayments} abonos`} a capital y vuelven las cuotas que tenían esas compras.` : "";
+    if (!window.confirm(`Se borra el movimiento${details.length ? ` y ${details.join(" y ")}` : ""}.${undo} ¿Quieres continuar?`)) return;
     setBusy(true);
     setError("");
     try {

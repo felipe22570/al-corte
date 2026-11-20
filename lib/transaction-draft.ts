@@ -15,6 +15,7 @@ const draftSchema = z.strictObject({
     fxRate: z.string().max(100),
     installmentsCount: z.union([z.string().max(10), z.number().finite()]),
     interestFree: z.boolean(),
+    isInternational: z.boolean().optional(),
     categoryId: z.string().max(36),
     merchant: z.string().max(200),
     note: z.string().max(1000),

@@ -14,6 +14,8 @@ const fixture = vi.hoisted(() => ({
 }));
 const estimates = vi.hoisted(() => ({ load: vi.fn() }));
 vi.mock("@/lib/queries/interest-estimates", () => ({ loadInterestEstimates: estimates.load }));
+const prepaid = vi.hoisted(() => ({ amounts: new Map<string, { amount: unknown; amountCop: unknown }>() }));
+vi.mock("@/lib/queries/prepayments", () => ({ loadPrepaidAmounts: async () => prepaid.amounts }));
 vi.mock("@/components/statement-interest-form", () => ({ StatementInterestForm: () => <div>Formulario de intereses reales</div> }));
 vi.mock("@/lib/domain/dates", async (importOriginal) => ({
   ...await importOriginal<typeof import("@/lib/domain/dates")>(),
@@ -62,6 +64,14 @@ describe("statement page", () => {
     fixture.marks = [];
     fixture.totals = [copTotals, usdTotals];
     estimates.load.mockReset();
+    prepaid.amounts = new Map();
+  });
+
+  it("shows a single-installment charge net of its prepayment (R9)", async () => {
+    prepaid.amounts = new Map([["Mercado", { amount: new Decimal("2500"), amountCop: new Decimal("2500") }]]);
+    const html = await renderPage();
+    expect(html).toContain("Mercado · 12 nov · con abono a capital");
+    expect(html).toContain("$10.000");
   });
 
   it("shows minimum payment and total debt per currency, with USD apart from pesos (D33)", async () => {

@@ -51,7 +51,7 @@ vi.mock("@/lib/supabase/server", () => ({ createClient: async () => ({
     const result = { data: state.empty ? [] : tables[table] ?? [], error: null, count: 0 };
     const query = {
       select: () => query, eq: () => query, is: () => query, in: () => query, gt: () => query,
-      gte: () => query, lt: () => query, lte: () => query, order: () => query, range: () => query, limit: () => query, not: () => query,
+      gte: () => query, lt: () => query, lte: () => query, order: () => query, range: () => query, limit: () => query, not: () => query, or: () => query,
       single: async () => ({ ...result, data: result.data[0] ?? null }),
       maybeSingle: async () => ({ ...result, data: result.data[0] ?? null }),
       then: (resolve: (value: typeof result) => void) => Promise.resolve(result).then(resolve),

@@ -4,6 +4,7 @@ import Link from "next/link";
 import { CardColorChip } from "@/components/card-color-chip";
 import { CurrencyAmounts, CurrencyInline } from "@/components/currency-amounts";
 import { StatementPaymentControl } from "@/components/statement-payment-control";
+import { StatementPaymentForm } from "@/components/statement-payment-form";
 import { StatusBadge } from "@/components/status-badge";
 import type { CardColor } from "@/lib/card-colors";
 import { compareIsoDates } from "@/lib/domain/dates";
@@ -59,7 +60,9 @@ export function MonthStatementCard({ group, card, today }: { group: MonthCardSum
           <Link className="w-fit text-body underline pointer-coarse:min-h-11" href={`/tarjetas/${statement.cardId}/extractos/${statement.cutoffDate}`}>Ver extracto<span className="sr-only"> · {context}</span></Link>
           {currencies.map((currency) => {
             const currencyContext = currencies.length > 1 ? `${context} · ${currency === "COP" ? "pesos" : "dólares"}` : context;
-            return <StatementPaymentControl key={currency} id={statement.id!} currency={currency} currencyName={currencies.length > 1 ? (currency === "COP" ? "pesos" : "dólares") : undefined} paid={Boolean(currencyPaidAt(statement, currency))} today={today} context={currencyContext} openUntil={open && currency === currencies[0] ? cutoff : undefined} />;
+            const currencyName = currencies.length > 1 ? (currency === "COP" ? "pesos" : "dólares") : undefined;
+            // D37: payments are registered for statements already cut; marking without a value (D26) stays available.
+            return <div key={currency} className="grid gap-2">{!open && <StatementPaymentForm statementId={statement.id!} currency={currency} currencyName={currencyName} today={today} context={currencyContext} />}<StatementPaymentControl id={statement.id!} currency={currency} currencyName={currencies.length > 1 ? (currency === "COP" ? "pesos" : "dólares") : undefined} paid={Boolean(currencyPaidAt(statement, currency))} today={today} context={currencyContext} openUntil={open && currency === currencies[0] ? cutoff : undefined} /></div>;
           })}
         </div>}
       </div>;

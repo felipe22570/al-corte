@@ -4,6 +4,7 @@ import { statementPaidAt } from "./balances";
 import { buildInstallmentPlan, type AmortizationMethod } from "./installments";
 import { estimateBalanceInterest, type BalanceInterestInstallment, type InterestMode } from "./interest";
 import { toCop, type Currency } from "./money";
+import { prepaymentInterestWeight } from "./payments";
 import { statementPeriod, shiftStatement } from "./statements";
 import { chargeDatesBetween, type Frequency, type SubscriptionStatus } from "./subscriptions";
 import { compareMonths, monthlySpending, statementItemsFromMovements, statementTotals, type StatementConcept } from "./totals";
@@ -196,8 +197,11 @@ type ProjectionSubscription = Omit<ProjectableSubscription, "cardArchived"> & {
   /** Each charge is a purchase in this many installments (D35); 1 when missing. */
   installmentsCount?: number;
 };
+/** A prepayment made in the period of a real statement (R9): its basis is weighted by the days before its date. */
+type PrepaymentBasis = { statementId: string; date: IsoDate; basis: BalanceInterestInstallment };
 export type ProjectionInput = {
   cards: ProjectionCard[]; statements: SavedStatement[]; movements: Movement[]; installments: Installment[];
+  prepaymentBases?: PrepaymentBasis[];
   subscriptions: ProjectionSubscription[];
   /** Resolved by the caller using D4, or null when unavailable. */
   fxRate: Decimal | null;
@@ -247,6 +251,13 @@ export function projectStatements(input: ProjectionInput): { statements: Project
     if (installment.interestBasis) interestBasis.set(installment.statementId, [...interestBasis.get(installment.statementId) ?? [], installment.interestBasis]);
   }
   const interestModes = new Map(input.cards.map((card) => [card.id, card.interestMode]));
+  const savedById = new Map(input.statements.map((s) => [s.id, s]));
+  for (const prepayment of input.prepaymentBases ?? []) {
+    const s = savedById.get(prepayment.statementId);
+    if (!s) continue;
+    const weight = prepaymentInterestWeight(s.periodStart, s.cutoffDate, prepayment.date);
+    interestBasis.set(s.id, [...interestBasis.get(s.id) ?? [], { ...prepayment.basis, weight }]);
+  }
 
   const result: ProjectedStatement[] = input.statements.filter((s) => paymentMonth(s.dueDate) <= lastMonth).map((s) => {
     const charges = chargesByStatement.get(s.id) ?? [];

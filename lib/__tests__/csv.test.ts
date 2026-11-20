@@ -9,4 +9,7 @@ describe("serializeCsv", () => {
     expect(serializeCsv(["id", "dato"], [])).toBe("\ufeffid,dato\r\n");
     expect(serializeCsv(["id", "dato"], [{ id: "1", dato: null }])).toBe("\ufeffid,dato\r\n1,\r\n");
   });
+  it("keeps JSON columns as JSON", () => {
+    expect(serializeCsv(["id", "cuotas"], [{ id: "1", cuotas: [{ number: 8 }] }])).toBe('\ufeffid,cuotas\r\n1,"[{""number"":8}]"\r\n');
+  });
 });

@@ -3,6 +3,7 @@
 import { useId, useState } from "react";
 import { useRouter } from "next/navigation";
 import { StatementPaymentControl } from "@/components/statement-payment-control";
+import { StatementPaymentForm } from "@/components/statement-payment-form";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -10,8 +11,10 @@ import { setStatementBankValues } from "@/lib/actions/statements";
 import type { Currency } from "@/lib/domain/money";
 
 /** Bank values and payment mark of one currency of a statement (D33); secondary controls with unique IDs. */
-export function StatementBalanceControls({ id, currency, realMinimum, realTotal, paid, today, context }: {
+export function StatementBalanceControls({ id, currency, realMinimum, realTotal, paid, today, context, closed = false }: {
   id: string; currency: Currency; realMinimum: string | null; realTotal: string | null; paid: boolean; today: string; context: string;
+  /** Payments are registered for statements already cut (D37). */
+  closed?: boolean;
 }) {
   const router = useRouter();
   const minimumId = useId();
@@ -42,6 +45,7 @@ export function StatementBalanceControls({ id, currency, realMinimum, realTotal,
     <p id={helpId} className="text-small text-muted-foreground">Copia los valores de tu extracto. Son una referencia: no cambian el cálculo. Deja un campo vacío para quitarlo.</p>
     <Button type="button" variant="outline" className="w-fit" disabled={busy} onClick={save} aria-label={`Guardar valores del banco · ${context}`}>{busy ? "Guardando…" : "Guardar valores del banco"}</Button>
     {message && <p role={failed ? "alert" : "status"} className={failed ? "text-small text-danger" : "text-small text-muted-foreground"}>{message}</p>}
+    {closed && <StatementPaymentForm statementId={id} currency={currency} today={today} context={context} />}
     <StatementPaymentControl id={id} paid={paid} today={today} context={context} currency={currency} />
   </div>;
 }
