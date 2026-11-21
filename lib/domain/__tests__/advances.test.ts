@@ -10,3 +10,8 @@ it("uses the advance rate and assigns its fee to the first statement", () => {
   expect(result.fee.date).toBe("2026-01-20");
   expect(result.fee.cutoffDate).toBe("2026-02-15");
 });
+
+it("uses the advance's own fee when given (D41)", () => {
+  const result = buildCashAdvance({ amount: new Decimal("500000"), count: 2, card: { advanceRateEa: new Decimal("0.36"), advanceFee: new Decimal("15000"), amortizationMethod: "fixed_principal", cutoffDay: 15 }, date: "2026-01-20", fee: new Decimal("7200.5") });
+  expect(result.fee.amount.toString()).toBe("7200.5");
+});

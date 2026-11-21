@@ -2,6 +2,7 @@ import Decimal from "decimal.js";
 import { compareIsoDates, daysBetween, type IsoDate } from "./dates";
 import { amortize, type AmortizationMethod, type InstallmentRow, type ScheduleItem } from "./installments";
 import { roundMoney, type Currency } from "./money";
+import { shiftStatement } from "./statements";
 
 /** D37: how much of the statement the payment intends to cover. */
 export type PaymentKind = "minimum" | "total" | "other";
@@ -68,7 +69,7 @@ export function splitPayment(amount: Decimal, pending: Decimal) {
 }
 
 /** Billed rows: paid before tracking or in a statement cut before the payment date. They never change. */
-function isBilledAt(row: Pick<InstallmentRow, "beforeTracking" | "cutoffDate">, date: IsoDate): boolean {
+export function isBilledAt(row: Pick<InstallmentRow, "beforeTracking" | "cutoffDate">, date: IsoDate): boolean {
   return row.beforeTracking || compareIsoDates(row.cutoffDate!, date) < 0;
 }
 
@@ -177,8 +178,30 @@ export function reduceTermSchedule(balance: Decimal, first: Pick<InstallmentRow,
   return items;
 }
 
-function copOf(value: Decimal, terms: PlanTerms): Decimal {
+export function copOf(value: Decimal, terms: PlanTerms): Decimal {
   return terms.currency === "COP" ? value : roundMoney(value.times(terms.fxRate!), "COP");
+}
+
+/**
+ * Rows of a rebuilt plan after the kept ones: in the statements of the rows they replace and then the following ones
+ * by the card's cutoff day. The last COP equivalent absorbs the difference so that the COP invariant holds (D3).
+ */
+export function rebuildRows(input: { terms: PlanTerms; kept: InstallmentRow[]; future: InstallmentRow[]; items: ScheduleItem[]; balance: Decimal; coveredCop: Decimal; cutoffDay: number; lastCutoff: IsoDate }): InstallmentRow[] {
+  const { terms, kept, future, items } = input;
+  let copSoFar = input.coveredCop;
+  let balance = input.balance;
+  let cutoff = future.at(-1)?.cutoffDate ?? input.lastCutoff;
+  return items.map((item, index) => {
+    balance = balance.minus(item.principal);
+    if (index >= future.length) cutoff = shiftStatement(input.cutoffDay, cutoff!, 1);
+    const principalCop = index === items.length - 1 ? terms.amountCop.minus(copSoFar) : copOf(item.principal, terms);
+    copSoFar = copSoFar.plus(principalCop);
+    const interestCop = copOf(item.interest, terms);
+    return {
+      number: kept.length + index + 1, principal: item.principal, interest: item.interest, total: item.principal.plus(item.interest), balanceAfter: balance,
+      cutoffDate: index < future.length ? future[index]!.cutoffDate : cutoff, beforeTracking: false, principalCop, interestCop, totalCop: principalCop.plus(interestCop),
+    };
+  });
 }
 
 /**

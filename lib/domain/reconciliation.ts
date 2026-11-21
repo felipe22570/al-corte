@@ -2,9 +2,8 @@ import Decimal from "decimal.js";
 import { bankDifference, statementPaidAt } from "./balances";
 import { compareIsoDates, type IsoDate } from "./dates";
 import { MAX_PLAN_INSTALLMENTS, type InstallmentRow } from "./installments";
-import { roundMoney, type Currency } from "./money";
-import { installmentRowPayload, reduceTermSchedule, type PaymentTarget } from "./payments";
-import { shiftStatement } from "./statements";
+import type { Currency } from "./money";
+import { copOf, installmentRowPayload, rebuildRows, reduceTermSchedule, type PaymentTarget } from "./payments";
 
 const ZERO = new Decimal(0);
 const sum = (values: Decimal[]) => values.reduce((total, value) => total.plus(value), ZERO);
@@ -76,23 +75,9 @@ export function buildBalanceCorrection(input: { target: PaymentTarget; statement
   const maxCount = MAX_PLAN_INSTALLMENTS - kept.length;
   const items = remaining.isZero() ? [] : reduceTermSchedule(remaining, regular, maxCount + 1, terms.monthlyRate, terms.method, terms.currency);
   if (items.length > maxCount) throw new Error(`Con ese saldo el plan pasaría de ${MAX_PLAN_INSTALLMENTS} cuotas. Revisa el valor.`);
-  const copOf = (value: Decimal) => terms.currency === "COP" ? value : roundMoney(value.times(terms.fxRate!), "COP");
   const coveredCop = sum(kept.map((row) => row.principalCop)).plus(sum(target.prepayments.map((item) => item.amountCop)));
-  const amountCop = items.length ? copOf(amount) : terms.amountCop.minus(coveredCop);
-  let copSoFar = coveredCop.plus(amountCop);
-  let balance = remaining;
-  let cutoff = future.at(-1)?.cutoffDate ?? statementCutoff;
-  const rows: InstallmentRow[] = items.map((item, index) => {
-    balance = balance.minus(item.principal);
-    if (index >= future.length) cutoff = shiftStatement(cutoffDay, cutoff!, 1);
-    const principalCop = index === items.length - 1 ? terms.amountCop.minus(copSoFar) : copOf(item.principal);
-    copSoFar = copSoFar.plus(principalCop);
-    const interestCop = copOf(item.interest);
-    return {
-      number: kept.length + index + 1, principal: item.principal, interest: item.interest, total: item.principal.plus(item.interest), balanceAfter: balance,
-      cutoffDate: index < future.length ? future[index]!.cutoffDate : cutoff, beforeTracking: false, principalCop, interestCop, totalCop: principalCop.plus(interestCop),
-    };
-  });
+  const amountCop = items.length ? copOf(amount, terms) : terms.amountCop.minus(coveredCop);
+  const rows = rebuildRows({ terms, kept, future, items, balance: remaining, coveredCop: coveredCop.plus(amountCop), cutoffDay, lastCutoff: statementCutoff });
   return { calculated, amount, amountCop, rows, replacedFromNumber: kept.length + 1 };
 }
 

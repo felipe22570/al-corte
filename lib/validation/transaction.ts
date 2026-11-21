@@ -49,6 +49,8 @@ export const transactionSchema = z.object({
   interestFree: z.boolean().default(false),
   // R9: classifies purchases and advances in Bancolombia's prepayment order; true by default in USD.
   isInternational: z.boolean().optional(),
+  // D41: fee of this advance, prefilled with the card's; empty uses the card's.
+  advanceFee: z.string().max(100).default(""),
   categoryId: z.union([z.uuid("Elige una categoría válida."), z.literal("")]).default("").transform((value) => value || null),
   merchant: z.string().trim().max(200, "Usa máximo 200 caracteres.").default(""),
   note: z.string().trim().max(1000, "Usa máximo 1.000 caracteres.").default(""),
@@ -63,6 +65,9 @@ export const transactionSchema = z.object({
   if (value.type !== "purchase" && value.type !== "cash_advance" && value.installmentsCount !== 1) ctx.addIssue({ code: "custom", path: ["installmentsCount"], message: "Solo las compras y los avances pueden tener cuotas." });
   if (value.type !== "purchase" && value.type !== "cash_advance" && value.isInternational) ctx.addIssue({ code: "custom", path: ["isInternational"], message: "Solo las compras y los avances pueden ser internacionales." });
   if (value.type !== "purchase" && value.interestFree) ctx.addIssue({ code: "custom", path: ["interestFree"], message: "La opción sin intereses solo aplica a compras." });
+  if (value.type === "cash_advance" && !value.inProgress && value.advanceFee.trim() && parseMoney(value.advanceFee, true) === null) {
+    ctx.addIssue({ code: "custom", path: ["advanceFee"], message: "Ingresa la comisión como aparece en tu extracto, por ejemplo 7.200." });
+  }
   if (!value.inProgress) return;
   if ((value.type !== "purchase" && value.type !== "cash_advance") || value.installmentsCount < 2) {
     ctx.addIssue({ code: "custom", path: ["inProgress"], message: "Las cuotas ya pagadas solo aplican a compras o avances a varias cuotas." });
@@ -74,8 +79,9 @@ export const transactionSchema = z.object({
   if (!(current >= 2 && current <= max)) ctx.addIssue({ code: "custom", path: ["currentInstallment"], message: `Ingresa la cuota de tu último extracto, entre 2 y ${max}.` });
   if (hasBalance && parseMoney(value.balanceAfter, true) === null) ctx.addIssue({ code: "custom", path: ["balanceAfter"], message: "Ingresa el saldo como aparece en el extracto, por ejemplo 112.965." });
   if (!isValidIsoDate(value.trackedFromCutoff)) ctx.addIssue({ code: "custom", path: ["trackedFromCutoff"], message: "Elige el extracto de esa cuota." });
-}).transform(({ inProgress, currentInstallment, balanceAfter, trackedFromCutoff, ...transaction }) => ({
+}).transform(({ inProgress, currentInstallment, balanceAfter, trackedFromCutoff, advanceFee, ...transaction }) => ({
   ...transaction,
+  advanceFee: transaction.type === "cash_advance" && !inProgress && advanceFee.trim() ? parseMoney(advanceFee, true) : null,
   inProgress: inProgress ? {
     currentInstallment: Number(currentInstallment.trim()),
     balanceAfter: balanceAfter.trim() ? parseMoney(balanceAfter, true) : null,

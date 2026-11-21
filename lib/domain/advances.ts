@@ -3,7 +3,8 @@ import { buildInstallmentPlan, type AmortizationMethod } from "./installments";
 import { statementCutoffFor } from "./statements";
 import { type IsoDate } from "./dates";
 
-export function buildCashAdvance(input: { amount: Decimal; count: number; card: { advanceRateEa: Decimal; advanceFee: Decimal; amortizationMethod: AmortizationMethod; cutoffDay: number }; date: IsoDate }) {
+/** R3 with D41: the fee is the advance's own when given, the card's by default. */
+export function buildCashAdvance(input: { amount: Decimal; count: number; card: { advanceRateEa: Decimal; advanceFee: Decimal; amortizationMethod: AmortizationMethod; cutoffDay: number }; date: IsoDate; fee?: Decimal }) {
   const plan = buildInstallmentPlan({ principal: input.amount, count: input.count, annualRateEa: input.card.advanceRateEa, method: input.card.amortizationMethod, interestFree: false, currency: "COP", cutoffDay: input.card.cutoffDay, purchaseDate: input.date });
-  return { advance: { plan }, fee: { amount: input.card.advanceFee, type: "advance_fee" as const, date: input.date, cutoffDate: statementCutoffFor(input.card.cutoffDay, input.date) } };
+  return { advance: { plan }, fee: { amount: input.fee ?? input.card.advanceFee, type: "advance_fee" as const, date: input.date, cutoffDate: statementCutoffFor(input.card.cutoffDay, input.date) } };
 }

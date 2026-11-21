@@ -131,14 +131,14 @@ isOneToOne: false
                   ]
                 },"principal_prepayments": {
                   Row: {
-                    "amount": number,"amount_cop": number,"assumed": boolean,"bank_balance": number | null,"created_at": string,"effect": Database["public"]['Enums']["prepayment_effect"],"id": string,"payment_id": string | null,"replaced_from_number": number | null,"replaced_installments": Json | null,"statement_id": string | null,"transaction_id": string,"user_id": string
+                    "amount": number,"amount_cop": number,"assumed": boolean,"bank_balance": number | null,"created_at": string,"effect": Database["public"]['Enums']["prepayment_effect"],"effective_date": string | null,"id": string,"payment_id": string | null,"remaining_installments": number | null,"replaced_from_number": number | null,"replaced_installments": Json | null,"statement_id": string | null,"transaction_id": string,"user_id": string
                   }
                   ComputedFields: never
                   Insert: {
-                    "amount": number,"amount_cop": number,"assumed"?: boolean,"bank_balance"?: number | null,"created_at"?: string,"effect"?: Database["public"]['Enums']["prepayment_effect"],"id"?: string,"payment_id"?: string | null,"replaced_from_number"?: number | null,"replaced_installments"?: Json | null,"statement_id"?: string | null,"transaction_id": string,"user_id"?: string
+                    "amount": number,"amount_cop": number,"assumed"?: boolean,"bank_balance"?: number | null,"created_at"?: string,"effect"?: Database["public"]['Enums']["prepayment_effect"],"effective_date"?: string | null,"id"?: string,"payment_id"?: string | null,"remaining_installments"?: number | null,"replaced_from_number"?: number | null,"replaced_installments"?: Json | null,"statement_id"?: string | null,"transaction_id": string,"user_id"?: string
                   }
                   Update: {
-                    "amount"?: number,"amount_cop"?: number,"assumed"?: boolean,"bank_balance"?: number | null,"created_at"?: string,"effect"?: Database["public"]['Enums']["prepayment_effect"],"id"?: string,"payment_id"?: string | null,"replaced_from_number"?: number | null,"replaced_installments"?: Json | null,"statement_id"?: string | null,"transaction_id"?: string,"user_id"?: string
+                    "amount"?: number,"amount_cop"?: number,"assumed"?: boolean,"bank_balance"?: number | null,"created_at"?: string,"effect"?: Database["public"]['Enums']["prepayment_effect"],"effective_date"?: string | null,"id"?: string,"payment_id"?: string | null,"remaining_installments"?: number | null,"replaced_from_number"?: number | null,"replaced_installments"?: Json | null,"statement_id"?: string | null,"transaction_id"?: string,"user_id"?: string
                   }
                   Relationships: [
                     {
@@ -449,7 +449,10 @@ isOneToOne: false
                 }
           }
           Functions: {
-            "close_statement":
+            "change_installments":
+{ Args: { "p_payload": Json }; Returns: string
+                           },
+"close_statement":
 { Args: { "p_payload": Json }; Returns: string
                            },
 "create_default_categories":

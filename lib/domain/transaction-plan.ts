@@ -13,6 +13,8 @@ export type TransactionPlanInput = {
   interestFree: boolean; categoryId: string | null; merchant: string; note: string;
   /** R9: international purchase or advance; true by default in USD. */
   isInternational?: boolean;
+  /** D41: fee of this advance; the card's is only the default. */
+  advanceFee?: string | null;
   inProgress?: TransactionInProgress | null;
 };
 export type TransactionCard = { id: string; cutoffDay: number; paymentDay: number; purchaseRateEa: string; advanceRateEa: string; advanceFee: string; amortizationMethod: AmortizationMethod; interestMode?: InterestMode };
@@ -27,6 +29,8 @@ export function buildTransactionPlan(input: TransactionPlanInput, card: Transact
   const currentRate = isAdvance ? card.advanceRateEa : card.purchaseRateEa;
   const rate = original?.cardId === input.cardId && original.type === input.type ? original.rateEaApplied ?? currentRate : currentRate;
   const inProgress = input.inProgress ?? null;
+  // D41: each advance keeps its own fee, the card's by default. An in-progress advance already paid it before tracking.
+  const advanceFee = isAdvance && !inProgress ? new Decimal(input.advanceFee ?? card.advanceFee).toFixed() : "0";
   const plan = buildInstallmentPlan({
     principal, count: input.installmentsCount, annualRateEa: new Decimal(isPurchase || isAdvance ? rate : "0"), method: card.amortizationMethod,
     interestFree: input.interestFree, currency: input.currency, fxRate, cutoffDay: card.cutoffDay, purchaseDate: input.date, interestMode: card.interestMode,
@@ -41,8 +45,7 @@ export function buildTransactionPlan(input: TransactionPlanInput, card: Transact
     firstInstallment: plan.firstInstallment.total.toFixed(),
     firstInstallmentCop: plan.firstInstallment.totalCop.toFixed(),
     totalInterest: plan.totalInterest.toFixed(),
-    // An in-progress advance already paid its fee before tracking.
-    advanceFee: isAdvance && !inProgress ? new Decimal(card.advanceFee).toFixed() : "0",
+    advanceFee,
     payload: {
       card_id: card.id, type: input.type, date: input.date, amount: principal.toFixed(), currency: input.currency,
       fx_rate: fxRate?.toFixed() ?? null, amount_cop: amountCop.toFixed(), installments_count: plan.rows.length,
@@ -51,6 +54,7 @@ export function buildTransactionPlan(input: TransactionPlanInput, card: Transact
       prior_installments: plan.priorInstallments, prior_principal_paid: plan.priorPrincipalPaid.toFixed(),
       original_installments_count: plan.originalCount, tracked_from_cutoff: inProgress?.trackedFromCutoff ?? null,
       is_international: (isPurchase || isAdvance) && (input.isInternational ?? input.currency === "USD"),
+      advance_fee: advanceFee,
     },
   };
 }

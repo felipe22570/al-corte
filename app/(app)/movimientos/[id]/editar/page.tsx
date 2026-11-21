@@ -5,6 +5,7 @@ import { PageHeader } from "@/components/page-header";
 import { TransactionDetailsForm } from "@/components/transaction-details-form";
 import { TransactionForm } from "@/components/transaction-form";
 import { todayInBogota } from "@/lib/domain/dates";
+import { formatAmountInput } from "@/lib/money-input";
 import { loadRecentStatementCutoffs } from "@/lib/queries/statement-cutoffs";
 import { createClient } from "@/lib/supabase/server";
 import type { TransactionCardOption, TransactionCategoryOption } from "@/lib/transaction-options";
@@ -21,14 +22,16 @@ export default async function EditTransactionPage({ params }: { params: Promise<
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) redirect("/login");
-  const [transactionResult, cardsResult, categoriesResult, installmentsResult, prepaymentsResult] = await Promise.all([
+  const [transactionResult, cardsResult, categoriesResult, installmentsResult, prepaymentsResult, feeResult] = await Promise.all([
     supabase.from("transactions").select("card_id,category_id,type,date,amount::text,currency,fx_rate::text,installments_count,interest_free,merchant,note,rate_ea_applied::text,parent_id,statement_id,prior_installments,original_installments_count,is_international,paid_statement_id").eq("id", id).eq("user_id", user.id).maybeSingle(),
     supabase.from("cards").select("id,name,last4,color,cutoff_day,payment_day,purchase_rate_ea::text,advance_rate_ea::text,advance_fee::text,amortization_method,interest_mode,usd_default_installments").eq("user_id", user.id).is("archived_at", null).order("name"),
     supabase.from("categories").select("id,name,icon").eq("user_id", user.id).is("archived_at", null).order("name"),
     supabase.from("installments").select("statement_id,number,balance_after::text").eq("transaction_id", id).eq("user_id", user.id),
     supabase.from("principal_prepayments").select("id", { count: "exact", head: true }).eq("user_id", user.id).or(`transaction_id.eq.${id},payment_id.eq.${id}`),
+    // D41: an advance keeps its own fee when edited.
+    supabase.from("transactions").select("amount::text").eq("user_id", user.id).eq("parent_id", id).eq("type", "advance_fee").maybeSingle(),
   ]);
-  if (transactionResult.error || cardsResult.error || categoriesResult.error || installmentsResult.error || prepaymentsResult.error) throw new Error("No pudimos cargar el movimiento.");
+  if (transactionResult.error || cardsResult.error || categoriesResult.error || installmentsResult.error || prepaymentsResult.error || feeResult.error) throw new Error("No pudimos cargar el movimiento.");
   if (!transactionResult.data) notFound();
   const transaction = transactionResult.data as unknown as RawTransaction;
   const type = transactionTypeSchema.safeParse(transaction.type);
@@ -63,8 +66,8 @@ export default async function EditTransactionPage({ params }: { params: Promise<
   if (hasPrepayments || transaction.paid_statement_id) {
     const reason = transaction.type === "payment"
       ? "Este pago cubre un extracto. Para cambiar su valor o su fecha, bórralo y regístralo de nuevo desde el extracto."
-      : `${transaction.type === "cash_advance" ? "Este avance" : "Esta compra"} tiene abonos a capital. Para cambiar su valor o sus cuotas, borra primero los pagos que abonaron a ${transaction.type === "cash_advance" ? "él" : "ella"}.`;
+      : `${transaction.type === "cash_advance" ? "Este avance" : "Esta compra"} tiene abonos, saldos del banco o cambios de cuotas. Para cambiar su valor, deshazlos primero desde su detalle.`;
     return <div className="mx-auto flex w-full max-w-xl flex-col gap-6"><PageHeader title="Editar movimiento" subtitle="Solo puedes cambiar categoría, comercio y nota." /><TransactionDetailsForm id={id} categories={categories} reason={reason} initial={{ categoryId: transaction.category_id ?? "", merchant: transaction.merchant ?? "", note: transaction.note ?? "" }} /></div>;
   }
-  return <div className="mx-auto flex w-full max-w-xl flex-col gap-6"><PageHeader title="Editar movimiento" subtitle="Revisa los datos antes de guardar." />{cardArchived && <p className="text-body">La tarjeta original está archivada. Elige una tarjeta activa para continuar.</p>}{categoryArchived && <p className="text-body">La categoría original está archivada. Elige una categoría activa o Sin categoría antes de guardar.</p>}{cards.length ? <TransactionForm userId={user.id} cards={cards} categories={categories} today={today} latestRate={transaction.fx_rate} existingCutoffs={existingCutoffs} edit={{ id, original: { cardId: transaction.card_id, type: type.data, rateEaApplied: transaction.rate_ea_applied }, hasPaidInstallments: (paid.count ?? 0) > 0, initial: { cardId: cardArchived ? "" : transaction.card_id, type: type.data, date: transaction.date, amount: transaction.amount.replace(".", ","), currency: transaction.currency, fxRate: transaction.fx_rate?.replace(".", ",") ?? "", installmentsCount: String(transaction.original_installments_count ?? transaction.installments_count), interestFree: transaction.interest_free, isInternational: transaction.is_international, categoryId: transaction.category_id ?? "", merchant: transaction.merchant ?? "", note: transaction.note ?? "", ...inProgress } }} /> : <p className="text-body">Necesitas una tarjeta activa para editar este movimiento.</p>}</div>;
+  return <div className="mx-auto flex w-full max-w-xl flex-col gap-6"><PageHeader title="Editar movimiento" subtitle="Revisa los datos antes de guardar." />{cardArchived && <p className="text-body">La tarjeta original está archivada. Elige una tarjeta activa para continuar.</p>}{categoryArchived && <p className="text-body">La categoría original está archivada. Elige una categoría activa o Sin categoría antes de guardar.</p>}{cards.length ? <TransactionForm userId={user.id} cards={cards} categories={categories} today={today} latestRate={transaction.fx_rate} existingCutoffs={existingCutoffs} edit={{ id, original: { cardId: transaction.card_id, type: type.data, rateEaApplied: transaction.rate_ea_applied }, hasPaidInstallments: (paid.count ?? 0) > 0, initial: { cardId: cardArchived ? "" : transaction.card_id, type: type.data, date: transaction.date, amount: transaction.amount.replace(".", ","), currency: transaction.currency, fxRate: transaction.fx_rate?.replace(".", ",") ?? "", installmentsCount: String(transaction.original_installments_count ?? transaction.installments_count), interestFree: transaction.interest_free, isInternational: transaction.is_international, advanceFee: transaction.type === "cash_advance" && prior === 0 ? formatAmountInput((feeResult.data as { amount: string } | null)?.amount ?? "0") : "", categoryId: transaction.category_id ?? "", merchant: transaction.merchant ?? "", note: transaction.note ?? "", ...inProgress } }} /> : <p className="text-body">Necesitas una tarjeta activa para editar este movimiento.</p>}</div>;
 }

@@ -41,3 +41,11 @@ it("rechaza una compra en curso incompleta o imposible", () => {
   }
   expect(transactionSchema.safeParse({ ...valid, ...inProgress, currentInstallment: "9", balanceAfter: "100" }).success).toBe(true);
 });
+it("toma la comisión propia de un avance (D41)", () => {
+  const advance = { ...valid, type: "cash_advance", installmentsCount: "1" };
+  expect(transactionSchema.parse({ ...advance, advanceFee: "7.200,5" }).advanceFee).toBe("7200.5");
+  expect(transactionSchema.parse({ ...advance, advanceFee: "0" }).advanceFee).toBe("0");
+  expect(transactionSchema.parse(advance).advanceFee).toBeNull();
+  expect(transactionSchema.parse({ ...valid, advanceFee: "7.200" }).advanceFee).toBeNull();
+  expect(transactionSchema.safeParse({ ...advance, advanceFee: "-1" }).success).toBe(false);
+});

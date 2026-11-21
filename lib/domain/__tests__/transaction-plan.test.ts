@@ -47,6 +47,11 @@ describe("transaction plan", () => {
     const result = buildTransactionPlan({ ...base, type: "cash_advance", amount: "500000", installmentsCount: 2 }, card);
     expect(result.payload.rate_ea_applied).toBe("0.36");
     expect(result.advanceFee).toBe("15000");
+    expect(result.payload.advance_fee).toBe("15000");
+    // D41: each advance keeps its own fee; other movements carry none.
+    const own = buildTransactionPlan({ ...base, type: "cash_advance", amount: "500000", installmentsCount: 2, advanceFee: "7200.50" }, card);
+    expect([own.advanceFee, own.payload.advance_fee]).toEqual(["7200.5", "7200.5"]);
+    expect(buildTransactionPlan({ ...base, advanceFee: "100" }, card).payload.advance_fee).toBe("0");
   });
   it("permite promociones sin intereses", () => {
     const result = buildTransactionPlan({ ...base, installmentsCount: 6, interestFree: true }, card);
