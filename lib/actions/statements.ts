@@ -6,9 +6,9 @@ import { todayInBogota } from "@/lib/domain/dates";
 import { paymentMonth } from "@/lib/domain/months";
 import { revalidateFinancialViews } from "@/lib/revalidate-views";
 import { createClient } from "@/lib/supabase/server";
-import { statementCutoffFor } from "@/lib/domain/statements";
-import { buildTransactionPlan } from "@/lib/domain/transaction-plan";
-import { bankValuesSchema, statementInterestSchema, statementPaymentDateSchema } from "@/lib/validation/statement";
+import { effectiveAnnualRate, planBalanceCorrections } from "@/lib/domain/reconciliation";
+import { loadCloseContext, type CloseContext } from "@/lib/queries/statement-close";
+import { statementCloseSchema, statementPaymentDateSchema } from "@/lib/validation/statement";
 import { currencySchema } from "@/lib/validation/transaction";
 
 function revalidateStatement(statement: { card_id: string; cutoff_date: string; due_date: string }) {
@@ -36,12 +36,6 @@ async function updateBalance(id: unknown, currency: unknown, values: { real_mini
   return { ok: true as const };
 }
 
-export async function setStatementBankValues(id: unknown, currency: unknown, input: unknown) {
-  const parsed = bankValuesSchema.safeParse(input);
-  if (!parsed.success) return { ok: false as const, error: "Ingresa los valores como aparecen en tu extracto." };
-  return updateBalance(id, currency, { real_minimum: parsed.data.realMinimum, real_total: parsed.data.realTotal });
-}
-
 export async function markStatementPaid(id: unknown, input: unknown, currency: unknown = "COP") {
   const parsed = statementPaymentDateSchema.safeParse(input);
   if (!parsed.success) return { ok: false as const, error: "Ingresa una fecha válida." };
@@ -53,30 +47,63 @@ export async function unmarkStatementPaid(id: unknown, currency: unknown = "COP"
   return updateBalance(id, currency, { paid_at: null });
 }
 
-type InterestCard = { id: string; cutoff_day: number; payment_day: number; purchase_rate_ea: string; advance_rate_ea: string; advance_fee: string; amortization_method: "fixed_principal" | "french"; interest_mode: "per_installment" | "on_balance" };
-
-/** F11: registers the real interest of an on-balance statement as an `interest` charge dated on its cutoff. */
-export async function recordStatementInterest(id: unknown, input: unknown) {
+/**
+ * F15, D39: saves the bank values of one currency, its real interest, the rate in force and the bank balance of each
+ * purchase (corrections planned by the domain), and optionally marks the currency as reconciled.
+ */
+export async function closeStatement(id: unknown, currency: unknown, input: unknown) {
   if (typeof id !== "string" || !z.uuid().safeParse(id).success) return { ok: false as const, error: "El extracto no es válido." };
-  const parsed = statementInterestSchema.safeParse(input);
-  if (!parsed.success) return { ok: false as const, error: parsed.error.issues[0]?.message ?? "Revisa los intereses." };
+  const parsedCurrency = currencySchema.safeParse(currency);
+  if (!parsedCurrency.success) return { ok: false as const, error: "La moneda no es válida." };
+  const parsed = statementCloseSchema.safeParse(input);
+  if (!parsed.success) return { ok: false as const, error: parsed.error.issues[0]?.message ?? "Revisa los valores del extracto." };
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
-  if (!user) return { ok: false as const, error: "Inicia sesión para registrar los intereses." };
-  const { data: statement, error: statementError } = await supabase.from("statements").select("card_id,cutoff_date,due_date").eq("id", id).eq("user_id", user.id).maybeSingle();
-  if (statementError || !statement) return { ok: false as const, error: "El extracto ya no está disponible." };
-  const { data, error: cardError } = await supabase.from("cards").select("id,cutoff_day,payment_day,purchase_rate_ea::text,advance_rate_ea::text,advance_fee::text,amortization_method,interest_mode").eq("id", statement.card_id).eq("user_id", user.id).is("archived_at", null).maybeSingle();
-  if (cardError || !data) return { ok: false as const, error: "La tarjeta ya no está disponible." };
-  const card = data as unknown as InterestCard;
-  if (card.interest_mode !== "on_balance") return { ok: false as const, error: "Esta tarjeta cobra los intereses dentro de cada cuota." };
-  // The charge is dated on the cutoff so R1 keeps it in this statement; a changed cutoff day (D10) would move it.
-  if (statementCutoffFor(card.cutoff_day, statement.cutoff_date) !== statement.cutoff_date) return { ok: false as const, error: "La tarjeta cambió su día de corte. Registra los intereses como un movimiento." };
-  const { payload } = buildTransactionPlan({
-    cardId: card.id, type: "interest", date: statement.cutoff_date, amount: parsed.data.amount, currency: parsed.data.currency, fxRate: parsed.data.fxRate,
-    installmentsCount: 1, interestFree: false, categoryId: null, merchant: "Intereses", note: "",
-  }, { id: card.id, cutoffDay: card.cutoff_day, paymentDay: card.payment_day, purchaseRateEa: card.purchase_rate_ea, advanceRateEa: card.advance_rate_ea, advanceFee: card.advance_fee, amortizationMethod: card.amortization_method, interestMode: card.interest_mode });
-  const { error } = await supabase.rpc("create_transaction_with_installments", { p_payload: payload });
-  if (error) return { ok: false as const, error: "No pudimos registrar los intereses. Intenta de nuevo." };
+  if (!user) return { ok: false as const, error: "Inicia sesión para cerrar el extracto." };
+  let context: CloseContext | null;
+  try {
+    context = await loadCloseContext(supabase, user.id, id, parsedCurrency.data);
+  } catch {
+    return { ok: false as const, error: "No pudimos consultar el extracto. Intenta de nuevo." };
+  }
+  if (!context) return { ok: false as const, error: "El extracto ya no está disponible." };
+  if (context.statement.cutoffDate >= todayInBogota()) return { ok: false as const, error: "El extracto aún no ha cortado." };
+  const values = parsed.data;
+  const usdCharges = parsedCurrency.data === "USD" && (values.interest?.gt(0) || values.lateInterest?.gt(0));
+  if (usdCharges && !context.fxRate) return { ok: false as const, error: "Falta la TRM para registrar intereses en dólares." };
+  let planned: ReturnType<typeof planBalanceCorrections>;
+  try {
+    planned = planBalanceCorrections({ purchases: context.purchases, entered: new Map(values.balances.map((item) => [item.transactionId, item.bankBalance])), statementCutoff: context.statement.cutoffDate, cutoffDay: context.card.cutoffDay });
+  } catch (error) {
+    return { ok: false as const, error: error instanceof Error ? error.message : "Revisa los saldos de las compras." };
+  }
+  const { error } = await supabase.rpc("close_statement", { p_payload: {
+    statement_id: id, currency: parsedCurrency.data, real_minimum: values.realMinimum?.toFixed() ?? null, real_total: values.realTotal?.toFixed() ?? null,
+    rate_ea: values.rate ? effectiveAnnualRate(values.rate, values.rateUnit).toFixed() : null,
+    interest: values.interest?.toFixed() ?? null, late_interest: values.lateInterest?.toFixed() ?? null,
+    fx_rate: parsedCurrency.data === "USD" && context.fxRate ? context.fxRate.toFixed() : null,
+    corrections: planned.corrections, remove_corrections: planned.remove, reconcile: values.reconcile,
+  } });
+  // R9: corrections are undone last in, first out, like prepayments.
+  if (error?.message.includes("pago más reciente")) return { ok: false as const, error: "Esa compra recibió un abono después de este extracto. Borra ese pago antes de cambiar su saldo." };
+  if (error?.message.includes("varios intereses")) return { ok: false as const, error: "El extracto tiene varios cargos de intereses. Corrígelos desde movimientos." };
+  if (error) return { ok: false as const, error: "No pudimos guardar el cierre. Revisa los valores e intenta de nuevo." };
+  revalidateStatement({ card_id: context.statement.cardId, cutoff_date: context.statement.cutoffDate, due_date: context.statement.dueDate });
+  return { ok: true as const };
+}
+
+/** D39: reopening removes only the reconciliation mark; bank values and corrections stay. */
+export async function reopenStatement(id: unknown, currency: unknown) {
+  if (typeof id !== "string" || !z.uuid().safeParse(id).success) return { ok: false as const, error: "El extracto no es válido." };
+  const parsedCurrency = currencySchema.safeParse(currency);
+  if (!parsedCurrency.success) return { ok: false as const, error: "La moneda no es válida." };
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return { ok: false as const, error: "Inicia sesión para reabrir el extracto." };
+  const { data: statement } = await supabase.from("statements").select("card_id,cutoff_date,due_date").eq("id", id).eq("user_id", user.id).maybeSingle();
+  if (!statement) return { ok: false as const, error: "El extracto ya no está disponible." };
+  const { error } = await supabase.rpc("reopen_statement", { p_statement_id: id, p_currency: parsedCurrency.data });
+  if (error) return { ok: false as const, error: "No pudimos reabrir el extracto. Intenta de nuevo." };
   revalidateStatement(statement);
   return { ok: true as const };
 }

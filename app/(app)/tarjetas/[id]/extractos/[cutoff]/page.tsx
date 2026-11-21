@@ -10,7 +10,7 @@ import { PageHeader } from "@/components/page-header";
 import { StatementBalanceControls } from "@/components/statement-balance-controls";
 import { StatementBreakdown } from "@/components/statement-breakdown";
 import type { StatementConceptData } from "@/components/statement-concept";
-import { StatementInterestForm } from "@/components/statement-interest-form";
+import { StatementCloseForm, type StatementClosePurchase } from "@/components/statement-close-form";
 import { StatementStatus } from "@/components/statement-status";
 import { bankDifference } from "@/lib/domain/balances";
 import { isValidIsoDate, todayInBogota } from "@/lib/domain/dates";
@@ -20,6 +20,7 @@ import { statementPeriod } from "@/lib/domain/statements";
 import { formatDateShort, formatMoney } from "@/lib/format";
 import { loadInterestEstimates, type InterestEstimate } from "@/lib/queries/interest-estimates";
 import { loadPrepaidAmounts } from "@/lib/queries/prepayments";
+import { loadCloseContext, type CloseContext } from "@/lib/queries/statement-close";
 import { loadStatementBalances, summarizeStatementBalances, type CurrencySummary, type StatementBalancesData } from "@/lib/queries/statement-balances";
 import { createClient } from "@/lib/supabase/server";
 import type { CardColor } from "@/lib/card-colors";
@@ -39,7 +40,7 @@ function movementGroup(movement: Movement): ConceptKey | null {
   switch (movement.type) {
     case "purchase": return movement.source === "subscription" ? "subscriptions" : "single_purchases";
     case "cash_advance": case "advance_fee": return "cash_advances";
-    case "interest": return "interest";
+    case "interest": case "late_interest": return "interest";
     case "handling_fee": return "handling_fees";
     case "insurance": return "insurance";
     case "adjustment": return "adjustments";
@@ -93,7 +94,6 @@ export default async function StatementDetailPage({ params }: { params: Promise<
   // D32: without a registered interest charge, an on-balance statement carries the R8 estimate in its minimum payment.
   const onBalance = card.interest_mode === "on_balance";
   let estimate: InterestEstimate | undefined;
-  let latestRate: string | null = null;
   // D37: payments registered for this statement, wherever their date places them (R1).
   const paidFor: Partial<Record<Currency, Decimal>> = {};
   if (statement) {
@@ -120,22 +120,13 @@ export default async function StatementDetailPage({ params }: { params: Promise<
       if (result.error) throw new Error("No pudimos consultar las compras a cuotas.");
       parents = (result.data ?? []) as unknown as Movement[];
     }
-    if (onBalance) {
-      const [estimates, rate] = await Promise.all([
-        loadInterestEstimates(supabase, user.id, [statement]),
-        supabase.from("fx_rates").select("usd_cop::text").order("date", { ascending: false }).limit(1).maybeSingle(),
-      ]);
-      if (rate.error) throw new Error("No pudimos consultar la última TRM.");
-      estimate = estimates.get(statement.id);
-      latestRate = (rate.data as { usd_cop: string } | null)?.usd_cop ?? null;
-    }
+    if (onBalance) estimate = (await loadInterestEstimates(supabase, user.id, [statement])).get(statement.id);
   }
   const { summaries, paidAt } = summarizeStatementBalances(balances, estimate);
   const [cop, usd] = [summaries.find((item) => item.currency === "COP")!, summaries.find((item) => item.currency === "USD")];
   // D33: pesos lead; a statement with charges only in dollars leads with dollars instead of "$0".
   const headline = !cop.hasCharges && usd?.hasCharges ? usd : cop;
   const secondary = headline === cop && usd?.hasCharges ? usd : null;
-  const hasRealInterest = movements.some((item) => item.type === "interest");
   const cardName = `${card.name} · •••• ${card.last4}`;
   const movementEntry = (item: Movement, fallback: string): StatementConceptData["entries"][number] => ({
     id: item.id,
@@ -177,6 +168,18 @@ export default async function StatementDetailPage({ params }: { params: Promise<
     return { summary, concepts, payments };
   });
   const several = breakdowns.length > 1;
+  // F15: the monthly close, once the statement is cut, for each currency with charges (D39).
+  const closeContexts: CloseContext[] = statement && cutoff < today
+    ? (await Promise.all(visible.map((summary) => loadCloseContext(supabase, user.id, statement.id, summary.currency)))).flatMap((item) => item ? [item] : [])
+    : [];
+  const closes = closeContexts.map((context) => ({
+    context, title: several ? `Cierre en ${currencyLabels[context.currency].context}` : "Cierre del extracto",
+    purchases: context.purchases.map((purchase): StatementClosePurchase => ({
+      id: purchase.id, label: purchase.merchant || (purchase.type === "cash_advance" ? "Avance" : "Compra"),
+      detail: `${purchase.type === "cash_advance" ? "Avance" : "Compra"} del ${formatDateShort(purchase.date, today)} · ${purchase.installmentsCount} cuotas`,
+      calculated: purchase.calculated.toFixed(), bankBalance: purchase.bankBalance?.toFixed() ?? null,
+    })),
+  }));
 
   return (
     <>
@@ -205,7 +208,7 @@ export default async function StatementDetailPage({ params }: { params: Promise<
                 {summary.realMinimum && <Row label="Pago mínimo del banco"><BankValue calculated={summary.minimum} real={summary.realMinimum} currency={summary.currency} /></Row>}
                 {summary.realTotal && <Row label="Deuda total del banco"><BankValue calculated={summary.debt} real={summary.realTotal} currency={summary.currency} /></Row>}
               </dl>
-              <StatementBalanceControls id={statement.id} currency={summary.currency} realMinimum={summary.realMinimum?.toFixed() ?? null} realTotal={summary.realTotal?.toFixed() ?? null} paid={!!summary.paidAt} today={today} context={context} closed={cutoff < today} />
+              <StatementBalanceControls id={statement.id} currency={summary.currency} paid={!!summary.paidAt} today={today} context={context} closed={cutoff < today} />
             </section>;
           })}
         </div>}
@@ -213,7 +216,11 @@ export default async function StatementDetailPage({ params }: { params: Promise<
           const labels = currencyLabels[summary.currency];
           return <StatementBreakdown key={summary.currency} concepts={concepts} payments={payments} title={several ? labels.breakdown : "Desglose"} paymentsTitle={several ? labels.payments : "Pagos"} idSuffix={several ? `-${summary.currency.toLowerCase()}` : ""} />;
         }) : <p className="text-body text-muted-foreground">Aún no hay movimientos en este extracto.</p>}
-        {statement && onBalance && !hasRealInterest && !card.archived_at && <StatementInterestForm id={statement.id} latestRate={latestRate} />}
+        {closes.length > 0 && <div id="cierre" className="grid scroll-mt-4 items-start gap-6 xl:grid-cols-2">{closes.map(({ context: close, title, purchases }, index) => <StatementCloseForm key={close.currency} statementId={close.statement.id} currency={close.currency} today={today}
+          context={`${cardName} · corte ${formatDateShort(cutoff, today)} · ${currencyLabels[close.currency].context}`} title={title} showRate={index === 0}
+          calculated={{ minimum: close.calculated.minimum.toFixed(), debt: close.calculated.debt.toFixed(), interest: close.calculated.interest.toFixed(), estimated: close.calculated.estimated }}
+          bank={{ minimum: close.bank.minimum?.toFixed() ?? null, debt: close.bank.debt?.toFixed() ?? null, interest: close.bank.interest?.toFixed() ?? null, lateInterest: close.bank.lateInterest?.toFixed() ?? null, rateEa: close.bank.rateEa?.toFixed() ?? null, reconciledAt: close.bank.reconciledAt }}
+          purchases={purchases} />)}</div>}
         <nav aria-label="Navegación de extractos" className="flex justify-between gap-4">
           {previous ? <Link className="text-body underline" href={`/tarjetas/${id}/extractos/${previous}`}>Anterior</Link> : <span />}
           {next && <Link className="text-body underline" href={`/tarjetas/${id}/extractos/${next}`}>Siguiente</Link>}

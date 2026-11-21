@@ -1,5 +1,6 @@
 import Decimal from "decimal.js";
 import { statementPaidAt } from "@/lib/domain/balances";
+import { statementReconciledAt } from "@/lib/domain/reconciliation";
 import type { Currency } from "@/lib/domain/money";
 import { fetchAllPages } from "@/lib/paginate";
 import type { createClient } from "@/lib/supabase/server";
@@ -10,7 +11,7 @@ export const STATEMENT_CONCEPTS = ["single_purchases", "installments", "subscrip
 export type StatementConceptKey = typeof STATEMENT_CONCEPTS[number];
 /** One row of statement_currency_totals: amounts in the original currency (D33), as text. */
 export type CurrencyTotalsRow = { statement_id: string; currency: Currency; has_charges: boolean; total_calculated: string; total_cop: string; pending_principal: string; total_debt: string } & Record<StatementConceptKey, string>;
-export type BalanceMarkRow = { statement_id: string; currency: Currency; real_minimum: string | null; real_total: string | null; paid_at: string | null };
+export type BalanceMarkRow = { statement_id: string; currency: Currency; real_minimum: string | null; real_total: string | null; paid_at: string | null; reconciled_at?: string | null };
 export type StatementBalancesData = { totals: Partial<Record<Currency, CurrencyTotalsRow>>; marks: Partial<Record<Currency, BalanceMarkRow>> };
 export type CurrencySummary = {
   currency: Currency; hasCharges: boolean;
@@ -32,7 +33,7 @@ export async function loadStatementBalances(supabase: Client, userId: string, st
   if (!statementIds.length) return result;
   const [totals, marks] = await Promise.all([
     fetchAllPages((from, to) => supabase.from("statement_currency_totals").select(totalsFields).eq("user_id", userId).in("statement_id", statementIds).order("statement_id").order("currency").range(from, to)),
-    fetchAllPages((from, to) => supabase.from("statement_balances").select("statement_id,currency,real_minimum::text,real_total::text,paid_at").eq("user_id", userId).in("statement_id", statementIds).order("id").range(from, to)),
+    fetchAllPages((from, to) => supabase.from("statement_balances").select("statement_id,currency,real_minimum::text,real_total::text,paid_at,reconciled_at").eq("user_id", userId).in("statement_id", statementIds).order("id").range(from, to)),
   ]);
   for (const row of totals as unknown as CurrencyTotalsRow[]) result.get(row.statement_id)!.totals[row.currency] = row;
   for (const row of marks as unknown as BalanceMarkRow[]) result.get(row.statement_id)!.marks[row.currency] = row;
@@ -62,5 +63,7 @@ export function summarizeStatementBalances(data: StatementBalancesData | undefin
   });
   const charged = summaries.filter((summary) => summary.hasCharges).map((summary) => summary.currency);
   const paidAt = statementPaidAt(Object.fromEntries(summaries.map((summary) => [summary.currency, summary.paidAt])), charged);
-  return { summaries, paidAt };
+  // D39: reconciled with the bank when every currency with charges is.
+  const reconciledAt = statementReconciledAt(Object.fromEntries(currencies.map((currency) => [currency, data?.marks[currency]?.reconciled_at ?? null])), charged);
+  return { summaries, paidAt, reconciledAt };
 }

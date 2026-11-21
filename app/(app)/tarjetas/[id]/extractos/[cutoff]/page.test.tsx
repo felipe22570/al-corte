@@ -16,13 +16,18 @@ const estimates = vi.hoisted(() => ({ load: vi.fn() }));
 vi.mock("@/lib/queries/interest-estimates", () => ({ loadInterestEstimates: estimates.load }));
 const prepaid = vi.hoisted(() => ({ amounts: new Map<string, { amount: unknown; amountCop: unknown }>() }));
 vi.mock("@/lib/queries/prepayments", () => ({ loadPrepaidAmounts: async () => prepaid.amounts }));
-vi.mock("@/components/statement-interest-form", () => ({ StatementInterestForm: () => <div>Formulario de intereses reales</div> }));
+const close = vi.hoisted(() => ({ load: vi.fn(), today: "2026-11-12" }));
+vi.mock("@/lib/queries/statement-close", () => ({ loadCloseContext: close.load }));
+vi.mock("@/components/statement-close-form", () => ({
+  StatementCloseForm: ({ currency, title, showRate, purchases }: { currency: string; title: string; showRate: boolean; purchases: Array<{ label: string; detail: string }> }) =>
+    <div data-close={currency} data-rate={String(showRate)}>{title}{purchases.map((purchase) => ` ${purchase.label} (${purchase.detail})`)}</div>,
+}));
 vi.mock("@/lib/domain/dates", async (importOriginal) => ({
   ...await importOriginal<typeof import("@/lib/domain/dates")>(),
-  todayInBogota: () => "2026-11-12",
+  todayInBogota: () => close.today,
 }));
 vi.mock("@/components/statement-balance-controls", () => ({
-  StatementBalanceControls: ({ currency, paid, realMinimum, context }: { currency: string; paid: boolean; realMinimum: string | null; context: string }) => <div data-currency={currency} data-paid={String(paid)} data-real-minimum={realMinimum} data-context={context}>Controles {currency}</div>,
+  StatementBalanceControls: ({ currency, paid, context, closed }: { currency: string; paid: boolean; context: string; closed?: boolean }) => <div data-currency={currency} data-paid={String(paid)} data-closed={String(!!closed)} data-context={context}>Controles {currency}</div>,
 }));
 const zeros = { single_purchases: "0", installments: "0", subscriptions: "0", cash_advances: "0", interest: "0", handling_fees: "0", insurance: "0", adjustments: "0", refunds: "0", payments: "0" };
 const copTotals = { ...zeros, statement_id: "statement", currency: "COP", has_charges: true, single_purchases: "12500", subscriptions: "64000", refunds: "2500", payments: "10000", total_calculated: "74000", total_cop: "74000", pending_principal: "300000", total_debt: "374000" };
@@ -97,7 +102,7 @@ describe("statement page", () => {
   it("marks the statement paid only when every currency with charges is marked", async () => {
     fixture.marks = [{ statement_id: "statement", currency: "COP", real_minimum: "74001", real_total: "374000.5", paid_at: "2026-11-12T05:00:00Z" }];
     let html = await renderPage();
-    expect(html).toContain('data-currency="COP" data-paid="true" data-real-minimum="74001"');
+    expect(html).toContain('data-currency="COP" data-paid="true"');
     expect(html).toContain('data-currency="USD" data-paid="false"');
     expect(html).not.toContain(">Pagado<");
     expect(html).toContain("Pago mínimo del banco");
@@ -133,17 +138,31 @@ describe("statement page", () => {
     expect(html).toContain("$81.266");
     expect(html).toContain("Intereses estimados");
     expect(html).toContain("Incluye intereses estimados");
-    expect(html).toContain("Formulario de intereses reales");
+    expect(html).not.toContain('data-close="');
   });
 
-  it("does not estimate per-installment cards nor offer the form once the real interest exists", async () => {
+  it("offers the monthly close per currency once the statement is cut (D39)", async () => {
+    close.today = "2026-11-21";
+    close.load.mockImplementation(async (_client: unknown, _user: string, statementId: string, currency: string) => currency === "USD" ? null : {
+      statement: { id: statementId }, currency, calculated: { minimum: new Decimal(74000), debt: new Decimal(374000), interest: new Decimal(0), estimated: false },
+      bank: { minimum: null, debt: null, interest: null, lateInterest: null, rateEa: null, reconciledAt: null },
+      purchases: [{ id: "p", merchant: null, type: "cash_advance", date: "2026-04-16", installmentsCount: 24, calculated: new Decimal(425000), bankBalance: null }],
+    });
+    const html = await renderPage();
+    expect(close.load).toHaveBeenCalledTimes(2);
+    expect(html).toContain('data-close="COP" data-rate="true"');
+    expect(html).toContain("Cierre en pesos Avance (Avance del 16 abr · 24 cuotas)");
+    expect(html).toContain('data-closed="true"');
+    close.today = "2026-11-12";
+  });
+
+  it("does not estimate per-installment cards", async () => {
     expect(await renderPage()).not.toContain("Intereses estimados");
     expect(estimates.load).not.toHaveBeenCalled();
     fixture.interestMode = "on_balance";
     fixture.realInterest = true;
     estimates.load.mockResolvedValue(new Map());
     const html = await renderPage();
-    expect(html).not.toContain("Formulario de intereses reales");
     expect(html).not.toContain("Intereses estimados");
   });
 });

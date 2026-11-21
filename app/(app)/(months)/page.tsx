@@ -10,6 +10,7 @@ import { NewExpenseFab } from "@/components/new-expense-fab";
 import { PageHeader } from "@/components/page-header";
 import { SaveNotice } from "@/components/save-notice";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { StatementCloseNotice } from "@/components/statement-close-notice";
 import { buttonVariants } from "@/components/ui/button";
 import { todayInBogota } from "@/lib/domain/dates";
 import { historyMonthCapacity, historyMonthNextBlock } from "@/lib/domain/months";
@@ -39,6 +40,7 @@ export default async function MonthsPage({ searchParams }: { searchParams: Promi
       {saved === "1" && <SaveNotice />}
       <PageHeader title="Meses" subtitle="Tus tarjetas, claras antes de cada corte." action={<Link href="/movimientos/nuevo" className={buttonVariants({ className: "hidden md:inline-flex" })}><Plus aria-hidden="true" className="size-5" strokeWidth={1.75} />Nuevo gasto</Link>} />
       <div className="grid min-w-0 gap-6">
+        <StatementCloseNotice reviews={overview.toReview} cards={cards} today={today} />
         {overview.overdue.months.size > 0 && (
           <Alert variant="destructive" role="note">
             <AlertTitle>Extractos vencidos sin confirmar pago: <CurrencyInline cop={overview.overdue.total} usd={overview.overdue.totalUsd} /></AlertTitle>

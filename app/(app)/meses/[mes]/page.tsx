@@ -9,8 +9,9 @@ import { MonthStatementCard } from "@/components/month-statement-card";
 import { MonthSummary } from "@/components/month-summary";
 import { PageHeader } from "@/components/page-header";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { StatementCloseNotice } from "@/components/statement-close-notice";
 import { todayInBogota } from "@/lib/domain/dates";
-import { monthBreakdown, monthComparison, parsePaymentMonth } from "@/lib/domain/months";
+import { monthBreakdown, monthComparison, parsePaymentMonth, paymentMonth } from "@/lib/domain/months";
 import { formatDateShort, formatMonth, formatSpendingComparison } from "@/lib/format";
 import { loadMonthDetail } from "@/lib/queries/months";
 import { createSupabaseMonthSource } from "@/lib/queries/supabase-months";
@@ -39,7 +40,7 @@ export default async function MonthDetailPage({ params }: { params: Promise<{ me
   const [cards, categories, purchases] = await Promise.all([
     source.loadCardDetails(), source.loadCategories(), source.loadPurchaseMonthSpending(mes),
   ]);
-  const { month, previous, neighbors, overdue, subscriptionNames } = detail;
+  const { month, previous, neighbors, overdue, subscriptionNames, toReview } = detail;
   const breakdown = monthBreakdown(month.statements);
   // D33: dollar charges are broken down apart and never added to the peso total.
   const usdBreakdown = month.totalUsd.isZero() ? null : monthBreakdown(month.statements, "USD");
@@ -59,6 +60,8 @@ export default async function MonthDetailPage({ params }: { params: Promise<{ me
       {neighbors.previous ? <Link className={navLink} href={`/meses/${neighbors.previous}`} aria-label={`Mes anterior: ${formatMonth(neighbors.previous, "long")}`}><ChevronLeft aria-hidden="true" className="size-5 shrink-0 text-muted-foreground" strokeWidth={1.75} />{formatMonth(neighbors.previous, "long")}</Link> : <span />}
       {neighbors.next && <Link className={navLink} href={`/meses/${neighbors.next}`} aria-label={`Mes siguiente: ${formatMonth(neighbors.next, "long")}`}>{formatMonth(neighbors.next, "long")}<ChevronRight aria-hidden="true" className="size-5 shrink-0 text-muted-foreground" strokeWidth={1.75} /></Link>}
     </nav>
+    {/* F15: statements of this payment month still to close against the bank. */}
+    <StatementCloseNotice reviews={toReview.filter((review) => paymentMonth(review.dueDate) === mes)} cards={cards} today={today} />
     {month.kind === "current" && overdue.months.size > 0 && <Alert variant="destructive" role="note">
       <AlertTitle>Extractos vencidos sin confirmar pago: <CurrencyInline cop={overdue.total} usd={overdue.totalUsd} /></AlertTitle>
       <AlertDescription className="text-foreground"><p>No descuenta abonos registrados. Los extractos siguen en su mes de pago.</p><div className="flex flex-wrap gap-3">{[...overdue.months.keys()].sort().map((key) => <Link className="underline" key={key} href={`/meses/${key}`}>{formatMonth(key, "long")}</Link>)}</div></AlertDescription>

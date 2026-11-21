@@ -10,6 +10,7 @@ import {
   selectMonthStatementScope,
   type ProjectionInput,
 } from "@/lib/domain/months";
+import { statementsToReview } from "@/lib/domain/reconciliation";
 import type { IsoDate } from "@/lib/domain/dates";
 
 type Card = ProjectionInput["cards"][number];
@@ -54,8 +55,15 @@ export async function loadMonthDetail(source: MonthReadSource, today: IsoDate, r
     previous: summaries.find((summary) => summary.month === previousMonth && summary.statements.length > 0),
     neighbors: { previous: available[index - 1] ?? null, next: available[index + 1] ?? null },
     overdue: overdueStatements(projected.statements, today),
+    toReview: reviewList(cards, statements, today),
     subscriptionNames: Object.fromEntries(subscriptions.map((subscription) => [subscription.id, subscription.name ?? "Suscripción"])),
   };
+}
+
+/** F15: latest statement already cut of each active card that is not reconciled with the bank yet. */
+function reviewList(cards: Card[], statements: Statement[], today: IsoDate) {
+  return statementsToReview(cards, statements.map((statement) => ({ cardId: statement.cardId, cutoffDate: statement.cutoffDate, dueDate: statement.dueDate, reconciledAt: statement.reconciledAt ?? null })), today)
+    .map(({ cardId, cutoffDate, dueDate }) => ({ cardId, cutoffDate, dueDate }));
 }
 
 export async function loadMonthOverview(
@@ -88,6 +96,7 @@ export async function loadMonthOverview(
     historyNextBefore: scope.history.nextBefore,
     overdue: overdueStatements(projected.statements, today),
     hasLaterCommitments: projected.hasLaterCommitments,
+    toReview: reviewList(cards, statements, today),
     subscriptionNames: Object.fromEntries(subscriptions.map((subscription) => [subscription.id, subscription.name ?? "Suscripción"])),
   };
 }

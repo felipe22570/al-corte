@@ -518,6 +518,18 @@ describe("projectStatements", () => {
       expect(settled.gt(0) && settled.lt(full)).toBe(true);
     });
 
+    it("no estima en una moneda conciliada ni con interés real en esa moneda; la otra moneda conserva su estimación (D39)", () => {
+      const cards = [{ ...card, handlingFee: new Decimal(0), interestMode: "on_balance" as const }];
+      const usdBasis = { ...basis, currency: "USD" as const, principal: new Decimal("10"), balanceAfter: new Decimal("100"), fxRate: new Decimal(4000) };
+      const both = { ...input, cards, installments: [...input.installments, { id: "u", statementId: "s", categoryId: null, totalCop: new Decimal(40000), total: new Decimal(10), currency: "USD" as const, interestBasis: usdBasis }] };
+      const estimated = (result: ReturnType<typeof projectStatements>) => result.statements[0]!.charges.filter((charge) => charge.estimated).map((charge) => charge.currency);
+      expect(estimated(projectStatements(both))).toEqual(["COP", "USD"]);
+      expect(estimated(projectStatements({ ...both, statements: [{ ...statement, reconciledByCurrency: { COP: "2026-11-27T10:00:00Z" } }] }))).toEqual(["USD"]);
+      const usdInterest = projectStatements({ ...both, movements: [{ id: "real", statementId: "s", type: "late_interest", amountCop: new Decimal(4000), amount: new Decimal(1), currency: "USD", categoryId: null, date: "2026-11-25" }] });
+      expect(estimated(usdInterest)).toEqual(["COP"]);
+      expect(usdInterest.statements[0]!.charges.find((charge) => charge.id === "real")?.concept).toBe("interest");
+    });
+
     it("no estima en tarjetas por cuota ni sin capital con interés", () => {
       const perInstallment = projectStatements({ ...input, cards: [{ ...card, handlingFee: new Decimal(0), interestMode: "per_installment" }] });
       expect(perInstallment.statements[0]?.recordedTotal.toString()).toBe("112965");

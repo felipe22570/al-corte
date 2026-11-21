@@ -2,6 +2,7 @@ import Decimal from "decimal.js";
 import type { CardColor } from "@/lib/card-colors";
 import { monthDateBounds, purchaseMonthSpending, type ProjectionInput } from "@/lib/domain/months";
 import { statementPaidAt } from "@/lib/domain/balances";
+import { statementReconciledAt } from "@/lib/domain/reconciliation";
 import type { AmortizationMethod } from "@/lib/domain/installments";
 import type { InterestMode } from "@/lib/domain/interest";
 import type { Currency } from "@/lib/domain/money";
@@ -14,7 +15,7 @@ type Client = Awaited<ReturnType<typeof createClient>>;
 type RawCard = { id: string; name: string; bank: string; last4: string; color: CardColor; archived_at: string | null; cutoff_day: number; payment_day: number; handling_fee: string; interest_mode: InterestMode; purchase_rate_ea: string; amortization_method: AmortizationMethod };
 type RawBalance = { card_id: string; used: string; available: string; utilization: string };
 type RawStatement = { id: string; card_id: string; period_start: string; cutoff_date: string; due_date: string };
-type RawBalanceMark = { statement_id: string; currency: Currency; paid_at: string | null };
+type RawBalanceMark = { statement_id: string; currency: Currency; paid_at: string | null; reconciled_at: string | null };
 type RawCurrencyTotal = { statement_id: string; currency: Currency; has_charges: boolean; pending_principal: string };
 type RawSubscription = { id: string; name: string; card_id: string; category_id: string | null; amount: string; currency: "COP" | "USD"; frequency: "monthly" | "yearly"; billing_day: number; start_date: string; trial_ends_at: string | null; status: "active" | "paused" | "cancelled"; installments_count: number };
 type Movement = ProjectionInput["movements"][number];
@@ -88,11 +89,15 @@ export function createSupabaseMonthSource(client: Client, userId: string): Month
     async loadStatements() {
       const [rows, marks, totals] = await Promise.all([
         fetchAllPages((from, to) => client.from("statements").select("id,card_id,period_start,cutoff_date,due_date").eq("user_id", userId).order("id").range(from, to)),
-        fetchAllPages((from, to) => client.from("statement_balances").select("statement_id,currency,paid_at").eq("user_id", userId).order("id").range(from, to)),
+        fetchAllPages((from, to) => client.from("statement_balances").select("statement_id,currency,paid_at,reconciled_at").eq("user_id", userId).order("id").range(from, to)),
         fetchAllPages((from, to) => client.from("statement_currency_totals").select("statement_id,currency,has_charges,pending_principal::text").eq("user_id", userId).order("statement_id").order("currency").range(from, to)),
       ]);
       const paid = new Map<string, Partial<Record<Currency, string | null>>>();
-      for (const mark of marks as unknown as RawBalanceMark[]) paid.set(mark.statement_id, { ...paid.get(mark.statement_id), [mark.currency]: mark.paid_at });
+      const reconciled = new Map<string, Partial<Record<Currency, string | null>>>();
+      for (const mark of marks as unknown as RawBalanceMark[]) {
+        paid.set(mark.statement_id, { ...paid.get(mark.statement_id), [mark.currency]: mark.paid_at });
+        reconciled.set(mark.statement_id, { ...reconciled.get(mark.statement_id), [mark.currency]: mark.reconciled_at });
+      }
       const currencies = new Map<string, Currency[]>();
       const pending = new Map<string, Partial<Record<Currency, Decimal>>>();
       for (const total of totals as unknown as RawCurrencyTotal[]) {
@@ -102,9 +107,11 @@ export function createSupabaseMonthSource(client: Client, userId: string): Month
       // D33: a statement is paid once every currency with charges is marked.
       return (rows as unknown as RawStatement[]).map((s) => {
         const paidByCurrency = { COP: paid.get(s.id)?.COP ?? null, USD: paid.get(s.id)?.USD ?? null };
+        const reconciledByCurrency = { COP: reconciled.get(s.id)?.COP ?? null, USD: reconciled.get(s.id)?.USD ?? null };
         return {
           id: s.id, cardId: s.card_id, periodStart: s.period_start, cutoffDate: s.cutoff_date, dueDate: s.due_date,
           paidAt: statementPaidAt(paidByCurrency, currencies.get(s.id) ?? []), paidByCurrency, pendingPrincipal: pending.get(s.id) ?? {},
+          reconciledByCurrency, reconciledAt: statementReconciledAt(reconciledByCurrency, currencies.get(s.id) ?? []),
         };
       });
     },

@@ -3,10 +3,11 @@ import { monthKey } from "./dates";
 
 export type StatementConcept = "single_purchases" | "installments" | "subscriptions" | "cash_advances" | "interest" | "handling_fees" | "insurance" | "adjustments" | "refunds" | "payments";
 export type StatementItem = { concept: StatementConcept; amountCop: Decimal };
-type MovementType = "purchase" | "cash_advance" | "advance_fee" | "interest" | "handling_fee" | "insurance" | "adjustment" | "refund" | "payment";
+type MovementType = "purchase" | "cash_advance" | "advance_fee" | "interest" | "late_interest" | "handling_fee" | "insurance" | "adjustment" | "refund" | "payment";
 type StatementMovement = { type: MovementType; amountCop: Decimal; installmentsCount?: number; source?: "manual" | "subscription" | "import" | "email" | "system" };
 const movementConcept: Record<Exclude<MovementType, "purchase">, StatementConcept> = {
-  cash_advance: "cash_advances", advance_fee: "cash_advances", interest: "interest",
+  // Late interest counts as interest in totals (D39); it is its own type only for the order of payments (R9).
+  cash_advance: "cash_advances", advance_fee: "cash_advances", interest: "interest", late_interest: "interest",
   handling_fee: "handling_fees", insurance: "insurance", adjustment: "adjustments",
   refund: "refunds", payment: "payments",
 };

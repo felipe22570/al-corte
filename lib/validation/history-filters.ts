@@ -2,7 +2,7 @@ import { z } from "zod";
 
 const monthSchema = z.string().regex(/^\d{4}-(0[1-9]|1[0-2])$/).refine((value) => Number(value.slice(0, 4)) >= 2 && Number(value.slice(0, 4)) <= 9998);
 const idSchema = z.uuid();
-const typeSchema = z.enum(["purchase", "cash_advance", "advance_fee", "payment", "handling_fee", "interest", "insurance", "refund", "adjustment"]);
+const typeSchema = z.enum(["purchase", "cash_advance", "advance_fee", "payment", "handling_fee", "interest", "late_interest", "insurance", "refund", "adjustment"]);
 
 export function parseHistoryFilters(params: Record<string, string | string[] | undefined>, currentMonth: string) {
   const text = typeof params.q === "string" ? params.q.trim().slice(0, 100) : "";

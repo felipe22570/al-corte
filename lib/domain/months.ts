@@ -180,6 +180,10 @@ type SavedStatement = {
   paidByCurrency?: Partial<Record<Currency, string | null>>;
   /** Principal still to be billed after this statement, per currency (statement_currency_totals). */
   pendingPrincipal?: Partial<Record<Currency, Decimal>>;
+  /** Reconciled with the bank per currency (D39): its interest is known, so no estimate is added. */
+  reconciledByCurrency?: Partial<Record<Currency, string | null>>;
+  /** Reconciled in every currency with charges (D39). */
+  reconciledAt?: string | null;
 };
 type Movement = Parameters<typeof statementItemsFromMovements>[0][number] & {
   id: string; statementId: string; categoryId: string | null; subscriptionId?: string | null; date: IsoDate;
@@ -261,11 +265,13 @@ export function projectStatements(input: ProjectionInput): { statements: Project
 
   const result: ProjectedStatement[] = input.statements.filter((s) => paymentMonth(s.dueDate) <= lastMonth).map((s) => {
     const charges = chargesByStatement.get(s.id) ?? [];
-    // D32: without a real interest charge, on-balance statements carry the R8 estimate in their calculated total.
-    if (interestModes.get(s.cardId) === "on_balance" && !charges.some((charge) => charge.concept === "interest")) {
+    // D32: without a real interest charge in a currency, on-balance statements carry the R8 estimate in their calculated
+    // total. A currency reconciled with the bank (D39) already has its real interest, even when it is zero.
+    if (interestModes.get(s.cardId) === "on_balance") {
       const estimate = estimateBalanceInterest(interestBasis.get(s.id) ?? [], s.periodStart);
       for (const currency of CURRENCIES) {
-        if (estimate.byCurrency[currency].gt(0)) charges.push({ id: `interest:${s.id}:${currency}`, origin: "real", concept: "interest", categoryId: null,
+        const known = s.reconciledByCurrency?.[currency] || charges.some((charge) => charge.concept === "interest" && chargeCurrency(charge) === currency);
+        if (!known && estimate.byCurrency[currency].gt(0)) charges.push({ id: `interest:${s.id}:${currency}`, origin: "real", concept: "interest", categoryId: null,
           amount: estimate.byCurrency[currency], currency, amountCop: estimate.copByCurrency[currency], estimated: true });
       }
     }

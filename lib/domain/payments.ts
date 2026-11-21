@@ -22,8 +22,11 @@ export type PlanTerms = {
   amount: Decimal; amountCop: Decimal; currency: Currency; fxRate: Decimal | null;
   method: AmortizationMethod; monthlyRate: Decimal;
 };
-/** A prepayment already applied to the movement, in its currency and its COP reference. */
-export type AppliedPrepayment = { amount: Decimal; amountCop: Decimal };
+/**
+ * A prepayment or balance correction already applied to the movement, in its currency and its COP reference (signed for
+ * corrections, D39). `date` is when it took effect: the payment date, or the cutoff of the corrected statement.
+ */
+export type AppliedPrepayment = { amount: Decimal; amountCop: Decimal; date?: IsoDate };
 
 /** A movement of the card in the payment currency, with what is needed to classify it and rebuild its plan. */
 export type PaymentTarget = {
@@ -286,6 +289,14 @@ export function prepaymentInterestWeight(periodStart: IsoDate, cutoffDate: IsoDa
   return new Decimal(days).div(daysBetween(periodStart, cutoffDate) + 1);
 }
 
+/** An installment row as the RPCs receive it. */
+export function installmentRowPayload(row: InstallmentRow) {
+  return {
+    number: row.number, cutoff_date: row.cutoffDate, principal: row.principal.toFixed(), interest: row.interest.toFixed(), total: row.total.toFixed(),
+    balance_after: row.balanceAfter.toFixed(), principal_cop: row.principalCop.toFixed(), interest_cop: row.interestCop.toFixed(), total_cop: row.totalCop.toFixed(),
+  };
+}
+
 /**
  * Payload of `register_payment`: the payment in its currency (a USD payment carries the D4 TRM only as reference),
  * the payment mark when it covers the minimum (D37) and each prepayment with its rebuilt rows.
@@ -300,10 +311,7 @@ export function paymentPayload(input: { cardId: string; statementId: string; cur
     prepayments: plan.prepayments.map((prepayment) => ({
       transaction_id: prepayment.transactionId, amount: prepayment.amount.toFixed(), amount_cop: prepayment.amountCop.toFixed(),
       effect: prepayment.effect, assumed: prepayment.assumed, replaced_from_number: prepayment.replacedFromNumber,
-      installments: prepayment.rows && prepayment.rows.map((row) => ({
-        number: row.number, cutoff_date: row.cutoffDate, principal: row.principal.toFixed(), interest: row.interest.toFixed(), total: row.total.toFixed(),
-        balance_after: row.balanceAfter.toFixed(), principal_cop: row.principalCop.toFixed(), interest_cop: row.interestCop.toFixed(), total_cop: row.totalCop.toFixed(),
-      })),
+      installments: prepayment.rows && prepayment.rows.map(installmentRowPayload),
     })),
   };
 }
