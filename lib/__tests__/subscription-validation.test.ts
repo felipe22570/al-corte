@@ -12,7 +12,9 @@ describe("subscription validation", () => {
   it("acepta cuotas por cobro y rechaza un valor que no alcanza para ellas (D35)", () => {
     expect(subscriptionSchema.parse(valid).installmentsCount).toBe(1);
     expect(subscriptionSchema.parse({ ...valid, amount: "12,99", installmentsCount: "36" }).installmentsCount).toBe(36);
-    for (const input of [{ ...valid, amount: "0,54", installmentsCount: "36" }, { ...valid, amount: "0,01", installmentsCount: "2" }, { ...valid, installmentsCount: "37" }, { ...valid, installmentsCount: "0" }]) {
+    // R2: a rounded installment that ends the plan earlier is accepted (US$ 2,79 a 36).
+    expect(subscriptionSchema.parse({ ...valid, amount: "2,79", installmentsCount: "36" }).installmentsCount).toBe(36);
+    for (const input of [{ ...valid, amount: "0,17", installmentsCount: "36" }, { ...valid, amount: "0,01", installmentsCount: "3" }, { ...valid, installmentsCount: "37" }, { ...valid, installmentsCount: "0" }]) {
       const result = subscriptionSchema.safeParse(input);
       expect(result.success).toBe(false);
       expect(result.error?.issues[0]?.path).toEqual(["installmentsCount"]);

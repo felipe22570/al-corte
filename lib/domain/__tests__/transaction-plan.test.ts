@@ -70,6 +70,7 @@ describe("transaction plan", () => {
   });
   it("arma una compra en curso en el extracto de la cuota k, sin cortes anteriores", () => {
     const result = buildTransactionPlan({ ...base, date: "2026-04-16", amount: "600000", installmentsCount: 24, inProgress: { currentInstallment: 7, balanceAfter: "269998.46", trackedFromCutoff: "2026-11-15" } }, card);
+    expect(buildTransactionPlan({ ...base, date: "2026-04-16", amount: "600000", installmentsCount: 24, inProgress: { currentInstallment: 7, balanceAfter: "269998.46", trackedFromCutoff: "2026-11-15", currentPrincipal: "25000" } }, card).payload.prior_principal_paid).toBe(result.payload.prior_principal_paid);
     expect(result.firstCutoff).toBe("2026-11-15");
     expect(result.dueDate).toBe("2026-12-05");
     expect(result.firstInstallment).toBe(result.payload.installments[6]?.total);

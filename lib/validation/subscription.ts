@@ -27,9 +27,10 @@ export const subscriptionSchema = z.object({
   // D35: each charge is registered as a purchase in these installments.
   installmentsCount: z.coerce.number().int("Ingresa un número entero.").min(1, "Elige entre 1 y 36 cuotas.").max(36, "Elige entre 1 y 36 cuotas.").default(1),
 }).superRefine((value, ctx) => {
-  // Same rule as the database: with fixed principal every installment but the last is round(amount / N, 2) and the last stays positive.
+  // Same rule as the database: the installment round(amount / N, 2) cannot be zero. When it leaves nothing for the last one,
+  // the plan ends earlier with the same installment, as the bank bills it (R2).
   const installment = new Decimal(value.amount).div(value.installmentsCount).toDecimalPlaces(2, Decimal.ROUND_HALF_UP);
-  if (value.installmentsCount > 1 && (!installment.gt(0) || !installment.times(value.installmentsCount - 1).lt(value.amount))) {
+  if (value.installmentsCount > 1 && !installment.gt(0)) {
     ctx.addIssue({ code: "custom", path: ["installmentsCount"], message: "El valor es muy pequeño para esa cantidad de cuotas." });
   }
 });

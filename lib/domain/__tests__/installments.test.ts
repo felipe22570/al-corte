@@ -73,14 +73,35 @@ describe("installments", () => {
     expect(() => buildInstallmentPlan({ ...input, currency: "USD" })).toThrow("TRM");
   });
 
-  it("rechaza planes cuyo redondeo agotaría el capital antes de la última cuota", () => {
-    expect(() => buildInstallmentPlan({ principal: decimal("0.02"), count: 4, annualRateEa: decimal("0"), method: "fixed_principal", interestFree: false, currency: "COP", cutoffDay: 15, purchaseDate: "2026-01-20" })).toThrow("muy pequeño");
+  it("con una cuota redondeada que agota el capital, conserva la cuota y termina antes, como el banco", () => {
+    // US$ 2,79 a 36 cuotas: 34 de US$ 0,08 y la última de US$ 0,07; conserva el N original.
+    const plan = buildInstallmentPlan({ principal: decimal("2.79"), count: 36, annualRateEa: decimal("0.2899"), method: "fixed_principal", interestFree: false, currency: "USD", fxRate: decimal("4000"), cutoffDay: 15, purchaseDate: "2026-10-20", interestMode: "on_balance" });
+    expect(plan.rows.length).toBe(35);
+    expect(plan.rows.slice(0, -1).every((row) => row.principal.equals("0.08"))).toBe(true);
+    expect(plan.rows.at(-1)!.principal.toString()).toBe("0.07");
+    expect(plan.originalCount).toBe(36);
+    expect(plan.rows.reduce((sum, row) => sum.plus(row.principalCop), decimal(0)).equals(plan.amountCop)).toBe(true);
+    // Exact multiple: US$ 2,72 a 36 deja 34 cuotas de US$ 0,08.
+    expect(buildInstallmentPlan({ principal: decimal("2.72"), count: 36, annualRateEa: decimal("0"), method: "french", interestFree: false, currency: "USD", fxRate: decimal("4000"), cutoffDay: 15, purchaseDate: "2026-10-20" }).rows.length).toBe(34);
+  });
+
+  it("rechaza planes con una cuota redondeada a cero", () => {
+    expect(() => buildInstallmentPlan({ principal: decimal("0.01"), count: 4, annualRateEa: decimal("0"), method: "fixed_principal", interestFree: false, currency: "COP", cutoffDay: 15, purchaseDate: "2026-01-20" })).toThrow("muy pequeño");
   });
 });
 
 describe("compras en curso (R8, D31, D49)", () => {
   const base = { annualRateEa: decimal(0), method: "fixed_principal" as const, interestFree: false, currency: "COP" as const, cutoffDay: 15, purchaseDate: "2026-09-10" };
   const summary = (rows: ReturnType<typeof buildInstallmentPlan>["rows"]) => rows.map((row) => [row.number, row.principal.toFixed(2), row.interest.toFixed(2), row.balanceAfter.toFixed(2), row.cutoffDate, row.beforeTracking]);
+
+  it("usa la cuota k que imprime el banco cuando no es la regular (última por el resto)", () => {
+    // $232.000 a 3 cuotas, cuota 3 de $77.331,87 y saldo 0: el banco cobró $154.668,13 antes.
+    const plan = buildInstallmentPlan({ ...base, principal: decimal("232000"), count: 3, purchaseDate: "2026-08-23",
+      inProgress: { currentInstallment: 3, balanceAfter: decimal(0), trackedFromCutoff: "2026-11-15", currentPrincipal: decimal("77331.87") } });
+    expect(plan.priorPrincipalPaid.toString()).toBe("154668.13");
+    expect(summary(plan.rows).at(-1)).toEqual([3, "77331.87", "0.00", "0.00", "2026-11-15", false]);
+    expect(plan.originalCount).toBeNull();
+  });
 
   it("IKEA de la Visa: cuota 3 de 4 con el saldo del extracto mantiene el plan", () => {
     const plan = buildInstallmentPlan({ ...base, principal: decimal("451860"), count: 4, inProgress: { currentInstallment: 3, balanceAfter: decimal("112965"), trackedFromCutoff: "2026-11-15" } });

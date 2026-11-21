@@ -80,6 +80,11 @@ describe("cambio de cuotas (F16, D40, D50)", () => {
     expect(installmentChangePayload("compra", 3, change)).toMatchObject({ transaction_id: "compra", remaining_installments: 3, replaced_from_number: 3, installments: [expect.objectContaining({ number: 3, principal: "30" }), expect.anything(), expect.anything()] });
   });
 
+  it("rechaza cuotas restantes que el saldo no alcanza a cubrir", () => {
+    const tiny = target({ amount: "0.30", count: 2, date: "2026-11-20" });
+    expect(() => changeInstallments({ target: tiny, remaining: 36, date: "2026-11-21", cutoffDay: 15, interestRate: rate })).toThrow("muy pequeño");
+  });
+
   it("no cambia una compra sin cuotas por facturar", () => {
     const purchase = target({ amount: "300000", count: 3, date: "2026-08-10" });
     expect(() => changeInstallments({ target: purchase, remaining: 2, date: "2026-11-21", cutoffDay: 15, interestRate: rate })).toThrow("no tiene cuotas por facturar");

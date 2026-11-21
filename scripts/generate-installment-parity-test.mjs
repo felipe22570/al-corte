@@ -21,8 +21,8 @@ normalized as (
   from cases
 )
 select is(actual, expected, 'paridad SQL/TypeScript: ' || name) from normalized;
-select throws_ok($$ select private.build_installment_rows(0.54, 36, 0, 'fixed_principal', false, 'per_installment', 'COP', null, 15, '2026-01-20') $$,
-  '22023', 'El valor es muy pequeño para esa cantidad de cuotas.', 'rechaza un plan cuyo redondeo agota el capital');
+select throws_ok($$ select private.build_installment_rows(0.17, 36, 0, 'fixed_principal', false, 'per_installment', 'COP', null, 15, '2026-01-20') $$,
+  '22023', 'El valor es muy pequeño para esa cantidad de cuotas.', 'rechaza un plan con la cuota redondeada a cero');
 select * from finish();
 rollback;
 `;

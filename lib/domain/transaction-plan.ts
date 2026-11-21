@@ -6,7 +6,7 @@ import { dueDateFor, statementCutoffFor } from "./statements";
 import type { IsoDate } from "./dates";
 
 /** In-progress purchase data copied from the last bank statement (D49). */
-export type TransactionInProgress = { currentInstallment: number; balanceAfter: string | null; trackedFromCutoff: IsoDate };
+export type TransactionInProgress = { currentInstallment: number; balanceAfter: string | null; trackedFromCutoff: IsoDate; currentPrincipal?: string | null };
 export type TransactionPlanInput = {
   cardId: string; type: "purchase" | "cash_advance" | "payment" | "handling_fee" | "interest" | "insurance" | "refund" | "adjustment";
   date: IsoDate; amount: string; currency: Currency; fxRate?: string | null; installmentsCount: number;
@@ -34,7 +34,7 @@ export function buildTransactionPlan(input: TransactionPlanInput, card: Transact
   const plan = buildInstallmentPlan({
     principal, count: input.installmentsCount, annualRateEa: new Decimal(isPurchase || isAdvance ? rate : "0"), method: card.amortizationMethod,
     interestFree: input.interestFree, currency: input.currency, fxRate, cutoffDay: card.cutoffDay, purchaseDate: input.date, interestMode: card.interestMode,
-    inProgress: inProgress && { currentInstallment: inProgress.currentInstallment, balanceAfter: inProgress.balanceAfter === null ? null : new Decimal(inProgress.balanceAfter), trackedFromCutoff: inProgress.trackedFromCutoff },
+    inProgress: inProgress && { currentInstallment: inProgress.currentInstallment, balanceAfter: inProgress.balanceAfter === null ? null : new Decimal(inProgress.balanceAfter), trackedFromCutoff: inProgress.trackedFromCutoff, currentPrincipal: inProgress.currentPrincipal ? new Decimal(inProgress.currentPrincipal) : null },
   });
   // With prior installments, the movement belongs to the statement of installment k, not to the one R1 gives its date.
   const firstCutoff = inProgress?.trackedFromCutoff ?? statementCutoffFor(card.cutoffDay, input.date);

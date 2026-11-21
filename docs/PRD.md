@@ -249,6 +249,7 @@ Donde P es el valor de la compra, N el número de cuotas y S el saldo de capital
 
 - La cuota k se asigna al extracto de la compra más k − 1 meses.
 - Los valores en COP se calculan y guardan con centavos (2 decimales), como los factura el banco, y se muestran en pesos enteros. La última cuota absorbe la diferencia de redondeo para que el capital sume exactamente P (D48). Los datos guardados antes en pesos enteros siguen siendo válidos.
+- Si la cuota de capital redondeada (P/N a centavos) haría que las primeras N − 1 sumen P o más (valores pequeños a muchas cuotas), se conserva esa cuota y el plan termina antes, con la última por el resto, como lo factura el banco: US$ 2,79 a 36 cuotas son 34 de US$ 0,08 y una de US$ 0,07. Se guarda el N original. Una cuota redondeada a cero no es válida.
 - Una compra a 1 cuota no genera intereses. Una compra marcada "sin intereses" usa i = 0.
 - La tasa queda congelada en la compra. Si el banco cobra otro valor, la diferencia se registra con un movimiento de tipo "ajuste" durante la conciliación.
 

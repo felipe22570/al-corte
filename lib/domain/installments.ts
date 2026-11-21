@@ -9,7 +9,11 @@ export type AmortizationMethod = "fixed_principal" | "french";
 /** `cutoffDate` is null only for installments paid before tracking, which never belong to a statement (D31). */
 export type InstallmentRow = { number: number; principal: Decimal; interest: Decimal; total: Decimal; balanceAfter: Decimal; cutoffDate: IsoDate | null; beforeTracking: boolean; principalCop: Decimal; interestCop: Decimal; totalCop: Decimal };
 /** Copied from the last bank statement (D49): installment k already billed there and, optionally, the balance left after it. */
-export type InProgressInput = { currentInstallment: number; balanceAfter?: Decimal | null; trackedFromCutoff: IsoDate };
+export type InProgressInput = {
+  currentInstallment: number; balanceAfter?: Decimal | null; trackedFromCutoff: IsoDate;
+  /** Principal of installment k as printed by the bank, when it is not the regular one (the last installment's rest). */
+  currentPrincipal?: Decimal | null;
+};
 type Input = { principal: Decimal; count: number; annualRateEa: Decimal; method: AmortizationMethod; interestFree: boolean; currency: Currency; fxRate?: Decimal; cutoffDay: number; purchaseDate: IsoDate; inProgress?: InProgressInput | null; interestMode?: InterestMode };
 export type ScheduleItem = { principal: Decimal; interest: Decimal; beforeTracking: boolean };
 
@@ -35,7 +39,16 @@ export function amortize(principal: Decimal, count: number, rate: Decimal, metho
   return items;
 }
 
+/**
+ * R2 with the bank's rounding: when the rounded fixed principal would leave nothing for the last installment (small
+ * amounts in many installments), the bank keeps that installment and the plan ends earlier, the last one for the rest.
+ * The original N is kept apart (D31). An installment rounded to zero is still impossible.
+ */
 function standardSchedule(input: Input, rate: Decimal): ScheduleItem[] {
+  const regular = roundMoney(input.principal.div(input.count), input.currency);
+  const keepsPayment = input.method === "french" && !rate.isZero();
+  if (!keepsPayment && regular.isZero()) throw new Error("El valor es muy pequeño para esa cantidad de cuotas.");
+  if (!keepsPayment && regular.gt(0) && regular.times(input.count - 1).gte(input.principal)) return shortenedSchedule(input.principal, regular, rate, input.currency);
   return amortize(input.principal, input.count, rate, input.method, input.currency);
 }
 
@@ -70,15 +83,16 @@ function inProgressSchedule(input: Input, inProgress: InProgressInput, rate: Dec
     throw new Error("El corte de la cuota actual no es válido para esta tarjeta.");
   }
   const prior = k - 1;
+  // Never zero: the standard plan already rejects an installment rounded to zero.
   const installment = roundMoney(input.principal.div(input.count), input.currency);
-  if (installment.isZero()) throw new Error("El valor es muy pequeño para esa cantidad de cuotas.");
   if (balanceAfter === null) {
     const paid = sum(standard.slice(0, prior).map((item) => item.principal));
     return { prior, paid, items: priorSchedule(paid, prior, input.currency).concat(standard.slice(prior)) };
   }
   if (input.method === "french") throw new Error("El saldo del banco solo se puede usar con tarjetas de capital fijo.");
   if (balanceAfter.isNegative()) throw new Error("El saldo pendiente no puede ser negativo.");
-  const paid = input.principal.minus(balanceAfter).minus(installment);
+  // c = P − balance − installment k; the bank's own figure for k when given (D49).
+  const paid = input.principal.minus(balanceAfter).minus(inProgress.currentPrincipal ?? installment);
   if (paid.isNegative()) throw new Error("El saldo pendiente no puede ser mayor que el valor menos una cuota.");
   // The plan's own rounding residual (absorbed by its last installment) plus one cent of bank rounding.
   const tolerance = input.principal.minus(installment.times(input.count)).abs().plus("0.01");
