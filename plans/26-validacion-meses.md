@@ -1,10 +1,10 @@
 # Paso 26 — Pulido y validación de H9
 
 - **Hito PRD:** H9 (parte 6 de 6)
-- **Estado:** 🟡 En progreso
+- **Estado:** ✅ Terminado
 - **Inicio:** 2026-11-15
-- **Fin:**
-- **Commit:**
+- **Fin:** 2026-11-21
+- **Commit:** 3a2728b
 - **Depende de:** 25
 - **Decisiones aplicables (decididas, ver README):** D17–D29
 
@@ -38,7 +38,7 @@ pnpm build && pnpm start
 - [x] Rendimiento de `/` en 4G emulado dentro del objetivo del PRD (1,5 s).
 - [x] 360 px y escritorio, claro y oscuro, revisados en producción.
 - [x] Teclado, nombres accesibles contextualizados, IDs únicos, una sola acción primaria, foco tras pago y reflujo de etiquetas/importes largos; no confundir pruebas automatizadas con verificación manual en lector de pantalla.
-- [ ] Revisión del dueño en el celular.
+- [x] Revisión del dueño en el celular (el dueño cerró el paso el 2026-11-21).
 
 ## Criterios de terminado
 
@@ -67,3 +67,4 @@ pnpm build && pnpm start
   - Rendimiento de `/` a 360 px: LCP 0,55–0,60 s en Fast 4G y 0,93 s en Slow 4G; el candidato final es contenido real (franja de tarjetas), no el skeleton. Dentro de 1,5 s.
   - Defecto encontrado y corregido: con nombres de tarjeta largos el importe caía a una línea alineada a la izquierda en las filas compactas del inicio y en la cabecera del bloque de extractos; además quedaba un «·» colgante en «Ya facturado · Aún puede crecer». Commit `024a66e` en `main` con prueba de regresión, verificado en local con nombre largo y de nuevo en producción en ambos tamaños y temas.
   - Pendiente para cerrar H9: revisión del dueño en su celular. La prueba con lector de pantalla real tampoco se hizo; los nombres y roles inspeccionados no la sustituyen.
+- 2026-11-21 — El dueño marca el paso como completado y con él se cierra H9. La prueba con lector de pantalla real no se hizo; queda como pendiente conocido, no como bloqueo.

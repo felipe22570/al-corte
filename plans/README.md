@@ -53,7 +53,7 @@ Prompt sugerido para el agente al iniciar un paso:
 | 23 | [Inicio: lista de meses](23-lista-meses.md) | H9 | ✅ | Ver historial de git |
 | 24 | [Detalle de un mes](24-detalle-mes.md) | H9 | ✅ | Ver historial de git |
 | 25 | [Ajuste de vistas relacionadas y retiro del tablero](25-ajuste-vistas.md) | H9 | ✅ | Ver historial de git |
-| 26 | [Pulido y validación de H9](26-validacion-meses.md) | H9 | 🟡 | |
+| 26 | [Pulido y validación de H9](26-validacion-meses.md) | H9 | ✅ | 3a2728b |
 | 27 | [Compras en curso: datos y dominio](27-compras-en-curso-dominio.md) | H10 | ✅ | Ver historial de git |
 | 28 | [Compras en curso: formulario y vistas](28-compras-en-curso-ui.md) | H10 | ✅ | Ver historial de git |
 | 29 | [Intereses sobre saldo](29-intereses-sobre-saldo.md) | H10 | ✅ | Ver historial de git |
