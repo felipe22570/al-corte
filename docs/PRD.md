@@ -171,27 +171,45 @@ Sale de comparar la app con extractos reales de Bancolombia (noviembre de 2026).
 
 ### v2 — planeación y alertas
 
-Las cuatro primeras funcionalidades tienen prioridad sobre el resto de v2 (pedido del dueño, 16 de noviembre de 2026).
+#### H11 — Registro más rápido y costo real (prioridades 1 a 4)
 
-- **Cuotas y categoría sugeridas por comercio (prioridad 1):** al escribir el comercio, la app propone la categoría y el número de cuotas usados la última vez con ese comercio, y lo indica.
-- **Costo de diferir (prioridad 2):** cada compra a cuotas muestra cuánto terminará costando en intereses. Alerta para compras pequeñas diferidas a muchas cuotas (por ejemplo, $9.000 a 36 cuotas cuesta unos $12.500 con 2,1003 % M.V.). Incluye el ahorro de pagar el total este mes.
-- **Importación mensual de extractos (prioridad 3):** cargar un archivo `al-corte-import` v1 desde Ajustes, con vista previa, detección de duplicados y verificación contra los totales del extracto. Es el paso intermedio antes de la lectura de PDF con IA de v3.
-- **Pagar el saldo en dólares con pesos (prioridad 4):** registrar el pago en COP y la tasa que usó el banco, para conocer el costo real en pesos frente al estimado con la TRM de cada compra.
+**Objetivo:** que registrar un movimiento tome segundos y que el dueño vea cuánto le cuesta realmente cada compra, una vez H10 deja los extractos cuadrando con el banco. Agrupa las cuatro funcionalidades que el dueño priorizó sobre el resto de v2 el 16 de noviembre de 2026. La importación mensual (F22) construye además la revisión de movimientos que reutiliza la captura por correo de H12. No usa IA.
 
-Después de esas cuatro (la conciliación y los cobros en USD quedan en parte cubiertos por H10):
+**F20. Cuotas y categoría sugeridas por comercio (prioridad 1).** Como dueño, quiero que al escribir el comercio la app me proponga lo que usé la última vez, para registrar en segundos.
 
-- **Cobros en USD:** el movimiento guarda el valor en USD, la TRM usada y el valor en COP. Las suscripciones en USD se estiman con la TRM del día y luego se corrigen con el valor real del extracto.
-- **Recordatorios por email:** 3 días antes de la fecha límite de pago, 2 días antes de que termine una prueba gratis y 7 días antes de una renovación anual.
-- **Detección de alzas:** aviso cuando el cobro real de una suscripción supera en más del 5% al anterior.
-- **Conciliación:** casilla "verificado" por movimiento y comparación del total calculado contra el total real del extracto, con la diferencia resaltada.
-- **Presupuestos por categoría:** límite mensual con alertas al 80% y al 100%.
-- **Intereses pagados:** total de intereses, comisiones y cuotas de manejo del año en curso.
-- **Simulador de abono a capital:** dado un abono, muestra el ahorro en intereses al reducir plazo frente a reducir cuota.
-- **Costo del pago mínimo:** cuánto tiempo e intereses tomaría pagar la deuda pagando solo el mínimo.
-- **PWA:** instalable en el celular con un formulario de registro rápido.
-- **Exportar a CSV** cualquier vista filtrada del historial.
+- El campo de comercio autocompleta con comercios ya registrados, los más recientes primero.
+- Con un comercio conocido se sugieren categoría, número de cuotas, moneda, compra internacional y sin intereses de la última compra con ese comercio en la misma tarjeta; si no hay, en cualquier tarjeta. Aviso: "Como tu última compra en Netflix (7 nov)".
+- Las sugerencias solo llenan campos que el dueño no ha tocado y se pueden quitar con un toque. Nunca sugieren valor, fecha ni tarjeta.
+- Coincidencia por nombre normalizado (R11), sin coincidencias aproximadas. Los comercios sin historial se resuelven con IA en H12.
 
-### v2 · H12 — Capa de IA y captura por correo (prioridad 5)
+**F21. Costo de diferir (prioridad 2).** Como dueño, quiero saber cuánto me cuesta en intereses diferir una compra, antes y después de hacerla.
+
+- Vista previa del formulario: intereses estimados y costo total según cuotas, tasa y modo de la tarjeta. Ejemplo: $9.000 a 36 cuotas con 2,1003 % M.V. en capital fijo ≈ $3.308 de intereses y $12.308 en total en una tarjeta con intereses sobre saldo, como las de Bancolombia; ≈ $3.497 y $12.497 con intereses por cuota.
+- Alerta cuando los intereses estimados superan el 20 % del valor de la compra.
+- Detalle de la compra: intereses ya causados y estimados por pagar. Con intereses sobre saldo el banco no los reparte por compra, así que ambas cifras son estimadas.
+- Extracto y mes: ahorro estimado en intereses si se paga la deuda total de esa moneda en lugar del mínimo.
+- Todo valor calculado sobre el futuro lleva la etiqueta "estimado".
+
+**F22. Importación mensual de extractos (prioridad 3).** Como dueño, quiero cargar el extracto de cada mes desde un archivo para completar lo que no registré a mano.
+
+- Desde Ajustes se sube un archivo `al-corte-import` v1, el formato de la importación de noviembre, documentado en `docs/import-format.md`. El archivo se prepara fuera de la app a partir del PDF del banco; leer el PDF en la app es v3.
+- Vista previa antes de guardar: movimientos nuevos, ya registrados y en conflicto, cada uno incluible o excluible. Reconoce como ya registrados los cobros de suscripciones creados por la app, la cuota de manejo y los intereses ya registrados. Los pagos del archivo no se importan: si no están registrados, se ofrecen para registrarlos con el formulario de pago.
+- Nunca modifica movimientos existentes. Al marcar un conflicto como "Es el mismo" solo se guarda la referencia del banco en el movimiento, para reconocerlo en los meses siguientes.
+- Verificación contra los valores del banco del archivo (pago mínimo, deuda total y cupo) antes y después de guardar, y cierre mensual (F15) prellenado.
+- El archivo se procesa en el servidor y no se guarda; solo quedan los movimientos aceptados y los valores del banco del extracto.
+- La revisión es un componente reutilizable por la bandeja "Por confirmar" de H12.
+- La TRM oficial se carga a diario en `fx_rates` (D57); la importación y el cupo en dólares (F23) la usan.
+
+**F23. Pago del saldo en dólares con pesos (prioridad 4).** Como dueño, quiero registrar cuántos pesos me costó pagar el saldo en dólares y compararlo con lo estimado.
+
+- Al pagar en USD se puede ingresar el valor en pesos debitado; la app deriva la tasa usada por el banco en lugar de pedir la TRM.
+- El extracto muestra la diferencia cambiaria: pesos pagados frente al equivalente con la TRM de cada compra.
+- Una vez registrado el pago, el mes usa los pesos realmente pagados como equivalente de la parte pagada del saldo en USD; lo que falte por pagar conserva el equivalente de referencia.
+- El cupo valora la deuda en dólares con la TRM vigente (D52), no con la de cada compra.
+
+**Terminado cuando:** al recorrer el historial real, la sugerencia acierta categoría y cuotas en al menos el 80 % de las compras con comercio repetido; el costo de diferir coincide con R11 en las pruebas; un extracto mensual se carga desde archivo dos veces sin duplicar y cuadra con el banco; la TRM oficial se carga a diario en `fx_rates`; y un pago en dólares hecho con pesos muestra la tasa derivada y la diferencia cambiaria.
+
+#### H12 — Capa de IA y captura por correo (prioridad 5)
 
 Se implementa después de las cuatro prioridades de v2 (H11) y reutiliza su revisión de importaciones. Sustituye a la "captura desde email" que estaba en v3.
 
@@ -208,6 +226,21 @@ Se implementa después de las cuatro prioridades de v2 (H11) y reutiliza su revi
 - Tareas con nombre, cada una con esquema de entrada y salida, prompt versionado y modelo configurado. Salidas estructuradas validadas otra vez con Zod y con las reglas de dominio.
 - Solo en el servidor. La IA no tiene herramientas, trata el contenido externo como datos y nunca confirma nada por sí misma.
 - Tope de gasto mensual, registro por tarea sin contenido sensible y pruebas de calidad (evals) con alertas reales anonimizadas.
+
+#### Resto de v2
+
+Después de H11 y H12 (la conciliación y los cobros en USD quedan en parte cubiertos por H10):
+
+- **Cobros en USD:** el movimiento guarda el valor en USD, la TRM usada y el valor en COP. Las suscripciones en USD se estiman con la TRM del día y luego se corrigen con el valor real del extracto.
+- **Recordatorios por email:** 3 días antes de la fecha límite de pago, 2 días antes de que termine una prueba gratis y 7 días antes de una renovación anual.
+- **Detección de alzas:** aviso cuando el cobro real de una suscripción supera en más del 5% al anterior.
+- **Conciliación:** casilla "verificado" por movimiento y comparación del total calculado contra el total real del extracto, con la diferencia resaltada.
+- **Presupuestos por categoría:** límite mensual con alertas al 80% y al 100%.
+- **Intereses pagados:** total de intereses, comisiones y cuotas de manejo del año en curso.
+- **Simulador de abono a capital:** dado un abono, muestra el ahorro en intereses al reducir plazo frente a reducir cuota.
+- **Costo del pago mínimo:** cuánto tiempo e intereses tomaría pagar la deuda pagando solo el mínimo.
+- **PWA:** instalable en el celular con un formulario de registro rápido.
+- **Exportar a CSV** cualquier vista filtrada del historial.
 
 ### v3 — captura automática
 
@@ -272,7 +305,7 @@ Un avance genera dos movimientos: el avance (con cuotas, usando la tasa de avanc
 ### R6. Moneda
 
 - Cada movimiento guarda `amount` y `currency` originales; si es USD, también `fx_rate` y `amount_cop`.
-- En el MVP la TRM se ingresa a mano o se precarga con la última conocida; en v2 se consulta automáticamente una vez al día.
+- En el MVP la TRM se ingresa a mano o se precarga con la última conocida; desde H11 se consulta automáticamente una vez al día (D57).
 
 ### R7. Meses de pago y proyección
 
@@ -333,6 +366,27 @@ Basado en lo que publica Bancolombia para tarjetas de crédito (centro de ayuda,
 - **Seguridad del endpoint:** firma HMAC con marca de tiempo (máximo 5 minutos), idempotencia por identificador del mensaje, límite de solicitudes y opción de apagado. Cuerpo máximo de pocos KB. El secreto de firma y el usuario dueño viven en variables de entorno del servidor; la rotación es un procedimiento documentado, no una acción de la app (D51).
 - **Privacidad:** a la app y a la IA solo llega la frase del movimiento, sin pies de página ni datos personales; la tarjeta viaja a la IA como identificador interno. No se guarda el HTML del correo. La frase original se conserva solo en el borrador y se borra al confirmarlo o descartarlo. En la API de Claude, las entradas y salidas se borran en un máximo de 30 días y no se usan para entrenar.
 
+### R11. Sugerencias, costo de diferir, importación mensual y pagos en dólares con pesos
+
+- **Nombre normalizado de comercio (D53):** minúsculas, sin tildes, signos repetidos ni espacios sobrantes; se conservan prefijos como "google *" o "dlo*" porque distinguen comercios. Coincidencia exacta del nombre normalizado.
+- **Fuente de la sugerencia (D53):** la compra o avance confirmado más reciente con ese nombre en la misma tarjeta; si no hay, en cualquier tarjeta activa. Sugiere categoría, número de cuotas original (no el plan efectivo), moneda, `is_international` e `interest_free`. Nunca valor, fecha ni tarjeta.
+- **Costo de diferir (D54):** los intereses estimados de una compra usan la misma regla que el resto de la app, para que cuadren con los meses:
+    - `per_installment`: suma de los intereses de sus cuotas (R2). En capital fijo equivale a i × P × (N + 1) / 2.
+    - `on_balance`: suma de la estimación de R8 en cada extracto del plan (capital pendiente al inicio del periodo × tasa mensual de su `rate_ea_applied`). El extracto del periodo de la compra no lleva interés, así que en capital fijo equivale a i × P × (N − 1) / 2.
+    - Compras sin intereses o a una cuota: 0. En compras en curso solo cuentan las cuotas desde la registrada. En USD se calcula en dólares, con equivalente COP de referencia. Alerta si supera el 20 % del valor.
+    - Con intereses sobre saldo el banco no reparte el cargo por compra: lo causado por una compra también es estimado.
+- **Ahorro por pagar el total (D54):** suma de los intereses estimados de los extractos futuros de esa moneda, sin contar el interés ya causado en el periodo en curso.
+- **Identidad en la importación (D55):** cada fila del archivo queda como nueva, ya registrada o en conflicto.
+    - Ya registrada: coincide su clave del archivo (derivada de la referencia del banco, `import_key`) en la misma tarjeta o, sin ella, tarjeta, fecha, valor, moneda y nombre normalizado.
+    - Cobros de suscripciones: coinciden con el cobro creado por la app de la misma tarjeta, moneda y valor a 7 días o menos de la fecha; con otro valor son conflicto.
+    - Intereses, cuota de manejo y seguros: se comparan por tarjeta, extracto, tipo y moneda; si el valor difiere, se corrige en el cierre mensual (F15).
+    - Pagos: no se importan nunca (necesitan tipo y reparto, D37); los no registrados se ofrecen para el formulario de pago.
+    - Los que coinciden en tarjeta, fecha y valor pero no en el resto son conflictos y no se importan sin decisión del dueño. "Es el mismo" solo guarda la clave en el movimiento existente.
+    - Las asignaciones forzadas de extracto (D30) solo valen dentro del periodo del extracto del archivo.
+- **Pago en dólares con pesos (D56):** se guarda el valor exacto en pesos debitado y la tasa derivada (pesos ÷ dólares, 4 decimales); en pagos en USD se acepta la diferencia de redondeo de la tasa entre ambos. Diferencia cambiaria = pesos pagados − dólares pagados × (Σ equivalente COP ÷ Σ USD de los cargos en dólares del extracto). Equivalente del mes = pesos pagados + USD pendiente × equivalente de referencia.
+- **Cupo con deuda en dólares (D52):** la deuda neta en USD (cargos − pagos − devoluciones − capital previo + intereses facturados, en dólares) se convierte con la TRM vigente más reciente, no con la TRM de cada compra. Sin TRM se usa la de cada compra (D3) con aviso. Al comparar con un extracto se usa la TRM vigente el último día hábil antes del corte, que es la del día anterior al inicio del periodo de vigencia que contiene el corte: con la del 13 de noviembre de 2026 ($3.301,91), la Mastercard da exactamente el cupo del extracto ($10.528.221,51). Se confirma con el extracto de diciembre.
+- **TRM diaria (D57):** una tarea diaria guarda en `fx_rates` la TRM oficial de datos.gov.co (conjunto 32sa-8pi3), una fila por día calendario con el inicio de su periodo de vigencia, y recupera los últimos 30 días en cada corrida.
+
 ## 6. Modelo de datos
 
 Ocho tablas en Postgres (Supabase), todas con `id uuid`, `user_id`, `created_at` y políticas RLS `user_id = auth.uid()`. Los montos son `numeric(14,2)`, nunca `float`; las fechas de negocio son `date`.
@@ -345,7 +399,7 @@ Ocho tablas en Postgres (Supabase), todas con `id uuid`, `user_id`, `created_at`
 | `transactions` | card_id, statement_id, category_id, type, date, merchant, amount, currency, fx_rate, amount_cop, installments_count, interest_free, rate_ea_applied, subscription_id, parent_id, source, verified, note | `type`: purchase, cash_advance, advance_fee, payment, handling_fee, interest, insurance, refund, adjustment. `source`: manual, subscription, import, email. `parent_id` une la comisión con su avance. |
 | `installments` | transaction_id, statement_id, number, principal, interest, total, balance_after | Se borran y regeneran si cambia la compra. |
 | `subscriptions` | card_id, category_id, name, amount, currency, frequency, billing_day, start_date, trial_ends_at, status, last_charged_amount | `status`: active, paused, cancelled. |
-| `fx_rates` | date, usd_cop | Una fila por día. Sin `user_id`; lectura para cualquier usuario autenticado. |
+| `fx_rates` | date, usd_cop, valid_from | Una fila por día calendario; `valid_from` es el inicio de su periodo de vigencia oficial (H11, D57). Sin `user_id`; lectura para cualquier usuario autenticado. |
 | `notification_log` | kind, ref_id, scheduled_for, sent_at | Evita enviar el mismo recordatorio dos veces (v2). |
 
 **Índices y restricciones clave**
@@ -456,7 +510,7 @@ Las tareas corren con Supabase Cron (`pg_cron`), dentro de la base de datos, par
 | Tarea | Horario (Bogotá) | Qué hace | Implementación | Fase |
 | --- | --- | --- | --- | --- |
 | Cobros de suscripciones | Diario, 5:00 a. m. | Crea los movimientos de las suscripciones activas que cobran hoy, con su extracto asignado. | Función SQL `generate_subscription_charges()` | MVP |
-| TRM del día | Diario, 6:00 a. m. | Guarda la TRM oficial en `fx_rates` (fuente: datos abiertos de la Superfinanciera en datos.gov.co, por confirmar). | Edge Function | v2 |
+| TRM del día | Diario, 6:00 a. m. | Guarda la TRM oficial en `fx_rates` (datos abiertos de la Superfinanciera en datos.gov.co, conjunto 32sa-8pi3) y recupera los últimos 30 días (D57). | Edge Function | v2 · H11 |
 | Recordatorios | Diario, 7:00 a. m. | Envía un email por cada pago próximo, prueba gratis por vencer o renovación anual. Registra cada envío en `notification_log`. | Edge Function + Resend | v2 |
 | Alertas de presupuesto | Al guardar un movimiento | Revisa si la categoría pasó el 80% o el 100% del presupuesto del mes. | Server Action | v2 |
 
@@ -511,7 +565,7 @@ El MVP original se construyó en 9 hitos (H0–H8); H9 agrega la vista por meses
 9. **H8. Pulido.** Diseño responsive, estados vacíos, modo oscuro y exportación de datos.
 10. **H9. Vista por meses (MVP 1.1).** Dominio de meses de pago y proyección (R7), brief de diseño, lista de meses como inicio, detalle de mes, ajuste de vistas relacionadas y validación. Pasos 21 a 26 de `plans/`.
 11. **H10. Fidelidad con el extracto bancario (MVP 1.2).** Compras en curso, intereses sobre saldo, pago mínimo y deuda total por moneda, suscripciones diferidas, pagos por tipo y abonos a capital, cierre mensual, cambio de cuotas, comisión de avance por movimiento e importación de los extractos reales de noviembre. Pasos 27 a 35 de `plans/`.
-12. **H11. Prioridades de v2.** Cuotas y categoría sugeridas por comercio, costo de diferir, importación mensual de extractos y pago del saldo USD en pesos. Pasos 36 a 39 reservados; se planifican al cerrar H10.
+12. **H11. Registro más rápido y costo real (v2).** Cuotas y categoría sugeridas por comercio, costo de diferir, importación mensual de extractos con la TRM diaria, y pago del saldo USD en pesos con el cupo valorado a la TRM vigente. Pasos 36 a 39 de `plans/`. Sigue a H10, cerrado el 21 de noviembre de 2026.
 13. **H12. Capa de IA y captura por correo (v2).** Capa de IA, borradores por confirmar, endpoint de ingesta con reglas, interpretación con IA, script de Apps Script y validación. Pasos 40 a 45 de `plans/`.
 
 **Cómo trabajar cada hito**
@@ -604,5 +658,11 @@ Este registro consolida las decisiones del dueño de `plans/README.md`; no susti
 | D49 · Datos de una compra en curso | La cuota k y el saldo se copian del último extracto del banco: k es la cuota ya facturada en ese extracto y el saldo es el que queda después de ella. Por defecto, la cuota k cae en el último extracto cerrado de la tarjeta. |
 | D50 · Cuotas restantes y límite | El cambio de cuotas pide las restantes (1 a 36) sobre el saldo pendiente. El plan efectivo y el número de cuota admiten hasta 72 (facturadas o previas más nuevas); las compras nuevas siguen limitadas a 36 (D15). |
 | D51 · Secreto de ingesta | Secreto de firma y usuario dueño en variables de entorno del servidor. Rotar es un procedimiento documentado (Vercel, despliegue y script). Ajustes solo enciende o apaga la captura. |
+| D52 · Cupo con deuda en dólares | La deuda neta en USD se valora en dólares con la TRM vigente más reciente para el cupo (D2); sin TRM, con la de cada compra y aviso. Contra un extracto, con la TRM vigente el último día hábil antes del corte (la del día anterior al inicio del periodo de vigencia que contiene el corte). Evidencia: la TRM del 13 nov 2026 cuadra exactamente el cupo de la Mastercard; se confirma con el extracto de diciembre. Precisa H10. |
+| D53 · Sugerencias por comercio | Deterministas: última compra con el mismo nombre normalizado, primero en la misma tarjeta. Llenan solo campos que el dueño no cambió (registro propio, no el estado sucio del formulario); nunca valor, fecha ni tarjeta; sin IA. |
+| D54 · Costo de diferir | Intereses estimados por compra con la misma regla de la app: cuotas de R2 en `per_installment` y estimación de R8 en `on_balance` (sin interés en el extracto de la compra). Etiquetados como estimados; alerta sobre el 20 % del valor; ahorro estimado por pagar el total. |
+| D55 · Importación mensual | Archivo `al-corte-import` v1 desde Ajustes, preparado fuera de la app y procesado sin guardarse; RPC por lotes en una transacción con vista previa sin cambios; nuevos, existentes y conflictos, reconociendo cobros de suscripciones, cargos del extracto y pagos ya registrados. Los pagos no se importan. Solo agrega: "Es el mismo" solo guarda la clave del archivo. Verificación contra el banco. |
+| D56 · Pago en dólares con pesos | Pesos debitados exactos y tasa derivada (tolerancia de redondeo de la tasa solo en pagos); diferencia cambiaria en el extracto; el mes usa los pesos pagados para la parte pagada y el equivalente de referencia para el resto. |
+| D57 · TRM diaria | La carga diaria de la TRM oficial en `fx_rates` pasa de "Resto de v2" a H11 (paso 38): Edge Function con `pg_cron` a las 6:00 a. m., upsert de los últimos 30 días, carga inicial desde enero de 2026 y `valid_from` por periodo de vigencia. |
 
 Precisiones posteriores aprobadas: al editar una compra se conserva la tasa original si no cambian tarjeta ni tipo (10 de noviembre); guardar una suscripción intenta generar su cobro de hoy sin esperar al cron (10 de noviembre); el tablero prioriza el extracto no pagado con vencimiento más antiguo, incluso vencido (11 de noviembre; desde D25 lo cubre la alerta de vencidos de D23).

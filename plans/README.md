@@ -63,7 +63,10 @@ Prompt sugerido para el agente al iniciar un paso:
 | 33 | [Cierre mensual del extracto](33-cierre-mensual.md) | H10 | ✅ | Ver historial de git |
 | 34 | [Cambio de cuotas y comisión de avance por movimiento](34-cambio-cuotas-comision-avance.md) | H10 | ✅ | Ver historial de git |
 | 35 | [Importación de los extractos reales](35-importacion-extractos.md) | H10 | ✅ | bcd40f8 |
-| 36–39 | Reservados para H11 (prioridades 1 a 4 de v2), por planificar | H11 | ⬜ | |
+| 36 | [Cuotas y categoría sugeridas por comercio](36-sugerencias-comercio.md) | H11 | ⬜ | |
+| 37 | [Costo de diferir](37-costo-diferir.md) | H11 | ⬜ | |
+| 38 | [Importación mensual de extractos](38-importacion-mensual.md) | H11 | ⬜ | |
+| 39 | [Pago del saldo en dólares con pesos y cupo en USD](39-dolares-con-pesos.md) | H11 | ⬜ | |
 | 40 | [Capa de IA](40-capa-ia.md) | H12 | ⬜ | |
 | 41 | [Borradores por confirmar](41-borradores.md) | H12 | ⬜ | |
 | 42 | [Endpoint de ingesta y reglas de alertas](42-ingesta-reglas.md) | H12 | ⬜ | |
@@ -223,7 +226,20 @@ Aprobadas por el dueño el 2026-11-13. El detalle de cada regla está en R7 y en
 | D49 | **Datos de una compra en curso.** | Cuota k (ya facturada) y saldo después de ella, copiados del último extracto del banco. Por defecto, la cuota k cae en el último extracto cerrado de la tarjeta. | 27, 28, 35 |
 | D50 | **Cuotas restantes y límite.** | El cambio de cuotas pide las restantes (1 a 36). Plan efectivo y número de cuota hasta 72; compras nuevas siguen en 36 (D15). | 27, 34 |
 
-**H12 · Capa de IA y captura por correo (v2).** Aprobado por el dueño el 17 de noviembre de 2026 (D42–D47). Se ejecuta después de H10 y de H11; el paso 41 reutiliza la revisión de la importación mensual de H11 si ya existe. Requiere un secreto `ANTHROPIC_API_KEY` y un secreto de firma de ingesta, ambos solo en el servidor.
+**H11 · Registro más rápido y costo real (v2).** Aprobado por el dueño el 16 de noviembre de 2026 y planificado el 21 (D52–D57). Es el siguiente hito: H10 se cerró el 21 de noviembre con el paso 35. Objetivo y criterio de terminado en `docs/PRD.md`, sección v2. El paso 38 trae la TRM diaria a H11 (D57) y construye la revisión de importaciones que reutiliza el paso 41 de H12. El paso 39 incluye D52 (cupo con deuda en dólares), que precisa H10, y usa la TRM del paso 38.
+
+### Decisiones de H11 (registro más rápido y costo real)
+
+| # | Tema | Decisión | Paso afectado |
+| --- | --- | --- | --- |
+| D52 | **Cupo con deuda en dólares.** | Deuda neta en USD a la TRM vigente más reciente para el cupo (sin TRM, la de cada compra con aviso); contra un extracto, la del último día hábil antes del corte, derivada del periodo de vigencia. Se confirma con el extracto de diciembre. | 39 |
+| D53 | **Sugerencias por comercio.** | Última compra con el mismo nombre normalizado, primero en la misma tarjeta; solo campos que el dueño no cambió, con registro propio; sin IA. | 36 |
+| D54 | **Costo de diferir.** | Intereses estimados por compra con la regla de la app (R2 en `per_installment`, R8 en `on_balance`), alerta sobre el 20 % y ahorro por pagar el total. | 37 |
+| D55 | **Importación mensual.** | Archivo v1 sin guardar, RPC por lotes con vista previa sin cambios, reconoce cobros de suscripciones, cargos del extracto y pagos registrados; pagos nunca se importan; solo agrega ("Es el mismo" guarda solo `import_key`) y verificación contra el banco. | 38 |
+| D56 | **Dólares pagados con pesos.** | Pesos exactos, tasa derivada con tolerancia de redondeo solo en pagos y diferencia cambiaria; el mes usa los pesos pagados para la parte pagada. | 39 |
+| D57 | **TRM diaria.** | La carga diaria de la TRM oficial en `fx_rates` pasa a H11: Edge Function con `pg_cron`, upsert de 30 días, carga inicial desde enero de 2026 y `valid_from`. | 38, 39 |
+
+**H12 · Capa de IA y captura por correo (v2).** Aprobado por el dueño el 17 de noviembre de 2026 (D42–D47). Se ejecuta después de H10 y de H11; el paso 41 reutiliza la revisión de la importación mensual del paso 38. Requiere un secreto `ANTHROPIC_API_KEY` y un secreto de firma de ingesta, ambos solo en el servidor.
 
 ### Decisiones de H12 (IA y captura por correo)
 
@@ -267,3 +283,5 @@ Anota aquí cada decisión tomada durante la implementación (fecha, paso, decis
 | 2026-11-21 | 33 | Cierre mensual: un saldo del banco mayor también se respeta (misma cuota, más cuotas, hasta 72). Un saldo nuevo reemplaza la corrección anterior del mismo extracto y compra; reabrir solo quita la marca y conserva valores y correcciones. El aviso sale para el último extracto cortado sin conciliar de cada tarjeta activa. El cierre edita los intereses registrados y la tasa vigente cambia solo la de compras, para compras nuevas. | Respuesta del dueño al plan del paso. |
 | 2026-11-21 | 35 | Importación de noviembre: la comisión por avance por defecto de la Visa es $6.840, la misma de la Mastercard. Los abonos del 30 de octubre solo marcan pagado el extracto de octubre por moneda, sin movimientos de pago: pagaron cargos que no están en Al Corte y descontarlos inflaría el cupo (D2). Se prueba solo en local; el push, las migraciones remotas y la ejecución en producción los hace el dueño. | Respuestas del dueño. |
 | 2026-11-21 | 35 (R2) | Una compra cuya cuota redondeada agotaría el capital antes de la última conserva la cuota y termina antes, con la última por el resto y el N original guardado, en compras, cobros de suscripciones e importación. Una cuota redondeada a cero sigue siendo inválida. | Pedido del dueño ante seis compras pequeñas en USD del extracto real. |
+| 2026-11-21 | 36–39 | H11 planificado: sugerencias por comercio, costo de diferir, importación mensual y pago en dólares con pesos (D53–D56). D52 registra la valoración del cupo con deuda en dólares a la TRM vigente, que cuadra con el extracto de noviembre, y se implementa en el paso 39. | Pedido del dueño. |
+| 2026-11-21 | 36–39 | Revisión del plan de H11 contra el código. Costo de diferir con la regla de intereses ya implementada (R2 o R8): en `on_balance` da i × P × (N − 1) / 2 ($3.308 en el ejemplo de $9.000). TRM diaria a H11 en el paso 38 (D57), porque `fx_rates` no se llena en producción. Importación con RPC por lotes y vista previa, reconociendo cobros de suscripciones, cargos del extracto y pagos; "Es el mismo" solo guarda `import_key`. Pagos en USD con tolerancia de redondeo de la tasa y cupo con deuda neta en dólares. Sugerencias con registro propio de campos tocados. | Recomendaciones aprobadas por el dueño. |

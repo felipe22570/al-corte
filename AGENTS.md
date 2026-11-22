@@ -67,6 +67,7 @@ lib/database.types.ts     Tipos generados desde Supabase (no editar a mano)
 supabase/migrations/      Migraciones SQL
 supabase/functions/       Edge Functions
 docs/PRD.md               Requisitos del producto
+docs/import-format.md     Formato de archivo al-corte-import v1 (H11)
 ```
 
 ## Comandos
@@ -210,6 +211,12 @@ Detalle completo en la sección 5 de `docs/PRD.md`.
 
 - **Pagos y abonos (R9, D37, D38):** un pago cubre primero el mínimo facturado; el excedente es abono a capital según la regla de la tarjeta. Nunca apliques un pago en COP al saldo en USD. El orden de Bancolombia dentro de un mismo nivel no es público: el supuesto "más antigua" debe quedar marcado y ser corregible.
 
+- **Sugerencias por comercio (R11, D53):** deterministas por nombre normalizado; solo llenan campos que el dueño no tocó y nunca sugieren valor, fecha ni tarjeta.
+- **Costo de diferir (R11, D54):** usa la misma regla de intereses que la app (cuotas de R2 en `per_installment`, estimación de R8 en `on_balance`); nunca una fórmula aparte. Todo valor sobre el futuro se etiqueta como estimado; compras sin intereses o a una cuota cuestan 0.
+- **Importación mensual (R11, D55):** el archivo no se guarda ni se registra en logs. La importación solo agrega movimientos, en una transacción; nunca cambia montos, fechas, cuotas, categoría ni extracto de los existentes (enlazar un conflicto solo guarda su `import_key`) y nunca importa pagos.
+- **Dólares pagados con pesos y cupo (R11, D52, D56):** se guarda el valor exacto en pesos debitado; el cupo valora la deuda neta en USD, en dólares, con la TRM vigente, no con la de cada compra.
+- **TRM diaria (D57):** `fx_rates` se llena con una tarea diaria idempotente; si falta la TRM no se inventa un valor.
+
 ## Casos de prueba obligatorios en `lib/domain/`
 
 - Compra el mismo día del corte y un día después.
@@ -233,6 +240,11 @@ Detalle completo en la sección 5 de `docs/PRD.md`.
 - Suscripción diferida a 36 cuotas: la proyección acumula una cuota por cobro y no suma el valor completo.
 - Abono con la prioridad de Bancolombia en pesos y en dólares; reducir plazo frente a reducir cuota; pago total que liquida las cuotas futuras.
 - Cambio de cuotas restantes desde la próxima sin facturar, conservando facturadas y previas, incluido un plan efectivo de más de 36 cuotas.
+- Sugerencia por comercio: misma tarjeta antes que otra, nombre con tildes y espacios distintos, campos ya tocados sin sobrescribir.
+- Costo de diferir: $9.000 a 36 cuotas con 2,1003 % M.V. en capital fijo da $3.496,99 de intereses en `per_installment` (i × P × (N + 1) / 2) y $3.307,96 en `on_balance` (i × P × (N − 1) / 2, sin interés en el extracto de la compra), con el redondeo por cuota o por extracto; compra sin intereses da 0; compra en curso cuenta solo desde la cuota registrada.
+- Importación mensual: el mismo archivo dos veces no duplica; coincidencia por `import_key` y, sin ella, por tarjeta, fecha, valor, moneda y comercio; cobros de suscripciones, cuota de manejo e intereses ya registrados no se duplican; pagos nunca se importan; conflictos sin importar; la vista previa no deja cambios.
+- Pago en dólares con pesos: US$154 pagados con $510.000 dan una tasa de 3.311,6883; US$153,26 con $510.000 dan 3.327,6785 y conservan $510.000,00 exactos. Cupo de la Mastercard con TRM de $3.301,91: $10.528.221,51.
+- TRM del extracto: para el corte del 15 de noviembre de 2026 (periodo de vigencia del 14 al 17) es la del 13, $3.301,91.
 
 ## Forma de trabajar
 
