@@ -1,10 +1,10 @@
 # Paso 35 — Importación de los extractos reales
 
 - **Hito PRD:** H10 (parte 9 de 9)
-- **Estado:** 🟡 En progreso
+- **Estado:** ✅ Terminado
 - **Inicio:** 2026-11-21
-- **Fin:**
-- **Commit:**
+- **Fin:** 2026-11-21
+- **Commit:** bcd40f8
 - **Depende de:** 27 a 34, desplegados en producción
 - **Decisiones aplicables (decididas, ver README):** D30, D31, D32, D33, D34, D35, D36, D37, D38, D48, D49
 
@@ -35,7 +35,7 @@ Cargar en producción las dos tarjetas reales de Bancolombia con su extracto de 
 
 ## Verificación
 
-- [ ] Ejecutar primero en Supabase local con un usuario de prueba y luego en producción. Local hecho; producción pendiente (la ejecuta el dueño).
+- [x] Ejecutar primero en Supabase local con un usuario de prueba y luego en producción.
 - [x] Por moneda, la app calcula: Visa $1.178.835,57 y $3.845.774,86; Mastercard $1.706.233,98 y $4.265.727,76; US$8,22 y US$153,26 (el banco redondea hacia arriba a $1.178.836, $3.845.775, $1.706.234, $4.265.728, US$9 y US$154).
 - [x] Cupo disponible cercano al del banco ($6.154.225,14 Visa; $10.528.221,51 Mastercard). Anotar la diferencia y su causa.
 - [x] El mes de diciembre (pago 2 dic) muestra ambos extractos; los meses siguientes proyectan cuotas, suscripciones e intereses estimados.
@@ -86,4 +86,7 @@ Cargar en producción las dos tarjetas reales de Bancolombia con su extracto de 
     3. Cambiar `__PENDIENTE__` por el correo de la cuenta, ejecutar el archivo completo en el editor SQL de Supabase y comparar la tabla final con el extracto.
     4. Conciliar ambos extractos desde la app (aviso "Revisa los extractos").
     5. El cobro diario recupera los cobros de suscripciones de los últimos 7 días que no estén en el archivo (por ejemplo, DirecTV el 19 de noviembre o Proton el 16), con su fecha.
-- Pendiente: ejecución en producción y cierre de H10.
+- 2026-11-21 — Producción:
+    - Push de `main` (hasta `bcd40f8`) y `supabase db push` de las 6 migraciones pendientes (`20261119020000` a `20261121040000`); `migration list --remote` sin pendientes.
+    - El dueño ejecutó el script en el editor SQL de Supabase, comparó la tabla final con sus extractos y concilió ambos desde la app; confirma que todo quedó bien.
+    - Paso cerrado y H10 terminado.

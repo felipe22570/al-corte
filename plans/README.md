@@ -62,7 +62,7 @@ Prompt sugerido para el agente al iniciar un paso:
 | 32 | [Pagos por tipo y abonos a capital](32-pagos-abonos-capital.md) | H10 | ✅ | Ver historial de git |
 | 33 | [Cierre mensual del extracto](33-cierre-mensual.md) | H10 | ✅ | Ver historial de git |
 | 34 | [Cambio de cuotas y comisión de avance por movimiento](34-cambio-cuotas-comision-avance.md) | H10 | ✅ | Ver historial de git |
-| 35 | [Importación de los extractos reales](35-importacion-extractos.md) | H10 | 🟡 | |
+| 35 | [Importación de los extractos reales](35-importacion-extractos.md) | H10 | ✅ | bcd40f8 |
 | 36–39 | Reservados para H11 (prioridades 1 a 4 de v2), por planificar | H11 | ⬜ | |
 | 40 | [Capa de IA](40-capa-ia.md) | H12 | ⬜ | |
 | 41 | [Borradores por confirmar](41-borradores.md) | H12 | ⬜ | |
