@@ -2,7 +2,7 @@ begin;
 select no_plan();
 insert into auth.users (id, email) values ('dddddddd-dddd-4ddd-8ddd-dddddddddddd', 'usd-a@example.com');
 insert into public.cards (id, user_id, name, bank, network, last4, credit_limit, cutoff_day, payment_day)
-values ('dddddddd-0000-4000-8000-000000000001', 'dddddddd-dddd-4ddd-8ddd-dddddddddddd', 'Mastercard', 'Bancolombia', 'Mastercard', '1999', 2000000, 15, 2);
+values ('dddddddd-0000-4000-8000-000000000001', 'dddddddd-dddd-4ddd-8ddd-dddddddddddd', 'Mastercard', 'Bancolombia', 'Mastercard', '3141', 2000000, 15, 2);
 -- Own TRM for the test (the daily job may have loaded real ones); rolled back at the end.
 delete from public.fx_rates;
 insert into public.fx_rates (date, usd_cop) values ('2026-11-20', 3300);
