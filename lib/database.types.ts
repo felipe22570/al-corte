@@ -23,7 +23,21 @@ export type Database = {
           }
         },"public": {
           Tables: {
-            "cards": {
+            "ai_usage": {
+                  Row: {
+                    "cost_usd": number,"created_at": string,"id": string,"input_tokens": number,"latency_ms": number,"model": string,"output_tokens": number,"prompt_version": string,"result": string,"task": string,"user_id": string
+                  }
+                  ComputedFields: never
+                  Insert: {
+                    "cost_usd"?: number,"created_at"?: string,"id"?: string,"input_tokens"?: number,"latency_ms"?: number,"model": string,"output_tokens"?: number,"prompt_version": string,"result": string,"task": string,"user_id"?: string
+                  }
+                  Update: {
+                    "cost_usd"?: number,"created_at"?: string,"id"?: string,"input_tokens"?: number,"latency_ms"?: number,"model"?: string,"output_tokens"?: number,"prompt_version"?: string,"result"?: string,"task"?: string,"user_id"?: string
+                  }
+                  Relationships: [
+                    
+                  ]
+                },"cards": {
                   Row: {
                     "advance_fee": number,"advance_rate_ea": number,"amortization_method": Database["public"]['Enums']["amortization_method"],"archived_at": string | null,"bank": string,"color": string,"created_at": string,"credit_limit": number,"cutoff_day": number,"handling_fee": number,"id": string,"interest_mode": Database["public"]['Enums']["interest_mode"],"last4": string,"name": string,"network": string,"payment_allocation_rule": Database["public"]['Enums']["payment_allocation_rule"],"payment_day": number,"purchase_rate_ea": number,"updated_at": string,"usd_default_installments": number,"user_id": string
                   }
@@ -449,7 +463,10 @@ isOneToOne: false
                 }
           }
           Functions: {
-            "change_installments":
+            "ai_usage_spent_since":
+{ Args: { "p_since": string,"p_user_id": string }; Returns: string
+                           },
+"change_installments":
 { Args: { "p_payload": Json }; Returns: string
                            },
 "close_statement":

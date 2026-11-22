@@ -8,6 +8,7 @@ export const EXPORT_TABLES = {
   installments: { label: "Cuotas", columns: ["id", "user_id", "transaction_id", "statement_id", "number", "principal", "interest", "total", "balance_after", "principal_cop", "interest_cop", "total_cop", "before_tracking", "created_at"], numeric: ["principal", "interest", "total", "balance_after", "principal_cop", "interest_cop", "total_cop"] },
   subscriptions: { label: "Suscripciones", columns: ["id", "user_id", "card_id", "category_id", "name", "amount", "currency", "frequency", "billing_day", "start_date", "trial_ends_at", "status", "installments_count", "last_charged_amount", "created_at", "updated_at"], numeric: ["amount", "last_charged_amount"] },
   notification_log: { label: "Registro de avisos", columns: ["id", "user_id", "kind", "ref_id", "scheduled_for", "sent_at", "created_at"], numeric: [] },
+  ai_usage: { label: "Uso de IA", columns: ["id", "user_id", "task", "prompt_version", "model", "input_tokens", "output_tokens", "cost_usd", "latency_ms", "result", "created_at"], numeric: ["cost_usd"] },
   fx_rates: { label: "TRM", columns: ["date", "usd_cop", "valid_from"], numeric: ["usd_cop"] },
 } as const;
 
