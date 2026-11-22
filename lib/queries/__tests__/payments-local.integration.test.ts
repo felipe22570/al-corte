@@ -64,7 +64,8 @@ describe.skipIf(!enabled)("payments against local Supabase", () => {
 
       // Total en dólares con la TRM de D4: liquida la compra en USD y no toca los pesos.
       const total = await pay("total", "USD");
-      expect(total.context.fxRate?.toString()).toBe("4000.5");
+      // The latest TRM in fx_rates (D4): the test's own row unless the daily job (D57) already loaded newer ones.
+      expect(total.context.fxRate?.toString()).toBe(new Decimal(sql("select usd_cop from public.fx_rates order by date desc limit 1;").trim()).toString());
       expect(total.plan.prepayments.map((item) => item.transactionId)).toEqual([dollars]);
       expect(installments(dollars)).toBe("2:20.00");
       expect(sql(`select (select sum(principal_cop) from public.installments where transaction_id = '${dollars}') + (select sum(amount_cop) from public.principal_prepayments where transaction_id = '${dollars}') = amount_cop from public.transactions where id = '${dollars}';`).trim()).toBe("t");

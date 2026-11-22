@@ -4,6 +4,8 @@ insert into auth.users (id, email) values ('aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa
 insert into public.cards (id, user_id, name, bank, network, last4, credit_limit, cutoff_day, payment_day, purchase_rate_ea, interest_mode, usd_default_installments)
 values ('aaaaaaaa-0000-4000-8000-000000000001', 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa', 'Visa', 'Bancolombia', 'Visa', '1234', 10000000, 15, 2, 0.2899, 'on_balance', 36),
        ('aaaaaaaa-0000-4000-8000-000000000002', 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa', 'Otra', 'Banco', 'Visa', '5678', 10000000, 15, 2, 0.2899, 'per_installment', 1);
+-- The daily TRM job (D57) may have loaded real rates: the test sets its own, rolled back at the end.
+delete from public.fx_rates;
 insert into public.fx_rates (date, usd_cop) values ('2026-11-01', 4000);
 insert into public.subscriptions (id, user_id, card_id, name, amount, currency, frequency, billing_day, start_date, status, installments_count) values
   ('aaaaaaaa-0000-4000-8000-000000000011', 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa', 'aaaaaaaa-0000-4000-8000-000000000001', 'ChatGPT', 12.99, 'USD', 'monthly', 20, '2026-01-01', 'active', 36),

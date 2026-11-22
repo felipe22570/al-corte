@@ -476,6 +476,9 @@ isOneToOne: false
 "generate_subscription_charges":
 { Args: { "p_today"?: string }; Returns: number
                            },
+"import_statement_file":
+{ Args: { "p_dry_run": boolean,"p_payload": Json }; Returns: Json
+                           },
 "register_payment":
 { Args: { "p_payload": Json }; Returns: string
                            },

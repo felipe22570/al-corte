@@ -19,7 +19,7 @@ type ImportCard = {
 };
 type ImportBalance = { currency: Currency; real_minimum?: string; real_total?: string; paid_with?: string[] };
 type ImportStatement = { card: string; cutoff_date: IsoDate; due_date: IsoDate; reference_only?: boolean; paid?: boolean; balances: ImportBalance[] };
-type ImportTransaction = {
+export type ImportTransaction = {
   key: string; card: string; type: "purchase" | "cash_advance" | "advance_fee" | "interest" | "handling_fee" | "insurance" | "adjustment" | "refund";
   date: IsoDate; merchant: string; category: string | null; amount: string; currency: Currency; installments_count: number;
   // Before step 27 `installments_count` was the effective plan; the original N is `installments_count_original`.
@@ -62,22 +62,28 @@ function transactionCard(card: ImportCard, advanceFee: string): TransactionCard 
   };
 }
 
-/** Payload of one movement, built like the app builds it, plus what the import checks against the bank. */
-export function importPayload(transaction: ImportTransaction, card: ImportCard, advanceFee: string, fees: Map<string, string>, trm: Record<IsoDate, string>) {
-  const fxRate = transaction.currency === "USD" ? transaction.fx_rate ?? trm[transaction.date] : null;
-  check(transaction.currency === "COP" || !!fxRate, `Falta la TRM del ${transaction.date} para ${transaction.key}.`);
+/** What the plan of an imported movement needs from its line in the file. */
+export type ImportPlanSource = Pick<ImportTransaction, "key" | "type" | "date" | "merchant" | "amount" | "currency" | "installments_count" | "statement_cutoff">
+  & Partial<Pick<ImportTransaction, "installments_count_original" | "current_installment" | "prior_installments" | "prior_principal_paid" | "installment_principal_this_statement"
+    | "pending_principal_after_statement" | "interest_free" | "statement_override" | "note">>;
+
+/**
+ * Payload of one movement for a card, built like the app builds it, plus what differs from the bank. `fee` is the fee of a
+ * new advance (D41); `fxRate` the TRM of a dollar line.
+ */
+export function importPlanPayload(transaction: ImportPlanSource, card: TransactionCard, fee: string | null, fxRate: string | null) {
   const prior = transaction.prior_installments ?? 0;
   const input: TransactionPlanInput = {
-    cardId: CARD, type: transaction.type as TransactionPlanInput["type"], date: transaction.date, amount: transaction.amount, currency: transaction.currency, fxRate,
+    cardId: card.id, type: transaction.type as TransactionPlanInput["type"], date: transaction.date, amount: transaction.amount, currency: transaction.currency, fxRate,
     installmentsCount: transaction.installments_count_original ?? transaction.installments_count, interestFree: !!transaction.interest_free,
     categoryId: null, merchant: transaction.merchant, note: transaction.note ?? "",
-    advanceFee: transaction.type === "cash_advance" && prior === 0 ? fees.get(transaction.key) ?? "0" : null,
+    advanceFee: transaction.type === "cash_advance" && prior === 0 ? fee ?? "0" : null,
     inProgress: prior > 0 ? {
       currentInstallment: transaction.current_installment!, balanceAfter: transaction.pending_principal_after_statement ?? null, trackedFromCutoff: transaction.statement_cutoff,
       currentPrincipal: transaction.installment_principal_this_statement ?? null,
     } : null,
   };
-  const plan = buildTransactionPlan(input, transactionCard(card, advanceFee));
+  const plan = buildTransactionPlan(input, card);
   const payload: Record<string, unknown> = { ...plan.payload };
   const warnings: string[] = [];
   if (transaction.statement_override) payload.statement_cutoff_override = transaction.statement_cutoff;
@@ -93,6 +99,13 @@ export function importPayload(transaction: ImportTransaction, card: ImportCard, 
     if (transaction.pending_principal_after_statement && !new Decimal(row!.balance_after).equals(transaction.pending_principal_after_statement)) warnings.push(`${transaction.key}: saldo ${row!.balance_after}; el banco dice ${transaction.pending_principal_after_statement}.`);
   }
   return { payload, warnings };
+}
+
+/** Payload of one movement of the one-time script, with the card terms of the file. */
+export function importPayload(transaction: ImportTransaction, card: ImportCard, advanceFee: string, fees: Map<string, string>, trm: Record<IsoDate, string>) {
+  const fxRate = transaction.currency === "USD" ? transaction.fx_rate ?? trm[transaction.date] : null;
+  check(transaction.currency === "COP" || !!fxRate, `Falta la TRM del ${transaction.date} para ${transaction.key}.`);
+  return importPlanPayload(transaction, transactionCard(card, advanceFee), fees.get(transaction.key) ?? null, fxRate ?? null);
 }
 
 const header = (title: string) => `\n-- ${title} ${"-".repeat(Math.max(3, 100 - title.length))}\n`;

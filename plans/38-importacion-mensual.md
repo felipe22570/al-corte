@@ -60,17 +60,17 @@ Hoy `fx_rates` solo tiene datos en el seed y en las pruebas: nada la llena en pr
 
 ## Pruebas
 
-- [ ] TRM: la función es idempotente; un fin de semana y un festivo toman el valor de su periodo; `trmForStatement` da $3.301,91 para el corte del 15 nov 2026 (periodo del 14 al 17 nov).
-- [ ] Importar el mismo archivo dos veces no crea duplicados.
-- [ ] Un movimiento registrado a mano con los mismos datos aparece como "ya registrado"; uno con igual tarjeta, fecha y valor pero otro comercio, como conflicto.
-- [ ] "Es el mismo" guarda solo el `import_key`; el mes siguiente la misma compra se reconoce sin conflicto.
-- [ ] Un cobro de suscripción creado por el cron un día antes que la fecha del banco aparece como ya registrado; con otro valor, como conflicto.
-- [ ] La cuota de manejo de D1 y un interés ya registrado en el cierre no se duplican.
-- [ ] Un pago del archivo nunca crea un movimiento.
-- [ ] Una compra en curso del archivo que no está en la app crea su plan con D31 y D49; una ya importada el mes anterior se reconoce por `import_key`.
-- [ ] La vista previa (`p_dry_run`) no deja cambios en la base y da los mismos totales que el guardado real.
-- [ ] Archivo inválido, demasiado grande, con tarjeta desconocida o con USD sin TRM → error sin cambios en la base.
-- [ ] Ningún log contiene el contenido del archivo.
+- [x] TRM: la función es idempotente; un fin de semana y un festivo toman el valor de su periodo; `trmForStatement` da $3.301,91 para el corte del 15 nov 2026 (periodo del 14 al 17 nov).
+- [x] Importar el mismo archivo dos veces no crea duplicados.
+- [x] Un movimiento registrado a mano con los mismos datos aparece como "ya registrado"; uno con igual tarjeta, fecha y valor pero otro comercio, como conflicto.
+- [x] "Es el mismo" guarda solo el `import_key`; el mes siguiente la misma compra se reconoce sin conflicto.
+- [x] Un cobro de suscripción creado por el cron un día antes que la fecha del banco aparece como ya registrado; con otro valor, como conflicto.
+- [x] La cuota de manejo de D1 y un interés ya registrado en el cierre no se duplican.
+- [x] Un pago del archivo nunca crea un movimiento.
+- [x] Una compra en curso del archivo que no está en la app crea su plan con D31 y D49; una ya importada el mes anterior se reconoce por `import_key`.
+- [x] La vista previa (`p_dry_run`) no deja cambios en la base y da los mismos totales que el guardado real.
+- [x] Archivo inválido, demasiado grande, con tarjeta desconocida o con USD sin TRM → error sin cambios en la base.
+- [x] Ningún log contiene el contenido del archivo.
 
 ## Verificación
 
@@ -90,3 +90,12 @@ pnpm build && pnpm start
 ## Notas de progreso
 
 <!-- Fecha — nota -->
+
+- 2026-11-21 — Parte 1 (`79bee97`, `feat: load daily TRM into fx_rates`). D57 cambió con aprobación del dueño: en lugar de una Edge Function, `private.refresh_fx_rates()` consulta datos.gov.co con la extensión `http` y `pg_cron` la llama a las 11:00 UTC. `private.upsert_fx_rates()` expande cada periodo por días, es idempotente y rechaza el lote completo ante una fila inválida. Guarda días solo hasta hoy en Bogotá: así "la fila más reciente" (D4) sigue siendo la TRM de hoy, sin tocar a quienes la leen. `fx_rates.valid_from` (un trigger la llena con la fecha en filas escritas a mano). `trmForStatement` en `lib/domain/fx.ts` da $3.301,91 para el corte del 15 de noviembre. En local se cargó desde el 1 de enero (326 días) y la segunda corrida no cambió nada. Exportación con `valid_from`.
+- 2026-11-21 — Parte 2. Formato en `docs/import-format.md` (su ejemplo se valida en las pruebas). `lib/import/monthly-file.ts` (Zod, 1 MB, errores sin eco del contenido), `lib/domain/import-identity.ts` (identidad D55, cobertura 100 %), `lib/import/monthly-review.ts` (revisión y payloads con la tarjeta guardada; `importPlanPayload` se extrajo de `importPayload` del paso 35 sin cambiar el script), `lib/queries/import-context.ts`, `lib/import/run-monthly-import.ts`, Server Actions en `lib/actions/statement-import.ts`, RPC `import_statement_file(p_payload, p_dry_run)` (la vista previa corre el mismo código dentro de un bloque que se deshace con un código de error propio). Interfaz en `/ajustes/importar` con `ImportReview` (reutilizable en H12) e `ImportVerification`; enlace desde Ajustes. `serverActions.bodySizeLimit` en 2 MB para que el control de 1 MB responda con su mensaje.
+- Decisiones menores: una línea en USD sin TRM, una comisión sin su avance o un plan imposible quedan como "No se pueden importar" sin bloquear el resto del archivo. Un cobro de suscripción con el mismo valor a 7 días se reconoce aunque el nombre cambie; con otro valor es conflicto solo si el nombre coincide (aprobado). Los cargos del extracto se comparan antes que los datos generales. La tarjeta desconocida, un JSON inválido, un archivo grande o decisiones inválidas devuelven un error sin cambios. Los pagos de un extracto de referencia aparecen como "sin registrar" (informativo).
+- Pruebas: pgTAP 180 (TRM) y 190 (RPC: vista previa sin cambios, guardado, idempotencia, enlace solo con clave, valores del banco solo si están vacíos, error con la clave de la fila, otro dueño). Vitest: identidad (10), archivo y revisión (7), interfaz (4), integración local del flujo completo (cobro de suscripción del día anterior, DirecTV con otro valor, cuota de manejo D1, interés ya registrado, compra en curso, enlace, reimportación, mes siguiente por clave, errores). 581 de Vitest y cobertura de dominio 100 %. Se ajustó la prueba de integración de pagos y la pgTAP 130 para no depender de que no exista una TRM más reciente, porque el cron diario también corre en local.
+- Archivo real de noviembre en vista previa contra la base local: 83 movimientos ya registrados, 0 nuevos y 3 pagos sin registrar (los marcados en el paso 35); pago mínimo y deuda total cuadran con el banco dentro del redondeo.
+- Revisión en navegador (local, 360 px, oscuro y claro) con un archivo sintético para la Visa local: grupos, verificación que se recalcula al desmarcar una línea y base sin cambios después de la vista previa.
+- `supabase test db` sobre la base local con los datos reales del dueño: 070, 130 y 140 fallan por esos datos (cobros de sus suscripciones y más de una tarjeta), como antes de este paso; 180 y 190 pasan. Falta `supabase db reset` sobre una base limpia, pendiente de aprobación del dueño porque borra sus datos locales.
+- Pendiente del dueño en producción: `db push`, `select private.refresh_fx_rates('2026-01-01');` en el editor SQL, comprobar que `fx_rates` tiene la TRM de hoy y probar con el extracto de diciembre.
