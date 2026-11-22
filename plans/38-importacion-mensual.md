@@ -80,7 +80,7 @@ supabase db reset && supabase test db
 pnpm build && pnpm start
 ```
 
-- [ ] La función de TRM corre en producción y `fx_rates` tiene la TRM de hoy y la carga inicial.
+- [x] La función de TRM corre en producción y `fx_rates` tiene la TRM de hoy y la carga inicial.
 - [ ] Con el extracto de diciembre del dueño: vista previa, importación, verificación contra el banco y cierre mensual.
 
 ## Criterios de terminado
@@ -99,3 +99,4 @@ pnpm build && pnpm start
 - Revisión en navegador (local, 360 px, oscuro y claro) con un archivo sintético para la Visa local: grupos, verificación que se recalcula al desmarcar una línea y base sin cambios después de la vista previa.
 - `supabase test db` sobre la base local con los datos reales del dueño: 070, 130 y 140 fallan por esos datos (cobros de sus suscripciones y más de una tarjeta), como antes de este paso; 180 y 190 pasan. Falta `supabase db reset` sobre una base limpia, pendiente de aprobación del dueño porque borra sus datos locales.
 - Pendiente del dueño en producción: `db push`, `select private.refresh_fx_rates('2026-01-01');` en el editor SQL, comprobar que `fx_rates` tiene la TRM de hoy y probar con el extracto de diciembre.
+- 2026-11-22 — Producción: `supabase db push --remote` aplicó las migraciones `20261122010000`, `20261122020000` y `20261122030000` (pasos 38 y 39), con local y remoto alineados. La carga inicial `private.refresh_fx_rates('2026-01-01')` escribió 327 días, del 31 de diciembre de 2025 al 22 de noviembre de 2026: TRM de hoy $3.461,92; el 13 de noviembre, $3.301,91; el 15 de noviembre, con vigencia desde el 14. El cron `refresh-fx-rates` quedó en `0 11 * * *`. El código de la app de los pasos 36 a 39 aún no está desplegado.
