@@ -1,8 +1,8 @@
 # Paso 36 — Cuotas y categoría sugeridas por comercio
 
 - **Hito PRD:** H11 (parte 1 de 4)
-- **Estado:** ⬜ Pendiente
-- **Inicio:**
+- **Estado:** 🟡 En progreso
+- **Inicio:** 2026-11-21
 - **Fin:**
 - **Commit:**
 - **Depende de:** 35
@@ -28,12 +28,12 @@ Que el formulario de gasto proponga lo que el dueño usó la última vez con ese
 
 ## Pruebas
 
-- [ ] Normalización: "DLO*NETFLIX.COM", "dlo*netflix.com " y "Dlo*Nétflix.com" son el mismo comercio; "GOOGLE *ChatGPT" y "ChatGPT" no.
-- [ ] Misma tarjeta antes que otra; la más reciente gana.
-- [ ] Un campo ya tocado no se sobrescribe, tampoco si viene de un borrador restaurado.
-- [ ] Las cuotas que puso el cambio a USD (D34) no cuentan como tocadas: una sugerencia con cuotas las reemplaza.
-- [ ] Sugerir USD precarga la TRM e `is_international` igual que elegirlo a mano; quitar la sugerencia restaura los valores anteriores.
-- [ ] Recorrido del historial real (prueba de solo lectura o script fuera de git): por cada compra con comercio repetido, predecir con las anteriores y reportar el acierto de categoría y cuotas en las notas. Meta del PRD: 80 %.
+- [x] Normalización: "DLO*NETFLIX.COM", "dlo*netflix.com " y "Dlo*Nétflix.com" son el mismo comercio; "GOOGLE *ChatGPT" y "ChatGPT" no.
+- [x] Misma tarjeta antes que otra; la más reciente gana.
+- [x] Un campo ya tocado no se sobrescribe, tampoco si viene de un borrador restaurado.
+- [x] Las cuotas que puso el cambio a USD (D34) no cuentan como tocadas: una sugerencia con cuotas las reemplaza.
+- [x] Sugerir USD precarga la TRM e `is_international` igual que elegirlo a mano; quitar la sugerencia restaura los valores anteriores.
+- [x] Recorrido del historial real (prueba de solo lectura o script fuera de git): por cada compra con comercio repetido, predecir con las anteriores y reportar el acierto de categoría y cuotas en las notas. Meta del PRD: 80 %.
 
 ## Verificación
 
@@ -51,3 +51,10 @@ pnpm build && pnpm start
 ## Notas de progreso
 
 <!-- Fecha — nota -->
+
+- 2026-11-21 — Implementado. Dominio en `lib/domain/merchant-suggestions.ts` (`normalizeMerchant`, `latestByMerchant`, `suggestFromHistory`, `recentMerchantNames`, `merchantHistorySince`). Lógica del formulario sin React en `lib/merchant-suggestion-form.ts` (`applySuggestion`, `revertSuggestion`, `currencyEffects`, `suggestionNotice`); el cambio manual de moneda usa el mismo `currencyEffects`. Consulta en `lib/queries/merchant-history.ts`: compras y avances de tarjetas activas de los últimos 12 meses, reducidos en el servidor a uno por comercio y tarjeta. El embed nombra `cards!transactions_card_id_fkey` porque `transactions` tiene dos relaciones con `cards`. Sin migraciones ni dependencias nuevas; autocompletado con `<datalist>` nativo.
+- Decisiones del dueño al aprobar el plan: solo en "Nuevo gasto"; sugerencia del mismo tipo del formulario; cambiar comercio, tarjeta o tipo deshace la sugerencia anterior y aplica la nueva si existe. Menores: "Quitar sugerencia" no vuelve a sugerir ese comercio en el mismo formulario; si el dueño fijó otra moneda, no se copia `is_international` de la sugerencia; una categoría archivada no se sugiere; el aviso nombra la tarjeta cuando la sugerencia viene de otra ("con Visa Bancolombia").
+- Pruebas: 13 de dominio (cobertura 100 %), 11 de la lógica del formulario, 8 del formulario en jsdom, 3 de la consulta y 1 de integración local (`AL_CORTE_LOCAL_DB_TEST=1`). Total: 535 de Vitest; `typecheck`, `lint`, `test:coverage` y `build` pasan. No hubo cambios de esquema, así que no se ejecutó `supabase db reset` para conservar la importación local.
+- Recorrido del historial real (script fuera de git, sobre la importación de noviembre en Supabase local: 79 compras y avances, 41 con comercio repetido): categoría 41/41 (100 %), cuotas 36/41 (88 %), **categoría y cuotas 36/41 (88 %)**; meta del 80 % cumplida. Los 5 fallos son Mercado Pago y Mercado Libre, con cuotas distintas en cada compra. Conviene repetirlo con una exportación de producción cuando haya más registros manuales.
+- Revisión en navegador (`pnpm build && pnpm start` local, 360 px, claro y oscuro): Netflix desde la Mastercard sugiere categoría y 1 cuota de la Visa con su aviso; "chatgpt (google play)" en minúsculas sugiere al salir del campo USD, TRM, 36 cuotas e internacional; "Quitar sugerencia" devuelve COP, sin categoría, 1 cuota y no internacional.
+- Pendiente: la verificación desde el celular contra producción (cobro de Netflix y uno de Google en dólares) la hace el dueño después del despliegue.

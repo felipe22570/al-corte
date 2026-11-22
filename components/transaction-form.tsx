@@ -17,21 +17,32 @@ import { createTransaction, updateTransaction } from "@/lib/actions/transactions
 import { storageKey } from "@/lib/brand";
 import { cardColorClasses } from "@/lib/card-colors";
 import { categoryIcons, type CategoryIcon } from "@/lib/category-icons";
+import { normalizeMerchant, recentMerchantNames, suggestFromHistory, type MerchantHistoryRow } from "@/lib/domain/merchant-suggestions";
 import { lastClosedCutoff, statementCutoffFor } from "@/lib/domain/statements";
 import { buildTransactionPlan, type TransactionPlanInput } from "@/lib/domain/transaction-plan";
 import { formatDateShort, formatRate } from "@/lib/format";
+import { applySuggestion, currencyEffects, revertSuggestion, suggestionNotice, type SuggestionField, type SuggestionPatch } from "@/lib/merchant-suggestion-form";
 import { formatAmountInput } from "@/lib/money-input";
 import type { TransactionCardOption, TransactionCategoryOption } from "@/lib/transaction-options";
 import { decodeTransactionDraft, encodeTransactionDraft, transactionDraftKey } from "@/lib/transaction-draft";
 import { transactionSchema, type TransactionInput } from "@/lib/validation/transaction";
 
-export function TransactionForm({ userId, cards, categories, today, latestRate, existingCutoffs = {}, edit }: { userId: string; cards: TransactionCardOption[]; categories: TransactionCategoryOption[]; today: string; latestRate: string | null; existingCutoffs?: Record<string, string[]>; edit?: { id: string; initial: TransactionInput; original: { cardId: string; type: TransactionPlanInput["type"]; rateEaApplied: string | null }; hasPaidInstallments: boolean } }) {
+const suggestionFields: SuggestionField[] = ["categoryId", "currency", "fxRate", "installmentsCount", "isInternational", "interestFree"];
+const noHistory: MerchantHistoryRow[] = [];
+
+export function TransactionForm({ userId, cards, categories, today, latestRate, existingCutoffs = {}, merchantHistory = noHistory, edit }: { userId: string; cards: TransactionCardOption[]; categories: TransactionCategoryOption[]; today: string; latestRate: string | null; existingCutoffs?: Record<string, string[]>; merchantHistory?: MerchantHistoryRow[]; edit?: { id: string; initial: TransactionInput; original: { cardId: string; type: TransactionPlanInput["type"]; rateEaApplied: string | null }; hasPaidInstallments: boolean } }) {
   const router = useRouter();
   const [serverError, setServerError] = useState("");
   const [draftNotice, setDraftNotice] = useState<"" | "saved" | "restored" | "unavailable">("");
   const [ready, setReady] = useState(false);
   const skipDraft = useRef(false);
   const options = useRef<HTMLDetailsElement>(null);
+  // D53: fields the owner changed, recorded from their own handlers, not React Hook Form's dirty state,
+  // which also flags values the form sets itself (USD default installments) and restored drafts.
+  const touched = useRef(new Set<SuggestionField>());
+  const applied = useRef<{ id: string; cardId: string; name: string; previous: SuggestionPatch } | null>(null);
+  const dismissed = useRef(new Set<string>());
+  const [suggestionText, setSuggestionText] = useState("");
   const defaults = useMemo<TransactionInput>(() => edit?.initial ?? { cardId: cards[0]?.id ?? "", type: "purchase", date: today, amount: "", currency: "COP", fxRate: "", installmentsCount: "1", interestFree: false, isInternational: false, advanceFee: "", categoryId: "", merchant: "", note: "", inProgress: false, currentInstallment: "", balanceAfter: "", trackedFromCutoff: "" }, [edit, cards, today]);
   const pristine = useRef(JSON.stringify(defaults));
   const baseline = edit ? JSON.stringify({ initial: edit.initial, original: edit.original }) : "new";
@@ -53,6 +64,8 @@ export function TransactionForm({ userId, cards, categories, today, latestRate, 
         const restored = decodeTransactionDraft(sessionStorage.getItem(draftKey), baseline);
         if (restored) {
           recovered = true;
+          // Everything in a restored draft counts as the owner's choice (D53).
+          touched.current = new Set(suggestionFields);
           setDraftNotice("restored");
           initial = { ...restored, cardId: cards.some((card) => card.id === restored.cardId) ? restored.cardId : "", categoryId: categories.some((category) => category.id === restored.categoryId) ? restored.categoryId : "" };
         } else {
@@ -75,6 +88,8 @@ export function TransactionForm({ userId, cards, categories, today, latestRate, 
     return () => { cancelled = true; };
   }, [defaults, reset, draftKey, baseline, cards, categories, edit]);
   const values = useWatch({ control: form.control });
+  const suggestionsOn = !edit && merchantHistory.length > 0;
+  const merchantNames = useMemo(() => suggestionsOn ? recentMerchantNames(merchantHistory) : [], [suggestionsOn, merchantHistory]);
   const selectedCard = cards.find((card) => card.id === values.cardId);
   const selectedCategory = categories.find((category) => category.id === values.categoryId);
   const CategoryIcon = selectedCategory && Object.hasOwn(categoryIcons, selectedCategory.icon) ? categoryIcons[selectedCategory.icon as CategoryIcon] : null;
@@ -148,9 +163,42 @@ export function TransactionForm({ userId, cards, categories, today, latestRate, 
       pristine.current = JSON.stringify(defaults);
       form.reset(defaults);
       skipDraft.current = false;
+      touched.current = new Set();
+      applied.current = null;
+      dismissed.current = new Set();
+      setSuggestionText("");
       setDraftNotice("");
       setServerError("");
     } catch { setDraftNotice("unavailable"); }
+  }
+
+  // F20 (R11, D53): last purchase with this merchant, only in "Nuevo gasto".
+  const touch = (field: SuggestionField) => { touched.current.add(field); };
+  function setFields(patch: SuggestionPatch) {
+    for (const [field, value] of Object.entries(patch)) form.setValue(field as SuggestionField, value as never, { shouldDirty: true, shouldValidate: form.formState.isSubmitted });
+  }
+  function clearSuggestion() {
+    if (applied.current) setFields(revertSuggestion(applied.current.previous, touched.current));
+    applied.current = null;
+    setSuggestionText("");
+  }
+  function evaluateSuggestion(merchant: string) {
+    if (!suggestionsOn) return;
+    const { cardId, type } = form.getValues();
+    const name = normalizeMerchant(merchant);
+    const found = dismissed.current.has(name) ? null : suggestFromHistory({ merchant, cardId, type }, merchantHistory, cards.map((card) => card.id));
+    if (found && applied.current?.id === found.id && applied.current.cardId === cardId) return;
+    clearSuggestion();
+    if (!found) return;
+    const { patch, previous } = applySuggestion(form.getValues(), found, touched.current, { latestRate, categoryIds: categories.map((category) => category.id) });
+    if (!Object.keys(patch).length) return;
+    setFields(patch);
+    applied.current = { id: found.id, cardId, name, previous };
+    setSuggestionText(suggestionNotice(found, today, found.cardId === cardId ? undefined : cards.find((card) => card.id === found.cardId)?.name));
+  }
+  function dismissSuggestion() {
+    if (applied.current) dismissed.current.add(applied.current.name);
+    clearSuggestion();
   }
   function cancel() {
     if (draftNotice === "unavailable" && isDirty && !window.confirm("No pudimos guardar el borrador. ¿Quieres salir y perder los cambios?")) return;
@@ -192,13 +240,13 @@ export function TransactionForm({ userId, cards, categories, today, latestRate, 
     {edit?.hasPaidInstallments && <Alert><AlertDescription>Algunas cuotas están en extractos pagados. Al guardar se regeneran todas las cuotas.</AlertDescription></Alert>}
     <div className="grid grid-cols-[minmax(0,1fr)_6rem] items-start gap-4">
       <div className="flex min-w-0 flex-col gap-2"><Label htmlFor="transaction-amount">Valor</Label><div className="flex items-center rounded-md border border-input bg-card px-3 focus-within:ring-2 focus-within:ring-ring has-aria-invalid:border-danger"><span className={`shrink-0 text-amount-lg ${values.currency === "USD" ? "mr-2" : ""}`} aria-hidden="true">{values.currency === "USD" ? "US$" : "$"}</span><Input id="transaction-amount" autoFocus inputMode="decimal" placeholder="0" className="h-14 border-0 px-0 text-left text-amount-lg focus-visible:ring-0 pointer-coarse:h-14" {...errorProps("amount")} {...form.register("amount")} /></div>{errorFor("amount")}</div>
-      <div className="flex min-w-0 flex-col gap-2"><Label htmlFor="transaction-currency">Moneda</Label><div className="flex h-14 items-center"><Controller control={form.control} name="currency" render={({ field: { onChange, ...field } }) => <SelectControl {...field} id="transaction-currency" {...errorProps("currency")} onValueChange={(value) => { onChange(value); form.setValue("fxRate", value === "USD" ? (latestRate ?? "").replace(".", ",") : ""); form.setValue("isInternational", value === "USD"); if (value === "USD" && allowsInstallments && selectedCard?.usdDefaultInstallments) form.setValue("installmentsCount", String(selectedCard.usdDefaultInstallments), { shouldDirty: true }); }} options={[{ value: "COP", label: "COP" }, { value: "USD", label: "USD" }]} />} /></div>{errorFor("currency")}</div>
+      <div className="flex min-w-0 flex-col gap-2"><Label htmlFor="transaction-currency">Moneda</Label><div className="flex h-14 items-center"><Controller control={form.control} name="currency" render={({ field: { onChange, ...field } }) => <SelectControl {...field} id="transaction-currency" {...errorProps("currency")} onValueChange={(value) => { touch("currency"); onChange(value); const effects = currencyEffects(value === "USD" ? "USD" : "COP", latestRate); form.setValue("fxRate", effects.fxRate); form.setValue("isInternational", effects.isInternational); if (value === "USD" && allowsInstallments && selectedCard?.usdDefaultInstallments) form.setValue("installmentsCount", String(selectedCard.usdDefaultInstallments), { shouldDirty: true }); }} options={[{ value: "COP", label: "COP" }, { value: "USD", label: "USD" }]} />} /></div>{errorFor("currency")}</div>
     </div>
-    {values.currency === "USD" && <div className="flex flex-col gap-2"><Label htmlFor="transaction-rate">TRM</Label><Input id="transaction-rate" inputMode="decimal" {...errorProps("fxRate")} {...form.register("fxRate")} />{errorFor("fxRate")}</div>}
-    <div className="flex flex-col gap-2"><Label htmlFor="transaction-card">Tarjeta</Label><Controller control={form.control} name="cardId" render={({ field: { onChange, ...field } }) => <SelectControl {...field} id="transaction-card" {...errorProps("cardId")} onValueChange={(value) => { onChange(value); const card = cards.find((item) => item.id === value); if (values.type === "cash_advance" && card) form.setValue("advanceFee", formatAmountInput(card.advanceFee)); }} options={[{ value: "", label: "Elige una tarjeta", disabled: true }, ...cards.map((card) => ({ value: card.id, label: `${card.name} · •••• ${card.last4}`, startAdornment: <span className={`size-2 rounded-full ${cardColorClasses[card.color]}`} /> }))]} />} />{errorFor("cardId")}</div>
-    <div className="flex flex-col gap-2"><Label htmlFor="transaction-category">Categoría</Label><div className="flex items-center gap-3">{CategoryIcon && <CategoryIcon className="size-5 shrink-0 text-muted-foreground" strokeWidth={1.75} aria-hidden="true" />}<Controller control={form.control} name="categoryId" render={({ field: { onChange, ...field } }) => <SelectControl {...field} id="transaction-category" {...errorProps("categoryId")} onValueChange={onChange} options={[{ value: "", label: "Sin categoría" }, ...categories.map((category) => ({ value: category.id, label: category.name }))]} />} /></div>{errorFor("categoryId")}</div>
-    <div className="flex flex-col gap-2"><Label htmlFor="transaction-merchant">Comercio</Label><Input id="transaction-merchant" autoComplete="off" {...errorProps("merchant")} {...form.register("merchant")} />{errorFor("merchant")}</div>
-    {allowsInstallments && <div className="flex flex-col gap-2"><Label htmlFor="transaction-count">Cuotas</Label><div className="flex items-center gap-2"><Button type="button" variant="outline" size="icon" aria-label="Reducir cuotas" disabled={count <= 1} onClick={() => form.setValue("installmentsCount", String(Math.max(1, count - 1)), { shouldValidate: true, shouldDirty: true })}><Minus className="size-5" strokeWidth={1.75} /></Button><Input id="transaction-count" type="number" min={1} max={36} inputMode="numeric" className="w-20 text-center" {...errorProps("installmentsCount")} {...form.register("installmentsCount")} /><Button type="button" variant="outline" size="icon" aria-label="Aumentar cuotas" disabled={count >= 36} onClick={() => form.setValue("installmentsCount", String(Math.min(36, count + 1)), { shouldValidate: true, shouldDirty: true })}><Plus className="size-5" strokeWidth={1.75} /></Button></div>{errorFor("installmentsCount")}</div>}
+    {values.currency === "USD" && <div className="flex flex-col gap-2"><Label htmlFor="transaction-rate">TRM</Label><Input id="transaction-rate" inputMode="decimal" {...errorProps("fxRate")} {...form.register("fxRate")} onChange={(event) => { touch("fxRate"); void form.register("fxRate").onChange(event); }} />{errorFor("fxRate")}</div>}
+    <div className="flex flex-col gap-2"><Label htmlFor="transaction-card">Tarjeta</Label><Controller control={form.control} name="cardId" render={({ field: { onChange, ...field } }) => <SelectControl {...field} id="transaction-card" {...errorProps("cardId")} onValueChange={(value) => { onChange(value); const card = cards.find((item) => item.id === value); if (values.type === "cash_advance" && card) form.setValue("advanceFee", formatAmountInput(card.advanceFee)); if (applied.current) evaluateSuggestion(form.getValues("merchant") ?? ""); }} options={[{ value: "", label: "Elige una tarjeta", disabled: true }, ...cards.map((card) => ({ value: card.id, label: `${card.name} · •••• ${card.last4}`, startAdornment: <span className={`size-2 rounded-full ${cardColorClasses[card.color]}`} /> }))]} />} />{errorFor("cardId")}</div>
+    <div className="flex flex-col gap-2"><Label htmlFor="transaction-category">Categoría</Label><div className="flex items-center gap-3">{CategoryIcon && <CategoryIcon className="size-5 shrink-0 text-muted-foreground" strokeWidth={1.75} aria-hidden="true" />}<Controller control={form.control} name="categoryId" render={({ field: { onChange, ...field } }) => <SelectControl {...field} id="transaction-category" {...errorProps("categoryId")} onValueChange={(value) => { touch("categoryId"); onChange(value); }} options={[{ value: "", label: "Sin categoría" }, ...categories.map((category) => ({ value: category.id, label: category.name }))]} />} /></div>{errorFor("categoryId")}</div>
+    <div className="flex flex-col gap-2"><Label htmlFor="transaction-merchant">Comercio</Label><Input id="transaction-merchant" autoComplete="off" list={merchantNames.length ? "transaction-merchant-options" : undefined} {...errorProps("merchant")} {...form.register("merchant")} onChange={(event) => { void form.register("merchant").onChange(event); if (merchantNames.includes(event.target.value)) evaluateSuggestion(event.target.value); }} onBlur={(event) => { void form.register("merchant").onBlur(event); evaluateSuggestion(event.target.value); }} />{merchantNames.length > 0 && <datalist id="transaction-merchant-options">{merchantNames.map((name) => <option key={name} value={name} />)}</datalist>}{errorFor("merchant")}{suggestionText && <div className="flex flex-wrap items-center justify-between gap-2"><p role="status" className="text-small text-muted-foreground">{suggestionText}</p><Button type="button" variant="outline" size="sm" onClick={dismissSuggestion}>Quitar sugerencia</Button></div>}</div>
+    {allowsInstallments && <div className="flex flex-col gap-2"><Label htmlFor="transaction-count">Cuotas</Label><div className="flex items-center gap-2"><Button type="button" variant="outline" size="icon" aria-label="Reducir cuotas" disabled={count <= 1} onClick={() => { touch("installmentsCount"); form.setValue("installmentsCount", String(Math.max(1, count - 1)), { shouldValidate: true, shouldDirty: true }); }}><Minus className="size-5" strokeWidth={1.75} /></Button><Input id="transaction-count" type="number" min={1} max={36} inputMode="numeric" className="w-20 text-center" {...errorProps("installmentsCount")} {...form.register("installmentsCount")} onChange={(event) => { touch("installmentsCount"); void form.register("installmentsCount").onChange(event); }} /><Button type="button" variant="outline" size="icon" aria-label="Aumentar cuotas" disabled={count >= 36} onClick={() => { touch("installmentsCount"); form.setValue("installmentsCount", String(Math.min(36, count + 1)), { shouldValidate: true, shouldDirty: true }); }}><Plus className="size-5" strokeWidth={1.75} /></Button></div>{errorFor("installmentsCount")}</div>}
     {values.type === "cash_advance" && !values.inProgress && <div className="flex flex-col gap-2"><Label htmlFor="transaction-advance-fee">Comisión del avance</Label><Input id="transaction-advance-fee" inputMode="decimal" autoComplete="off" placeholder={selectedCard ? formatAmountInput(selectedCard.advanceFee) : "0"} {...errorProps("advanceFee")} aria-describedby={form.formState.errors.advanceFee ? "transaction-advanceFee-error transaction-advance-fee-help" : "transaction-advance-fee-help"} {...form.register("advanceFee")} /><p id="transaction-advance-fee-help" className="text-small text-muted-foreground">La de tu tarjeta por defecto. Cámbiala si el banco cobró otra, por ejemplo en otro cajero.</p>{errorFor("advanceFee")}</div>}
     {canTrackPrior && <div className="flex flex-col gap-4">
       <label className="flex min-h-11 items-center gap-3 text-body"><input type="checkbox" className="size-5 accent-foreground" {...errorProps("inProgress")} {...form.register("inProgress")} />{values.type === "cash_advance" ? "Ya pagué cuotas de este avance" : "Ya pagué cuotas de esta compra"}</label>{errorFor("inProgress")}
@@ -214,9 +262,9 @@ export function TransactionForm({ userId, cards, categories, today, latestRate, 
     </div>}
     <div className="flex flex-col gap-2"><Label htmlFor="transaction-date">Fecha</Label><Controller control={form.control} name="date" render={({ field: { onChange, value, ...field } }) => <DateInput {...field} id="transaction-date" calendarLabel="Fecha del movimiento" value={value ?? ""} onValueChange={onChange} {...errorProps("date")} />} />{errorFor("date")}</div>
     <Disclosure ref={options}><DisclosureSummary><span>Más opciones</span><ChevronDown aria-hidden="true" className="size-5" strokeWidth={1.75} /></DisclosureSummary><DisclosureContent className="flex flex-col gap-4">
-      <div className="flex flex-col gap-2"><Label htmlFor="transaction-type">Tipo</Label><Controller control={form.control} name="type" render={({ field: { onChange, ...field } }) => <SelectControl {...field} id="transaction-type" {...errorProps("type")} onValueChange={(value) => { onChange(value); if (value !== "purchase" && value !== "cash_advance") form.setValue("installmentsCount", "1"); if (value !== "purchase") form.setValue("interestFree", false); if (value !== "purchase" && value !== "cash_advance") form.setValue("isInternational", false); form.setValue("advanceFee", value === "cash_advance" && selectedCard ? formatAmountInput(selectedCard.advanceFee) : ""); }} options={[{ value: "purchase", label: "Compra" }, { value: "cash_advance", label: "Avance" }, { value: "payment", label: "Pago" }, { value: "handling_fee", label: "Cuota de manejo" }, { value: "interest", label: "Interés" }, { value: "insurance", label: "Seguro" }, { value: "refund", label: "Devolución" }, { value: "adjustment", label: "Ajuste" }]} />} />{errorFor("type")}</div>
-      {values.type === "purchase" && <label className="flex min-h-11 items-center gap-3 text-body"><input type="checkbox" className="size-5 accent-foreground" {...form.register("interestFree")} />Compra sin intereses</label>}
-      {allowsInstallments && <label className="flex min-h-11 items-center gap-3 text-body"><input type="checkbox" className="size-5 accent-foreground" aria-describedby="transaction-international-help" {...form.register("isInternational")} />{values.type === "cash_advance" ? "Avance internacional" : "Compra internacional"}</label>}
+      <div className="flex flex-col gap-2"><Label htmlFor="transaction-type">Tipo</Label><Controller control={form.control} name="type" render={({ field: { onChange, ...field } }) => <SelectControl {...field} id="transaction-type" {...errorProps("type")} onValueChange={(value) => { clearSuggestion(); onChange(value); if (value !== "purchase" && value !== "cash_advance") form.setValue("installmentsCount", "1"); if (value !== "purchase") form.setValue("interestFree", false); if (value !== "purchase" && value !== "cash_advance") form.setValue("isInternational", false); form.setValue("advanceFee", value === "cash_advance" && selectedCard ? formatAmountInput(selectedCard.advanceFee) : ""); evaluateSuggestion(form.getValues("merchant") ?? ""); }} options={[{ value: "purchase", label: "Compra" }, { value: "cash_advance", label: "Avance" }, { value: "payment", label: "Pago" }, { value: "handling_fee", label: "Cuota de manejo" }, { value: "interest", label: "Interés" }, { value: "insurance", label: "Seguro" }, { value: "refund", label: "Devolución" }, { value: "adjustment", label: "Ajuste" }]} />} />{errorFor("type")}</div>
+      {values.type === "purchase" && <label className="flex min-h-11 items-center gap-3 text-body"><input type="checkbox" className="size-5 accent-foreground" {...form.register("interestFree")} onChange={(event) => { touch("interestFree"); void form.register("interestFree").onChange(event); }} />Compra sin intereses</label>}
+      {allowsInstallments && <label className="flex min-h-11 items-center gap-3 text-body"><input type="checkbox" className="size-5 accent-foreground" aria-describedby="transaction-international-help" {...form.register("isInternational")} onChange={(event) => { touch("isInternational"); void form.register("isInternational").onChange(event); }} />{values.type === "cash_advance" ? "Avance internacional" : "Compra internacional"}</label>}
       {allowsInstallments && <p id="transaction-international-help" className="-mt-3 text-small text-muted-foreground">Define en qué orden recibe abonos a capital.</p>}
       <div className="flex flex-col gap-2"><Label htmlFor="transaction-note">Nota</Label><textarea id="transaction-note" rows={3} className="w-full rounded-md border border-input bg-card p-3 text-input text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring" {...errorProps("note")} {...form.register("note")} />{errorFor("note")}</div>
     </DisclosureContent></Disclosure>
