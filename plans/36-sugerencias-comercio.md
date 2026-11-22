@@ -1,10 +1,10 @@
 # Paso 36 — Cuotas y categoría sugeridas por comercio
 
 - **Hito PRD:** H11 (parte 1 de 4)
-- **Estado:** 🟡 En progreso
+- **Estado:** ✅ Terminado y verificado
 - **Inicio:** 2026-11-21
-- **Fin:**
-- **Commit:**
+- **Fin:** 2026-11-22
+- **Commit:** 47ced1e
 - **Depende de:** 35
 - **Decisiones aplicables (decididas, ver README):** D15, D34, D53
 
@@ -42,7 +42,7 @@ pnpm typecheck && pnpm lint && pnpm test && pnpm test:coverage
 pnpm build && pnpm start
 ```
 
-- [ ] Registrar un cobro de Netflix y uno de Google en dólares desde el celular, sin cambiar campos sugeridos.
+- [x] Registrar un cobro de Netflix y uno de Google en dólares desde el celular, sin cambiar campos sugeridos.
 
 ## Criterios de terminado
 
@@ -58,3 +58,7 @@ pnpm build && pnpm start
 - Recorrido del historial real (script fuera de git, sobre la importación de noviembre en Supabase local: 79 compras y avances, 41 con comercio repetido): categoría 41/41 (100 %), cuotas 36/41 (88 %), **categoría y cuotas 36/41 (88 %)**; meta del 80 % cumplida. Los 5 fallos son Mercado Pago y Mercado Libre, con cuotas distintas en cada compra. Conviene repetirlo con una exportación de producción cuando haya más registros manuales.
 - Revisión en navegador (`pnpm build && pnpm start` local, 360 px, claro y oscuro): Netflix desde la Mastercard sugiere categoría y 1 cuota de la Visa con su aviso; "chatgpt (google play)" en minúsculas sugiere al salir del campo USD, TRM, 36 cuotas e internacional; "Quitar sugerencia" devuelve COP, sin categoría, 1 cuota y no internacional.
 - Pendiente: la verificación desde el celular contra producción (cobro de Netflix y uno de Google en dólares) la hace el dueño después del despliegue.
+- 2026-11-22 — Verificación de registro, con autorización del dueño, en el build del código desplegado (`6573efb`), contra la base local restaurada y emulando un celular táctil de 360 px. No se hizo en un celular físico ni en producción, porque el agente no tiene acceso a la cuenta de producción del dueño.
+    - Netflix por $44.900: sugirió Suscripciones, 1 cuota y COP, desde la última compra en la Visa ("Como tu última compra en Netflix con Visa Bancolombia (7 nov)").
+    - "ChatGPT (Google Play)" por US$4,39: sugirió USD, la TRM del día (3.461,92), Suscripciones, 36 cuotas y compra internacional.
+    - Ambos se guardaron sin cambiar campos; la base guardó exactamente lo sugerido (36 cuotas en el de dólares). Luego se borraron para dejar la base local como estaba.

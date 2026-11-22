@@ -63,7 +63,7 @@ Prompt sugerido para el agente al iniciar un paso:
 | 33 | [Cierre mensual del extracto](33-cierre-mensual.md) | H10 | ✅ | Ver historial de git |
 | 34 | [Cambio de cuotas y comisión de avance por movimiento](34-cambio-cuotas-comision-avance.md) | H10 | ✅ | Ver historial de git |
 | 35 | [Importación de los extractos reales](35-importacion-extractos.md) | H10 | ✅ | bcd40f8 |
-| 36 | [Cuotas y categoría sugeridas por comercio](36-sugerencias-comercio.md) | H11 | 🟡 | |
+| 36 | [Cuotas y categoría sugeridas por comercio](36-sugerencias-comercio.md) | H11 | ✅ | 47ced1e |
 | 37 | [Costo de diferir](37-costo-diferir.md) | H11 | ✅ | 03e0c78 |
 | 38 | [Importación mensual de extractos](38-importacion-mensual.md) | H11 | 🟡 | |
 | 39 | [Pago del saldo en dólares con pesos y cupo en USD](39-dolares-con-pesos.md) | H11 | 🟡 | |
