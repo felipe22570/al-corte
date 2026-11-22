@@ -64,7 +64,7 @@ Prompt sugerido para el agente al iniciar un paso:
 | 34 | [Cambio de cuotas y comisión de avance por movimiento](34-cambio-cuotas-comision-avance.md) | H10 | ✅ | Ver historial de git |
 | 35 | [Importación de los extractos reales](35-importacion-extractos.md) | H10 | ✅ | bcd40f8 |
 | 36 | [Cuotas y categoría sugeridas por comercio](36-sugerencias-comercio.md) | H11 | 🟡 | |
-| 37 | [Costo de diferir](37-costo-diferir.md) | H11 | ⬜ | |
+| 37 | [Costo de diferir](37-costo-diferir.md) | H11 | ✅ | |
 | 38 | [Importación mensual de extractos](38-importacion-mensual.md) | H11 | ⬜ | |
 | 39 | [Pago del saldo en dólares con pesos y cupo en USD](39-dolares-con-pesos.md) | H11 | ⬜ | |
 | 40 | [Capa de IA](40-capa-ia.md) | H12 | ⬜ | |
@@ -286,3 +286,4 @@ Anota aquí cada decisión tomada durante la implementación (fecha, paso, decis
 | 2026-11-21 | 36–39 | H11 planificado: sugerencias por comercio, costo de diferir, importación mensual y pago en dólares con pesos (D53–D56). D52 registra la valoración del cupo con deuda en dólares a la TRM vigente, que cuadra con el extracto de noviembre, y se implementa en el paso 39. | Pedido del dueño. |
 | 2026-11-21 | 36–39 | Revisión del plan de H11 contra el código. Costo de diferir con la regla de intereses ya implementada (R2 o R8): en `on_balance` da i × P × (N − 1) / 2 ($3.308 en el ejemplo de $9.000). TRM diaria a H11 en el paso 38 (D57), porque `fx_rates` no se llena en producción. Importación con RPC por lotes y vista previa, reconociendo cobros de suscripciones, cargos del extracto y pagos; "Es el mismo" solo guarda `import_key`. Pagos en USD con tolerancia de redondeo de la tasa y cupo con deuda neta en dólares. Sugerencias con registro propio de campos tocados. | Recomendaciones aprobadas por el dueño. |
 | 2026-11-21 | 36 | Las sugerencias solo aparecen en "Nuevo gasto", no al editar. Salen del mismo tipo que tiene el formulario (compra desde compras, avance desde avances). Cambiar el comercio o la tarjeta deshace la sugerencia anterior y aplica la nueva si existe. Autocompletado con `<datalist>` nativo, sin dependencias. | Respuesta del dueño al plan del paso. |
+| 2026-11-21 | 37 | La alerta de intereses sobre el 20 % es neutra (alerta con borde, sin ámbar), porque `AGENTS.md` no incluye ese caso entre los estados de atención. El ahorro por pagar el total excluye todo el periodo del corte abierto hoy: su interés ya se está causando. | Respuesta del dueño al plan del paso. |

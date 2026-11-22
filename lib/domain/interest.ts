@@ -18,6 +18,17 @@ export type BalanceInterestInstallment = {
 };
 
 /**
+ * R8 estimate for a single purchase or advance in a statement, rounded in its currency: pending principal at the start of
+ * the period × its monthly rate. Zero for interest-free purchases, without rate, or made during the period itself.
+ * Shared by the statement estimate and the cost of deferring (R11), so both add up.
+ */
+export function balanceInterestFor(installment: BalanceInterestInstallment, periodStart: IsoDate): Decimal {
+  if (installment.interestFree || !installment.rateEa?.gt(0) || compareIsoDates(installment.purchaseDate, periodStart) >= 0) return new Decimal(0);
+  const pending = installment.principal.plus(installment.balanceAfter).times(installment.weight ?? 1);
+  return roundMoney(pending.times(monthlyRateFromEA(installment.rateEa)), installment.currency);
+}
+
+/**
  * R8 estimate, not stored: Σ pending principal at the start of the period × monthly rate of each purchase.
  * The pending principal is what remains after the previous statement, i.e. before the installment billed here.
  * Single-installment purchases have no installments; interest-free purchases and those made during the period are excluded.
@@ -28,9 +39,8 @@ export function estimateBalanceInterest(installments: BalanceInterestInstallment
   const copByCurrency: Record<Currency, Decimal> = { COP: new Decimal(0), USD: new Decimal(0) };
   let amountCop = new Decimal(0);
   for (const installment of installments) {
-    if (installment.interestFree || !installment.rateEa?.gt(0) || compareIsoDates(installment.purchaseDate, periodStart) >= 0) continue;
-    const pending = installment.principal.plus(installment.balanceAfter).times(installment.weight ?? 1);
-    const interest = roundMoney(pending.times(monthlyRateFromEA(installment.rateEa)), installment.currency);
+    const interest = balanceInterestFor(installment, periodStart);
+    if (interest.isZero()) continue;
     byCurrency[installment.currency] = byCurrency[installment.currency].plus(interest);
     const cop = toCop(interest, installment.currency, installment.fxRate ?? undefined);
     copByCurrency[installment.currency] = copByCurrency[installment.currency].plus(cop);

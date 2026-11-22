@@ -11,9 +11,10 @@ import { PageHeader } from "@/components/page-header";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { StatementCloseNotice } from "@/components/statement-close-notice";
 import { todayInBogota } from "@/lib/domain/dates";
-import { monthBreakdown, monthComparison, parsePaymentMonth, paymentMonth } from "@/lib/domain/months";
+import { currencyPaidAt, monthBreakdown, monthComparison, parsePaymentMonth, paymentMonth } from "@/lib/domain/months";
 import { formatDateShort, formatMonth, formatSpendingComparison } from "@/lib/format";
 import { loadMonthDetail } from "@/lib/queries/months";
+import { loadPayInFullSavings } from "@/lib/queries/pay-in-full-savings";
 import { createSupabaseMonthSource } from "@/lib/queries/supabase-months";
 import { createClient } from "@/lib/supabase/server";
 
@@ -41,6 +42,12 @@ export default async function MonthDetailPage({ params }: { params: Promise<{ me
     source.loadCardDetails(), source.loadCategories(), source.loadPurchaseMonthSpending(mes),
   ]);
   const { month, previous, neighbors, overdue, subscriptionNames, toReview } = detail;
+  // F21: interest avoided by paying the total debt of cut statements, per currency still unpaid (D54).
+  const savings = await loadPayInFullSavings(supabase, user.id, month.cards.flatMap((group) => group.statements.flatMap(({ statement }) => {
+    if (statement.origin !== "real" || !statement.id || !statement.debt || statement.cutoffDate >= today) return [];
+    const currencies = (["COP", "USD"] as const).filter((currency) => statement.debt![currency].gt(0) && !currencyPaidAt(statement, currency));
+    return currencies.length ? [{ id: statement.id, cardId: statement.cardId, cutoffDate: statement.cutoffDate, currencies: [...currencies] }] : [];
+  })), today);
   const breakdown = monthBreakdown(month.statements);
   // D33: dollar charges are broken down apart and never added to the peso total.
   const usdBreakdown = month.totalUsd.isZero() ? null : monthBreakdown(month.statements, "USD");
@@ -71,7 +78,7 @@ export default async function MonthDetailPage({ params }: { params: Promise<{ me
     <div className={month.cards.length > 0 ? "grid min-w-0 items-start gap-6 lg:grid-cols-2" : "grid min-w-0 gap-6"}>
       {month.cards.length > 0 && <section className="grid min-w-0 gap-3" aria-labelledby="statements-heading">
         <h2 id="statements-heading" className="text-heading">Extractos por tarjeta</h2>
-        {month.cards.map((group) => <MonthStatementCard key={group.cardId} group={group} card={cards.find((item) => item.id === group.cardId)} today={today} />)}
+        {month.cards.map((group) => <MonthStatementCard key={group.cardId} group={group} card={cards.find((item) => item.id === group.cardId)} today={today} savings={savings} />)}
       </section>}
       <div className="grid min-w-0 gap-6">
         <section className="grid gap-3 rounded-xl border border-border bg-card p-4" aria-labelledby="concepts-heading">

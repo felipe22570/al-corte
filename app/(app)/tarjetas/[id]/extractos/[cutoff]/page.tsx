@@ -7,6 +7,7 @@ import { z } from "zod";
 import { Money } from "@/components/money";
 import { CardColorChip } from "@/components/card-color-chip";
 import { PageHeader } from "@/components/page-header";
+import { PayInFullSavings } from "@/components/pay-in-full-savings";
 import { StatementBalanceControls } from "@/components/statement-balance-controls";
 import { StatementBreakdown } from "@/components/statement-breakdown";
 import type { StatementConceptData } from "@/components/statement-concept";
@@ -19,6 +20,7 @@ import { isWithinMonthProjectionWindow, paymentMonth } from "@/lib/domain/months
 import { statementPeriod } from "@/lib/domain/statements";
 import { formatDateShort, formatMoney } from "@/lib/format";
 import { loadInterestEstimates, type InterestEstimate } from "@/lib/queries/interest-estimates";
+import { loadPayInFullSavings } from "@/lib/queries/pay-in-full-savings";
 import { loadPrepaidAmounts } from "@/lib/queries/prepayments";
 import { loadCloseContext, type CloseContext } from "@/lib/queries/statement-close";
 import { loadStatementBalances, summarizeStatementBalances, type CurrencySummary, type StatementBalancesData } from "@/lib/queries/statement-balances";
@@ -168,6 +170,9 @@ export default async function StatementDetailPage({ params }: { params: Promise<
     return { summary, concepts, payments };
   });
   const several = breakdowns.length > 1;
+  // F21: interest avoided by paying the total debt, for cut statements with that currency still unpaid (D54).
+  const savingsCurrencies = statement && cutoff < today ? visible.filter((summary) => !summary.paidAt).map((summary) => summary.currency) : [];
+  const savings = statement && savingsCurrencies.length ? (await loadPayInFullSavings(supabase, user.id, [{ id: statement.id, cardId: id, cutoffDate: cutoff, currencies: savingsCurrencies }], today)).get(statement.id) : undefined;
   // F15: the monthly close, once the statement is cut, for each currency with charges (D39).
   const closeContexts: CloseContext[] = statement && cutoff < today
     ? (await Promise.all(visible.map((summary) => loadCloseContext(supabase, user.id, statement.id, summary.currency)))).flatMap((item) => item ? [item] : [])
@@ -208,6 +213,7 @@ export default async function StatementDetailPage({ params }: { params: Promise<
                 {summary.realMinimum && <Row label="Pago mínimo del banco"><BankValue calculated={summary.minimum} real={summary.realMinimum} currency={summary.currency} /></Row>}
                 {summary.realTotal && <Row label="Deuda total del banco"><BankValue calculated={summary.debt} real={summary.realTotal} currency={summary.currency} /></Row>}
               </dl>
+              <PayInFullSavings amount={savings?.[summary.currency]} currency={summary.currency} />
               <StatementBalanceControls id={statement.id} currency={summary.currency} paid={!!summary.paidAt} today={today} context={context} closed={cutoff < today} />
             </section>;
           })}

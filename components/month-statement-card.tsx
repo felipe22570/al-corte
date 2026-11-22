@@ -3,6 +3,7 @@ import Decimal from "decimal.js";
 import Link from "next/link";
 import { CardColorChip } from "@/components/card-color-chip";
 import { CurrencyAmounts, CurrencyInline } from "@/components/currency-amounts";
+import { PayInFullSavings } from "@/components/pay-in-full-savings";
 import { StatementPaymentControl } from "@/components/statement-payment-control";
 import { StatementPaymentForm } from "@/components/statement-payment-form";
 import { StatusBadge } from "@/components/status-badge";
@@ -11,6 +12,7 @@ import { compareIsoDates } from "@/lib/domain/dates";
 import { currencyPaidAt, statementKnownTotal, statementUsdTotal, type MonthCardSummary } from "@/lib/domain/months";
 import type { Currency } from "@/lib/domain/money";
 import { formatDateShort } from "@/lib/format";
+import type { Savings } from "@/lib/queries/pay-in-full-savings";
 import { statementStatusLabels } from "@/lib/month-status";
 
 type CardIdentity = { id: string; name: string; last4: string; color: CardColor };
@@ -23,7 +25,7 @@ function Row({ label, children }: { label: ReactNode; children: ReactNode }) {
 }
 
 /** One card's statements in the payment month, with saved dates and compact payment marking for real statements. */
-export function MonthStatementCard({ group, card, today }: { group: MonthCardSummary; card: CardIdentity | undefined; today: string }) {
+export function MonthStatementCard({ group, card, today, savings }: { group: MonthCardSummary; card: CardIdentity | undefined; today: string; savings?: Savings }) {
   const name = card ? `${card.name} · •••• ${card.last4}` : "Tarjeta";
   const several = group.statements.length > 1;
   return <section aria-label={name} className="grid gap-4 rounded-xl border border-border bg-card p-4">
@@ -56,6 +58,7 @@ export function MonthStatementCard({ group, card, today }: { group: MonthCardSum
           {several && <Row label="Total del extracto"><CurrencyInline cop={statementKnownTotal(statement)} usd={statementUsdTotal(statement)} /></Row>}
           {statement.debt && <Row label="Deuda total"><CurrencyInline cop={statement.debt.COP} usd={statement.debt.USD} /></Row>}
         </dl>
+        {statement.id && savings?.get(statement.id) && currencies.map((currency) => <PayInFullSavings key={currency} amount={savings.get(statement.id!)![currency]} currency={currency} currencyName={currencies.length > 1 ? (currency === "COP" ? "pesos" : "dólares") : undefined} />)}
         {statement.origin === "real" && statement.id && <div className="grid gap-3">
           <Link className="w-fit text-body underline pointer-coarse:min-h-11" href={`/tarjetas/${statement.cardId}/extractos/${statement.cutoffDate}`}>Ver extracto<span className="sr-only"> · {context}</span></Link>
           {currencies.map((currency) => {

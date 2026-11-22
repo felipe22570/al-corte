@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+import { estimatedInterest } from "@/lib/domain/deferral-cost";
 import { buildTransactionPlan, type TransactionPlanInput } from "@/lib/domain/transaction-plan";
 
 const card = { id: "card-a", cutoffDay: 15, paymentDay: 5, purchaseRateEa: "0.28", advanceRateEa: "0.36", advanceFee: "15000", amortizationMethod: "fixed_principal" as const };
@@ -12,6 +13,15 @@ describe("transaction plan", () => {
     expect(result.firstCutoff).toBe("2026-02-15");
     expect(result.dueDate).toBe("2026-03-05");
     expect(result.firstInstallment).toBe("1000000");
+  });
+  it("entrega la compra para el costo de diferir con la regla de intereses de la tarjeta (F21)", () => {
+    const perInstallment = buildTransactionPlan({ ...base, installmentsCount: 6 }, card);
+    expect(estimatedInterest(perInstallment.deferral).toFixed()).toBe(perInstallment.totalInterest);
+    const onBalance = buildTransactionPlan({ ...base, installmentsCount: 6 }, { ...card, interestMode: "on_balance" });
+    expect(onBalance.deferral.interestMode).toBe("on_balance");
+    expect(onBalance.totalInterest).toBe("0");
+    expect(estimatedInterest(onBalance.deferral).gt(0)).toBe(true);
+    expect(buildTransactionPlan({ ...base, type: "adjustment" }, card).deferral.rateEa).toBeNull();
   });
   it("genera cuotas con la tasa de compra congelada", () => {
     const result = buildTransactionPlan({ ...base, installmentsCount: 6 }, card);

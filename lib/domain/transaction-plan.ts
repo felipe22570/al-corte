@@ -1,4 +1,5 @@
 import Decimal from "decimal.js";
+import type { DeferralPurchase } from "./deferral-cost";
 import { buildInstallmentPlan, type AmortizationMethod } from "./installments";
 import type { InterestMode } from "./interest";
 import { toCop, type Currency } from "./money";
@@ -39,6 +40,12 @@ export function buildTransactionPlan(input: TransactionPlanInput, card: Transact
   // With prior installments, the movement belongs to the statement of installment k, not to the one R1 gives its date.
   const firstCutoff = inProgress?.trackedFromCutoff ?? statementCutoffFor(card.cutoffDay, input.date);
   const installments = plan.rows.length > 1 ? plan.rows.map((row) => ({ number: row.number, cutoff_date: row.cutoffDate, before_tracking: row.beforeTracking, principal: row.principal.toFixed(), interest: row.interest.toFixed(), total: row.total.toFixed(), balance_after: row.balanceAfter.toFixed(), principal_cop: row.principalCop.toFixed(), interest_cop: row.interestCop.toFixed(), total_cop: row.totalCop.toFixed() })) : [];
+  // F21: the purchase as the cost of deferring reads it, with the same rows and interest rule (R11).
+  const deferral: DeferralPurchase = {
+    amount: principal, currency: input.currency, fxRate: fxRate ?? null, purchaseDate: input.date,
+    rateEa: isPurchase || isAdvance ? new Decimal(rate) : null, interestFree: input.interestFree,
+    interestMode: card.interestMode ?? "per_installment", cutoffDay: card.cutoffDay, installmentsCount: plan.rows.length, rows: plan.rows,
+  };
   return {
     firstCutoff,
     dueDate: dueDateFor(card.paymentDay, firstCutoff),
@@ -46,6 +53,7 @@ export function buildTransactionPlan(input: TransactionPlanInput, card: Transact
     firstInstallmentCop: plan.firstInstallment.totalCop.toFixed(),
     totalInterest: plan.totalInterest.toFixed(),
     advanceFee,
+    deferral,
     payload: {
       card_id: card.id, type: input.type, date: input.date, amount: principal.toFixed(), currency: input.currency,
       fx_rate: fxRate?.toFixed() ?? null, amount_cop: amountCop.toFixed(), installments_count: plan.rows.length,
