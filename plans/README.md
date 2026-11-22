@@ -67,7 +67,7 @@ Prompt sugerido para el agente al iniciar un paso:
 | 37 | [Costo de diferir](37-costo-diferir.md) | H11 | ✅ | 03e0c78 |
 | 38 | [Importación mensual de extractos](38-importacion-mensual.md) | H11 | 🟡 | |
 | 39 | [Pago del saldo en dólares con pesos y cupo en USD](39-dolares-con-pesos.md) | H11 | 🟡 | |
-| 40 | [Capa de IA](40-capa-ia.md) | H12 | ✅ | |
+| 40 | [Capa de IA](40-capa-ia.md) | H12 | ✅ | 7cc12f5 |
 | 41 | [Borradores por confirmar](41-borradores.md) | H12 | ⬜ | |
 | 42 | [Endpoint de ingesta y reglas de alertas](42-ingesta-reglas.md) | H12 | ⬜ | |
 | 43 | [Interpretación de alertas con IA](43-interpretacion-ia.md) | H12 | ⬜ | |
