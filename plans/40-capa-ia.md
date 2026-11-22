@@ -5,7 +5,7 @@
 - **Inicio:**
 - **Fin:**
 - **Commit:**
-- **Depende de:** H10 y H11 cerrados (PRD, sección 4: H12 va después de las cuatro prioridades de v2)
+- **Depende de:** H10 y H11 cerrados (PRD, sección 4: H12 va después de las cuatro prioridades de v2). Excepción del 22 de noviembre de 2026: empieza con H11 abierto, solo por verificaciones de los pasos 38 y 39 con datos reales (ver registro de decisiones).
 - **Decisiones aplicables (decididas, ver README):** D42, D51
 
 ## Objetivo
