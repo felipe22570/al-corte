@@ -65,7 +65,7 @@ Prompt sugerido para el agente al iniciar un paso:
 | 35 | [Importación de los extractos reales](35-importacion-extractos.md) | H10 | ✅ | bcd40f8 |
 | 36 | [Cuotas y categoría sugeridas por comercio](36-sugerencias-comercio.md) | H11 | 🟡 | |
 | 37 | [Costo de diferir](37-costo-diferir.md) | H11 | ✅ | 03e0c78 |
-| 38 | [Importación mensual de extractos](38-importacion-mensual.md) | H11 | ⬜ | |
+| 38 | [Importación mensual de extractos](38-importacion-mensual.md) | H11 | 🟡 | |
 | 39 | [Pago del saldo en dólares con pesos y cupo en USD](39-dolares-con-pesos.md) | H11 | ⬜ | |
 | 40 | [Capa de IA](40-capa-ia.md) | H12 | ⬜ | |
 | 41 | [Borradores por confirmar](41-borradores.md) | H12 | ⬜ | |
@@ -237,7 +237,7 @@ Aprobadas por el dueño el 2026-11-13. El detalle de cada regla está en R7 y en
 | D54 | **Costo de diferir.** | Intereses estimados por compra con la regla de la app (R2 en `per_installment`, R8 en `on_balance`), alerta sobre el 20 % y ahorro por pagar el total. | 37 |
 | D55 | **Importación mensual.** | Archivo v1 sin guardar, RPC por lotes con vista previa sin cambios, reconoce cobros de suscripciones, cargos del extracto y pagos registrados; pagos nunca se importan; solo agrega ("Es el mismo" guarda solo `import_key`) y verificación contra el banco. | 38 |
 | D56 | **Dólares pagados con pesos.** | Pesos exactos, tasa derivada con tolerancia de redondeo solo en pagos y diferencia cambiaria; el mes usa los pesos pagados para la parte pagada. | 39 |
-| D57 | **TRM diaria.** | La carga diaria de la TRM oficial en `fx_rates` pasa a H11: Edge Function con `pg_cron`, upsert de 30 días, carga inicial desde enero de 2026 y `valid_from`. | 38, 39 |
+| D57 | **TRM diaria.** | La carga diaria de la TRM oficial en `fx_rates` pasa a H11: función SQL con la extensión `http` llamada por `pg_cron` (antes Edge Function), upsert de 30 días, carga inicial desde enero de 2026 y `valid_from`. | 38, 39 |
 
 **H12 · Capa de IA y captura por correo (v2).** Aprobado por el dueño el 17 de noviembre de 2026 (D42–D47). Se ejecuta después de H10 y de H11; el paso 41 reutiliza la revisión de la importación mensual del paso 38. Requiere un secreto `ANTHROPIC_API_KEY` y un secreto de firma de ingesta, ambos solo en el servidor.
 
@@ -287,3 +287,4 @@ Anota aquí cada decisión tomada durante la implementación (fecha, paso, decis
 | 2026-11-21 | 36–39 | Revisión del plan de H11 contra el código. Costo de diferir con la regla de intereses ya implementada (R2 o R8): en `on_balance` da i × P × (N − 1) / 2 ($3.308 en el ejemplo de $9.000). TRM diaria a H11 en el paso 38 (D57), porque `fx_rates` no se llena en producción. Importación con RPC por lotes y vista previa, reconociendo cobros de suscripciones, cargos del extracto y pagos; "Es el mismo" solo guarda `import_key`. Pagos en USD con tolerancia de redondeo de la tasa y cupo con deuda neta en dólares. Sugerencias con registro propio de campos tocados. | Recomendaciones aprobadas por el dueño. |
 | 2026-11-21 | 36 | Las sugerencias solo aparecen en "Nuevo gasto", no al editar. Salen del mismo tipo que tiene el formulario (compra desde compras, avance desde avances). Cambiar el comercio o la tarjeta deshace la sugerencia anterior y aplica la nueva si existe. Autocompletado con `<datalist>` nativo, sin dependencias. | Respuesta del dueño al plan del paso. |
 | 2026-11-21 | 37 | La alerta de intereses sobre el 20 % es neutra (alerta con borde, sin ámbar), porque `AGENTS.md` no incluye ese caso entre los estados de atención. El ahorro por pagar el total excluye todo el periodo del corte abierto hoy: su interés ya se está causando. | Respuesta del dueño al plan del paso. |
+| 2026-11-21 | 38 | D57 cambia: la TRM diaria la consulta una función SQL con la extensión `http`, llamada por `pg_cron`, en lugar de una Edge Function (sin despliegue de funciones ni llaves en Vault; la expansión por días se prueba con pgTAP). Un cobro de suscripción con otro valor es conflicto solo si el nombre normalizado coincide con el de la suscripción. La verificación muestra la diferencia de cupo con una nota mientras D52 llega en el paso 39. | Respuesta del dueño al plan del paso. |

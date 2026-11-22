@@ -1,8 +1,8 @@
 # Paso 38 — Importación mensual de extractos
 
 - **Hito PRD:** H11 (parte 3 de 4)
-- **Estado:** ⬜ Pendiente
-- **Inicio:**
+- **Estado:** 🟡 En progreso
+- **Inicio:** 2026-11-21
 - **Fin:**
 - **Commit:**
 - **Depende de:** 35, 36
@@ -19,7 +19,7 @@ Cargar desde Ajustes el extracto de cada mes con un archivo `al-corte-import` v1
 Hoy `fx_rates` solo tiene datos en el seed y en las pruebas: nada la llena en producción, y `lib/import/trm.ts` solo expande un JSON ya descargado.
 
 - Migración: `fx_rates.valid_from date` (inicio del periodo de vigencia, `vigenciadesde`). Se mantiene una fila por día calendario, así D4 no cambia.
-- Edge Function `fx-rates` (service role) llamada por `pg_cron` a las 6:00 a. m. de Bogotá (11:00 UTC). Consulta datos.gov.co (conjunto 32sa-8pi3), expande cada periodo con `trmByDate` y hace upsert de los últimos 30 días: idempotente, recupera fines de semana, festivos y días en que falló.
+- Función SQL `refresh_fx_rates()` con la extensión `http` (antes Edge Function `fx-rates`; cambio aprobado el 21 de noviembre) llamada por `pg_cron` a las 6:00 a. m. de Bogotá (11:00 UTC). Consulta datos.gov.co (conjunto 32sa-8pi3), expande cada periodo con `trmByDate` y hace upsert de los últimos 30 días: idempotente, recupera fines de semana, festivos y días en que falló.
 - Carga inicial desde el 1 de enero de 2026, con la misma función.
 - Helper de dominio `trmForStatement(rates, cutoffDate)`: la TRM vigente el último día hábil antes del corte = la del día anterior a `valid_from` del periodo que contiene el corte (D52). No hace falta un calendario de festivos.
 - Si la consulta falla, no se inventa nada: queda la última TRM guardada y las vistas avisan lo que corresponda (D4, D33).

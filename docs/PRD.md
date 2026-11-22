@@ -510,7 +510,7 @@ Las tareas corren con Supabase Cron (`pg_cron`), dentro de la base de datos, par
 | Tarea | Horario (Bogotá) | Qué hace | Implementación | Fase |
 | --- | --- | --- | --- | --- |
 | Cobros de suscripciones | Diario, 5:00 a. m. | Crea los movimientos de las suscripciones activas que cobran hoy, con su extracto asignado. | Función SQL `generate_subscription_charges()` | MVP |
-| TRM del día | Diario, 6:00 a. m. | Guarda la TRM oficial en `fx_rates` (datos abiertos de la Superfinanciera en datos.gov.co, conjunto 32sa-8pi3) y recupera los últimos 30 días (D57). | Edge Function | v2 · H11 |
+| TRM del día | Diario, 6:00 a. m. | Guarda la TRM oficial en `fx_rates` (datos abiertos de la Superfinanciera en datos.gov.co, conjunto 32sa-8pi3) y recupera los últimos 30 días (D57). | Función SQL con la extensión `http` | v2 · H11 |
 | Recordatorios | Diario, 7:00 a. m. | Envía un email por cada pago próximo, prueba gratis por vencer o renovación anual. Registra cada envío en `notification_log`. | Edge Function + Resend | v2 |
 | Alertas de presupuesto | Al guardar un movimiento | Revisa si la categoría pasó el 80% o el 100% del presupuesto del mes. | Server Action | v2 |
 
@@ -663,6 +663,6 @@ Este registro consolida las decisiones del dueño de `plans/README.md`; no susti
 | D54 · Costo de diferir | Intereses estimados por compra con la misma regla de la app: cuotas de R2 en `per_installment` y estimación de R8 en `on_balance` (sin interés en el extracto de la compra). Etiquetados como estimados; alerta sobre el 20 % del valor; ahorro estimado por pagar el total. |
 | D55 · Importación mensual | Archivo `al-corte-import` v1 desde Ajustes, preparado fuera de la app y procesado sin guardarse; RPC por lotes en una transacción con vista previa sin cambios; nuevos, existentes y conflictos, reconociendo cobros de suscripciones, cargos del extracto y pagos ya registrados. Los pagos no se importan. Solo agrega: "Es el mismo" solo guarda la clave del archivo. Verificación contra el banco. |
 | D56 · Pago en dólares con pesos | Pesos debitados exactos y tasa derivada (tolerancia de redondeo de la tasa solo en pagos); diferencia cambiaria en el extracto; el mes usa los pesos pagados para la parte pagada y el equivalente de referencia para el resto. |
-| D57 · TRM diaria | La carga diaria de la TRM oficial en `fx_rates` pasa de "Resto de v2" a H11 (paso 38): Edge Function con `pg_cron` a las 6:00 a. m., upsert de los últimos 30 días, carga inicial desde enero de 2026 y `valid_from` por periodo de vigencia. |
+| D57 · TRM diaria | La carga diaria de la TRM oficial en `fx_rates` pasa de "Resto de v2" a H11 (paso 38): función SQL con la extensión `http` llamada por `pg_cron` (cambiado el 21 de noviembre de 2026: sin despliegue de funciones ni llaves en Vault) a las 6:00 a. m., upsert de los últimos 30 días, carga inicial desde enero de 2026 y `valid_from` por periodo de vigencia. |
 
 Precisiones posteriores aprobadas: al editar una compra se conserva la tasa original si no cambian tarjeta ni tipo (10 de noviembre); guardar una suscripción intenta generar su cobro de hoy sin esperar al cron (10 de noviembre); el tablero prioriza el extracto no pagado con vencimiento más antiguo, incluso vencido (11 de noviembre; desde D25 lo cubre la alerta de vencidos de D23).

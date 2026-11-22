@@ -53,14 +53,14 @@ export type Database = {
                   ]
                 },"fx_rates": {
                   Row: {
-                    "date": string,"usd_cop": number
+                    "date": string,"usd_cop": number,"valid_from": string
                   }
                   ComputedFields: never
                   Insert: {
-                    "date": string,"usd_cop": number
+                    "date": string,"usd_cop": number,"valid_from": string
                   }
                   Update: {
-                    "date"?: string,"usd_cop"?: number
+                    "date"?: string,"usd_cop"?: number,"valid_from"?: string
                   }
                   Relationships: [
                     
