@@ -91,7 +91,7 @@ export async function registerPayment(statementId: unknown, currency: unknown, i
   let payload: ReturnType<typeof paymentPayload>;
   try {
     const result = plan(context, data);
-    payload = paymentPayload({ cardId: context.card.id, statementId: context.statement.id, currency: context.currency, kind: data.kind, date: data.date, fxRate: context.fxRate, note: data.note }, result);
+    payload = paymentPayload({ cardId: context.card.id, statementId: context.statement.id, currency: context.currency, kind: data.kind, date: data.date, fxRate: context.fxRate, note: data.note, copDebited: data.copDebited }, result);
   } catch (error) {
     return { ok: false as const, error: errorMessage(error) };
   }

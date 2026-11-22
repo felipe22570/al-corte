@@ -112,6 +112,16 @@ describe("payment actions (F14)", () => {
     expect(rpc).toHaveBeenCalledTimes(1);
   });
 
+  it("registers a dollar payment with the pesos debited and the rate derived from them (D56)", async () => {
+    const rpc = mockClient();
+    mocks.loadPaymentContext.mockResolvedValue(context({ currency: "USD", targets: [], pending: new Decimal("153.26") }));
+    expect(paymentSchema.safeParse({ kind: "minimum", date: "2026-11-30", copDebited: "abc" }).success).toBe(false);
+    expect(await registerPayment(statementId, "USD", { kind: "other", date: "2026-11-30", amount: "153,26", copDebited: "510.000" })).toEqual({ ok: true, markedPaid: true });
+    expect(rpc.mock.calls[0]![1].p_payload).toMatchObject({ amount: "153.26", currency: "USD", fx_rate: "3327.6785", amount_cop: "510000", cop_debited: true });
+    mocks.loadPaymentContext.mockResolvedValue(context());
+    expect(await registerPayment(statementId, "COP", { kind: "minimum", date: "2026-11-30", copDebited: "150.000" })).toEqual({ ok: false, error: "Los pesos debitados solo aplican a pagos en dólares." });
+  });
+
   it("requires a session", async () => {
     mocks.createClient.mockResolvedValue({ auth: { getUser: vi.fn().mockResolvedValue({ data: { user: null } }) } });
     expect(await registerPayment(statementId, "COP", { kind: "minimum", date: "2026-11-30" })).toEqual({ ok: false, error: "Inicia sesión para registrar el pago." });

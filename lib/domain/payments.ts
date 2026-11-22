@@ -1,5 +1,6 @@
 import Decimal from "decimal.js";
 import { compareIsoDates, daysBetween, type IsoDate } from "./dates";
+import { rateFromPesos } from "./fx-difference";
 import { amortize, type AmortizationMethod, type InstallmentRow, type ScheduleItem } from "./installments";
 import { roundMoney, type Currency } from "./money";
 import { shiftStatement } from "./statements";
@@ -321,15 +322,21 @@ export function installmentRowPayload(row: InstallmentRow) {
 }
 
 /**
- * Payload of `register_payment`: the payment in its currency (a USD payment carries the D4 TRM only as reference),
+ * Payload of `register_payment`: the payment in its currency (a USD payment carries the D4 TRM only as reference, or the
+ * pesos debited and the rate derived from them, D56),
  * the payment mark when it covers the minimum (D37) and each prepayment with its rebuilt rows.
  */
-export function paymentPayload(input: { cardId: string; statementId: string; currency: Currency; kind: PaymentKind; date: IsoDate; fxRate: Decimal | null; note: string }, plan: ReturnType<typeof buildPaymentPlan>) {
-  if (input.currency === "USD" && !input.fxRate?.gt(0)) throw new Error("Falta la TRM para registrar un pago en dólares.");
-  const amountCop = input.currency === "COP" ? plan.amount : roundMoney(plan.amount.times(input.fxRate!), "COP");
+export function paymentPayload(input: { cardId: string; statementId: string; currency: Currency; kind: PaymentKind; date: IsoDate; fxRate: Decimal | null; note: string; copDebited?: Decimal | null }, plan: ReturnType<typeof buildPaymentPlan>) {
+  const copDebited = input.copDebited ?? null;
+  if (copDebited && input.currency !== "USD") throw new Error("Los pesos debitados solo aplican a pagos en dólares.");
+  if (copDebited && !copDebited.gt(0)) throw new Error("Ingresa los pesos debitados, mayores que cero.");
+  // D56: with the pesos debited, they are the exact equivalent and the rate is derived from them.
+  const fxRate = copDebited ? rateFromPesos(plan.amount, copDebited) : input.fxRate;
+  if (input.currency === "USD" && !fxRate?.gt(0)) throw new Error("Falta la TRM para registrar un pago en dólares.");
+  const amountCop = input.currency === "COP" ? plan.amount : copDebited ?? roundMoney(plan.amount.times(fxRate!), "COP");
   return {
     card_id: input.cardId, statement_id: input.statementId, date: input.date, amount: plan.amount.toFixed(), currency: input.currency,
-    fx_rate: input.currency === "USD" ? input.fxRate!.toFixed() : null, amount_cop: amountCop.toFixed(), kind: input.kind, note: input.note,
+    fx_rate: input.currency === "USD" ? fxRate!.toFixed() : null, amount_cop: amountCop.toFixed(), cop_debited: !!copDebited, kind: input.kind, note: input.note,
     mark_paid: plan.coversMinimum,
     prepayments: plan.prepayments.map((prepayment) => ({
       transaction_id: prepayment.transactionId, amount: prepayment.amount.toFixed(), amount_cop: prepayment.amountCop.toFixed(),

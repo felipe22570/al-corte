@@ -4,6 +4,7 @@ import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 import Decimal from "decimal.js";
 import { z } from "zod";
+import { ExchangeDifference } from "@/components/exchange-difference";
 import { Money } from "@/components/money";
 import { CardColorChip } from "@/components/card-color-chip";
 import { PageHeader } from "@/components/page-header";
@@ -98,16 +99,21 @@ export default async function StatementDetailPage({ params }: { params: Promise<
   let estimate: InterestEstimate | undefined;
   // D37: payments registered for this statement, wherever their date places them (R1).
   const paidFor: Partial<Record<Currency, Decimal>> = {};
+  // D56: dollars of this statement paid with the pesos debited.
+  let paidWithPesos = { usd: new Decimal(0), cop: new Decimal(0) };
   if (statement) {
     const [movementsResult, installmentsResult, balancesByStatement, paidForResult] = await Promise.all([
       supabase.from("transactions").select("id,type,source,merchant,date,currency,amount::text,amount_cop::text,installments_count").eq("statement_id", statement.id).eq("user_id", user.id).order("date"),
       supabase.from("installments").select("transaction_id,number,total::text,total_cop::text").eq("statement_id", statement.id).eq("user_id", user.id).order("number"),
       loadStatementBalances(supabase, user.id, [statement.id]),
-      supabase.from("transactions").select("currency,amount::text").eq("paid_statement_id", statement.id).eq("user_id", user.id).eq("type", "payment"),
+      supabase.from("transactions").select("currency,amount::text,amount_cop::text,cop_debited").eq("paid_statement_id", statement.id).eq("user_id", user.id).eq("type", "payment"),
     ]);
     if (movementsResult.error || installmentsResult.error || paidForResult.error) throw new Error("No pudimos consultar los movimientos del extracto.");
     movements = (movementsResult.data ?? []) as unknown as Movement[];
-    for (const payment of (paidForResult.data ?? []) as unknown as Array<{ currency: Currency; amount: string }>) paidFor[payment.currency] = (paidFor[payment.currency] ?? new Decimal(0)).plus(payment.amount);
+    for (const payment of (paidForResult.data ?? []) as unknown as Array<{ currency: Currency; amount: string; amount_cop: string; cop_debited: boolean }>) {
+      paidFor[payment.currency] = (paidFor[payment.currency] ?? new Decimal(0)).plus(payment.amount);
+      if (payment.cop_debited) paidWithPesos = { usd: paidWithPesos.usd.plus(payment.amount), cop: paidWithPesos.cop.plus(payment.amount_cop) };
+    }
     // R9: a single-installment charge shows what is left after its prepayments, as the statement totals do.
     const singles = movements.filter((item) => item.installments_count === 1 && item.type !== "payment" && item.type !== "refund");
     const prepaid = singles.length ? await loadPrepaidAmounts(supabase, user.id, singles.map((item) => item.id)) : new Map();
@@ -210,9 +216,11 @@ export default async function StatementDetailPage({ params }: { params: Promise<
                 <Row label="Deuda total"><Money value={summary.debt} currency={summary.currency} /></Row>
                 {paidFor[summary.currency] && <Row label="Pagos registrados a este extracto"><Money value={paidFor[summary.currency]!} currency={summary.currency} /></Row>}
                 {summary.currency === "USD" && <Row label="Equivalente en pesos (referencia)"><Money value={summary.equivalentCop} currency="COP" /></Row>}
+                {summary.currency === "USD" && paidWithPesos.usd.gt(0) && <Row label="Pagado en pesos"><Money value={paidWithPesos.cop} currency="COP" /></Row>}
                 {summary.realMinimum && <Row label="Pago mínimo del banco"><BankValue calculated={summary.minimum} real={summary.realMinimum} currency={summary.currency} /></Row>}
                 {summary.realTotal && <Row label="Deuda total del banco"><BankValue calculated={summary.debt} real={summary.realTotal} currency={summary.currency} /></Row>}
               </dl>
+              {summary.currency === "USD" && <ExchangeDifference paidUsd={paidWithPesos.usd} paidCop={paidWithPesos.cop} chargesUsd={summary.minimum} chargesCop={summary.equivalentCop} />}
               <PayInFullSavings amount={savings?.[summary.currency]} currency={summary.currency} />
               <StatementBalanceControls id={statement.id} currency={summary.currency} paid={!!summary.paidAt} today={today} context={context} closed={cutoff < today} />
             </section>;

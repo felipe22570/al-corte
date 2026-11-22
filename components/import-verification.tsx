@@ -6,7 +6,7 @@ import { bankDifference } from "@/lib/domain/balances";
 import type { Currency } from "@/lib/domain/money";
 import type { ReviewStatement } from "@/lib/import/monthly-review";
 import type { ImportVerification as Verification } from "@/lib/import/run-monthly-import";
-import { formatDateShort, formatMoney } from "@/lib/format";
+import { formatDateShort, formatExchangeRate, formatMoney } from "@/lib/format";
 
 const currencyNames: Record<Currency, string> = { COP: "En pesos", USD: "En dólares" };
 
@@ -33,7 +33,6 @@ export function ImportVerification({ statements, verification, today, title }: {
     {statements.map((statement) => {
       const rows = verification.filter((item) => item.cardId === statement.cardId && item.cutoffDate === statement.cutoffDate);
       const available = rows[0]?.available ?? null;
-      const dollars = statement.bank.some((item) => item.currency === "USD");
       return <div key={`${statement.cardId}:${statement.cutoffDate}`} className="grid gap-3 rounded-xl border border-border bg-card p-4">
         <div className="flex min-w-0 flex-wrap items-center justify-between gap-2">
           <CardColorChip color={statement.color} name={`${statement.cardName} · •••• ${statement.last4}`} />
@@ -50,7 +49,7 @@ export function ImportVerification({ statements, verification, today, title }: {
           </dl>;
         })}
         {available && <dl className="grid gap-1 text-small"><Compared label="Cupo disponible" calculated={available} bank={statement.bankAvailable} currency="COP" /></dl>}
-        {available && dollars && <p className="text-small text-muted-foreground">El cupo valora la deuda en dólares con la TRM de cada compra. Mientras no use la TRM vigente, puede no coincidir con el del banco.</p>}
+        {available && rows[0] && !new Decimal(rows[0].usdNet).isZero() && <p className="text-small text-muted-foreground">{rows[0].trm ? `Dólares del cupo con la TRM del corte: ${formatExchangeRate(rows[0].trm)}.` : "Falta la TRM del corte: el cupo usa la TRM vigente y puede no coincidir con el del banco."}</p>}
       </div>;
     })}
   </section>;

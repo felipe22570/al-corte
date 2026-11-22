@@ -291,6 +291,17 @@ describe("saldos por moneda (D33)", () => {
     expect(monthBreakdown(month.statements).total.eq(month.total)).toBe(true);
   });
 
+  it("con los dólares pagados con pesos, el mes usa los pesos pagados y la referencia por lo que falta (D56)", () => {
+    const paid = projectStatements({ ...input, statements: [{ ...saved, usdPaidWithPesos: [{ usd: new Decimal("9.22"), cop: new Decimal("38000") }] }] });
+    expect(paid.statements[0]?.usdEquivalentCop?.toString()).toBe("38000");
+    const month = buildMonths(paid.statements, input.today).find((m) => m.month === "2026-12")!;
+    expect(month.usdEquivalentCop.toString()).toBe("38000");
+    // Half paid: 4.61 dollars at the pesos paid and 4.61 at the reference of 4.000.
+    const partial = projectStatements({ ...input, statements: [{ ...saved, usdPaidWithPesos: [{ usd: new Decimal("4.61"), cop: new Decimal("19000") }] }] });
+    expect(partial.statements[0]?.usdEquivalentCop?.toString()).toBe("37440");
+    expect(projectStatements({ ...input, statements: [{ ...saved, usdPaidWithPesos: [] }] }).statements[0]?.usdEquivalentCop?.toString()).toBe("36880");
+  });
+
   it("marcar pagado el saldo en pesos no marca el de dólares", () => {
     const projected = projectStatements({ ...input, statements: [{ ...saved, paidAt: null, paidByCurrency: { COP: "2026-12-01T05:00:00Z", USD: null } }] });
     const [statement] = projected.statements;

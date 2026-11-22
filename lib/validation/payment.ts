@@ -24,7 +24,10 @@ export const paymentSchema = z.object({
   effect: z.enum(["reduce_term", "reduce_installment"], { error: "Elige el efecto del abono." }).default("reduce_term"),
   note: z.string().trim().max(1000, "Usa máximo 1.000 caracteres.").default(""),
   distribution: z.array(z.object({ transactionId: z.uuid("La compra no es válida."), amount: z.string().max(100) })).max(500).optional(),
+  // D56: pesos the bank debited for a dollar payment; empty when the payment keeps the TRM of D4.
+  copDebited: z.string().max(100).default(""),
 }).superRefine((value, ctx) => {
+  if (value.copDebited.trim() && parseAmount(value.copDebited, false) === null) ctx.addIssue({ code: "custom", path: ["copDebited"], message: "Ingresa los pesos debitados, mayores que cero." });
   if (value.kind === "other" && parseAmount(value.amount, false) === null) ctx.addIssue({ code: "custom", path: ["amount"], message: "Ingresa el valor que pagaste, mayor que cero." });
   value.distribution?.forEach((item, index) => {
     if (item.amount.trim() && parseAmount(item.amount, true) === null) ctx.addIssue({ code: "custom", path: ["distribution", index, "amount"], message: "Ingresa un abono válido." });
@@ -32,6 +35,7 @@ export const paymentSchema = z.object({
 }).transform((value) => ({
   kind: value.kind, date: value.date, effect: value.effect, note: value.note,
   amount: value.kind === "other" ? parseAmount(value.amount, false)! : null,
+  copDebited: value.copDebited.trim() ? parseAmount(value.copDebited, false)! : null,
   distribution: value.distribution?.flatMap((item) => {
     const amount = item.amount.trim() ? parseAmount(item.amount, true)! : new Decimal(0);
     return amount.gt(0) ? [{ transactionId: item.transactionId, amount }] : [];

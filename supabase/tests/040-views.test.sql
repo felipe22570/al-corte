@@ -1,5 +1,8 @@
 begin;
 select no_plan();
+-- D52 values the debt in dollars with the latest TRM: the test sets its own (the daily job may have loaded real ones).
+delete from public.fx_rates;
+insert into public.fx_rates (date, usd_cop) values ('2026-02-01', 4000);
 insert into auth.users (id, email) values
  ('dddddddd-dddd-dddd-dddd-dddddddddddd', 'views-a@example.com'),
  ('eeeeeeee-eeee-eeee-eeee-eeeeeeeeeeee', 'views-b@example.com');
@@ -16,7 +19,7 @@ values ('dddddddd-0000-0000-0000-000000000003', 'dddddddd-0000-0000-0000-0000000
 select is((select installments from public.statement_currency_totals where currency = 'USD'), 35.41::numeric, 'cuota USD en su moneda (D33)');
 select is((select total_cop from public.statement_currency_totals where currency = 'USD'), 141640::numeric, 'equivalente COP solo de referencia');
 select is((select total_calculated from public.statement_currency_totals where currency = 'USD'), 35.41::numeric, 'no se duplica el movimiento padre');
-select is((select used from public.card_balances), 408320::numeric, 'cupo incluye interés facturado');
+select is((select used from public.card_balances), 408320::numeric, 'cupo con US$100 e interés facturado de US$2,08 a la TRM vigente (D52)');
 select is((select available from public.card_balances), 4591680::numeric, 'cupo disponible');
 insert into public.transactions (card_id, statement_id, type, date, amount, amount_cop, source)
 values

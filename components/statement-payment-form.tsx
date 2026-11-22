@@ -12,7 +12,8 @@ import { Label } from "@/components/ui/label";
 import { previewPayment, registerPayment } from "@/lib/actions/payments";
 import type { Currency } from "@/lib/domain/money";
 import type { PaymentKind, PrepaymentEffect } from "@/lib/domain/payments";
-import { formatMoney } from "@/lib/format";
+import { rateFromPesos } from "@/lib/domain/fx-difference";
+import { formatExchangeRate, formatMoney } from "@/lib/format";
 import { formatAmountInput, parseColombianDecimal } from "@/lib/money-input";
 import type { PaymentPreview } from "@/lib/payment-types";
 
@@ -37,7 +38,7 @@ function parseInput(value: string): Decimal | null {
  */
 export function StatementPaymentForm({ statementId, currency, today, context, currencyName }: Props) {
   const suffix = currencyName ? ` en ${currencyName}` : "";
-  const ids = { panel: useId(), date: useId(), amount: useId(), effect: useId(), help: useId(), kind: useId(), distribution: useId() };
+  const ids = { panel: useId(), date: useId(), amount: useId(), effect: useId(), help: useId(), kind: useId(), distribution: useId(), pesos: useId(), rate: useId() };
   const router = useRouter();
   const mainButton = useRef<HTMLButtonElement>(null);
   const firstOption = useRef<HTMLInputElement>(null);
@@ -53,6 +54,9 @@ export function StatementPaymentForm({ statementId, currency, today, context, cu
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState("");
   const [failed, setFailed] = useState(false);
+  // D56: a dollar payment made with pesos keeps the pesos debited and derives the bank's rate from them.
+  const [withPesos, setWithPesos] = useState(false);
+  const [pesos, setPesos] = useState("");
 
   useEffect(() => {
     if (open) firstOption.current?.focus();
@@ -88,14 +92,17 @@ export function StatementPaymentForm({ statementId, currency, today, context, cu
   const distributed = parsedRows.reduce((sum, row) => sum.plus(row.value ?? 0), new Decimal(0));
   const difference = shown ? new Decimal(shown.allocatable).minus(distributed) : new Decimal(0);
   const edited = !!shown && shown.candidates.some((candidate) => !parseInput(distribution[candidate.id] ?? "")?.equals(shown.prepayments.find((item) => item.transactionId === candidate.id)?.amount ?? 0));
-  const canSave = !!shown && !loading && !busy && (!distributes || (!invalidRow && difference.isZero()));
+  const pesosValue = withPesos ? parseInput(pesos) : null;
+  const pesosValid = !withPesos || pesosValue?.gt(0) === true;
+  const derivedRate = shown && pesosValue?.gt(0) ? rateFromPesos(new Decimal(shown.amount), pesosValue) : null;
+  const canSave = !!shown && !loading && !busy && pesosValid && (!distributes || (!invalidRow && difference.isZero()));
 
   async function save() {
     if (!canSave) return;
     setBusy(true); setMessage("");
     try {
       const result = await registerPayment(statementId, currency, {
-        kind, date, amount, effect,
+        kind, date, amount, effect, copDebited: withPesos ? pesos : "",
         distribution: distributes ? Object.entries(distribution).map(([transactionId, value]) => ({ transactionId, amount: value })) : undefined,
       });
       setFailed(!result.ok);
@@ -142,6 +149,14 @@ export function StatementPaymentForm({ statementId, currency, today, context, cu
         {kind === "other" && <div className="flex min-w-0 flex-col gap-2"><Label htmlFor={ids.amount}>Valor pagado<span className="sr-only"> · {context}</span></Label><Input id={ids.amount} inputMode="decimal" autoComplete="off" placeholder="0" value={amount} onChange={(event) => setAmount(event.target.value)} disabled={busy} /></div>}
         <div className="flex min-w-0 flex-col gap-2"><Label htmlFor={ids.date}>Fecha del pago<span className="sr-only"> · {context}</span></Label><DateInput id={ids.date} calendarLabel={`Fecha del pago · ${context}`} value={date} onValueChange={setDate} disabled={busy} /></div>
 
+        {currency === "USD" && <div className="grid min-w-0 gap-2">
+          <label className="flex min-h-11 items-center gap-3 text-body"><input type="checkbox" className="size-5 accent-foreground" checked={withPesos} onChange={(event) => setWithPesos(event.target.checked)} disabled={busy} />Pagué con pesos<span className="sr-only"> · {context}</span></label>
+          {withPesos && <div className="flex min-w-0 flex-col gap-2">
+            <Label htmlFor={ids.pesos}>Pesos debitados<span className="sr-only"> · {context}</span></Label>
+            <Input id={ids.pesos} inputMode="decimal" autoComplete="off" placeholder="0" value={pesos} onChange={(event) => setPesos(event.target.value)} disabled={busy} aria-describedby={ids.rate} />
+            <p id={ids.rate} className="text-small text-muted-foreground">{derivedRate ? `Tasa del banco: ${formatExchangeRate(derivedRate)}. Se guarda en lugar de la TRM.` : "Copia el valor en pesos que te debitaron. La app calcula la tasa que usó el banco."}</p>
+          </div>}
+        </div>}
         {loading && <p role="status" className="text-small text-muted-foreground">Calculando…</p>}
         {previewError && <p role="alert" className="text-small text-danger">{previewError}</p>}
         {shown && <dl className="grid gap-1 text-small">

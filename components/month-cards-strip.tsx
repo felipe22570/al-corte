@@ -20,7 +20,7 @@ export function MonthCardsStrip({ cards }: { cards: MonthCardDetails[] }) {
           {active.map((card) => (
             <Link key={card.id} href={`/tarjetas/${card.id}`} className="grid w-64 shrink-0 gap-3 rounded-xl border border-border bg-card p-4 motion-safe:transition-colors hover:border-input md:w-auto focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring">
               <CardColorChip color={card.color} name={`${card.name} · •••• ${card.last4}`} />
-              <CreditAvailability value={card.available} />
+              <CreditAvailability value={card.available} fx={card.usdNet ? { usdNet: card.usdNet, rate: card.fxRate ?? null, estimated: card.fxEstimated ?? false } : undefined} />
               <UtilizationBar percent={card.utilization.times(100).toNumber()} />
             </Link>
           ))}

@@ -275,6 +275,18 @@ describe("plan de un pago (F14, D37)", () => {
     const usd = paymentPayload({ cardId: "card", statementId: "nov", currency: "USD", kind: "minimum", date: "2026-11-30", fxRate: d("4000.5"), note: "" }, usdPlan);
     expect(usd).toMatchObject({ amount: "9", fx_rate: "4000.5", amount_cop: "36004.5", prepayments: [] });
     expect(() => paymentPayload({ cardId: "card", statementId: "nov", currency: "USD", kind: "minimum", date: "2026-11-30", fxRate: null, note: "" }, usdPlan)).toThrow("TRM");
+    expect(usd.cop_debited).toBe(false);
+  });
+
+  it("con los pesos debitados guarda su valor exacto y la tasa derivada (D56)", () => {
+    const usdPlan = buildPaymentPlan({ ...base, targets: [], currency: "USD", kind: "other", amount: d("153.26"), pending: d("8.22") });
+    const payload = paymentPayload({ cardId: "card", statementId: "nov", currency: "USD", kind: "other", date: "2026-11-30", fxRate: d("4000.5"), note: "", copDebited: d(510000) }, usdPlan);
+    expect(payload).toMatchObject({ amount: "153.26", fx_rate: "3327.6785", amount_cop: "510000", cop_debited: true });
+    // The TRM of D4 is not needed when the pesos are known.
+    expect(paymentPayload({ cardId: "card", statementId: "nov", currency: "USD", kind: "other", date: "2026-11-30", fxRate: null, note: "", copDebited: d(510000) }, usdPlan).fx_rate).toBe("3327.6785");
+    const pesos = buildPaymentPlan({ ...base, kind: "other", amount: d("300000"), pending: d("150000") });
+    expect(() => paymentPayload({ cardId: "card", statementId: "nov", currency: "COP", kind: "other", date: "2026-11-30", fxRate: null, note: "", copDebited: d(300000) }, pesos)).toThrow("solo aplican a pagos en dólares");
+    expect(() => paymentPayload({ cardId: "card", statementId: "nov", currency: "USD", kind: "other", date: "2026-11-30", fxRate: null, note: "", copDebited: d(0) }, usdPlan)).toThrow("mayores que cero");
   });
 
   it("un pago parcial no cubre el mínimo ni abona", () => {

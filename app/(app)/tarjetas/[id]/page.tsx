@@ -35,7 +35,7 @@ export default async function CardDetailPage({ params }: { params: Promise<{ id:
   if (!user) redirect("/login");
   const [cardResult, balanceResult, statementResult, purchaseResult] = await Promise.all([
     supabase.from("cards").select("id,name,bank,last4,color,cutoff_day,payment_day,interest_mode,archived_at").eq("id", id).eq("user_id", user.id).maybeSingle(),
-    supabase.from("card_balances").select("available::text,utilization::text").eq("card_id", id).eq("user_id", user.id).maybeSingle(),
+    supabase.from("card_balances").select("available::text,utilization::text,usd_net::text,fx_rate::text,fx_estimated").eq("card_id", id).eq("user_id", user.id).maybeSingle(),
     supabase.from("statements").select("id,period_start,cutoff_date,due_date").eq("card_id", id).eq("user_id", user.id).order("cutoff_date"),
     supabase.from("transactions").select("id,merchant,currency,installments_count").eq("card_id", id).eq("user_id", user.id).eq("type", "purchase").gt("installments_count", 1),
   ]);
@@ -43,7 +43,7 @@ export default async function CardDetailPage({ params }: { params: Promise<{ id:
   if (!cardResult.data) notFound();
   if (!balanceResult.data) throw new Error("No pudimos consultar el cupo de la tarjeta.");
   const card = cardResult.data as Card;
-  const balance = balanceResult.data as unknown as { available: string; utilization: string };
+  const balance = balanceResult.data as unknown as { available: string; utilization: string; usd_net?: string; fx_rate?: string | null; fx_estimated?: boolean };
   const statements = (statementResult.data ?? []) as Statement[];
   // D32: on-balance statements without registered interest carry the R8 estimate in their minimum payment.
   const [balances, estimates] = await Promise.all([
@@ -102,7 +102,7 @@ export default async function CardDetailPage({ params }: { params: Promise<{ id:
           </section>
           <section className="flex min-w-0 flex-col gap-4 border-t border-border pt-4 xl:border-t-0 xl:pt-0">
             <h2 className="text-heading">Cupo disponible</h2>
-            <CreditAvailability value={balance.available} showLabel={false} />
+            <CreditAvailability value={balance.available} showLabel={false} fx={{ usdNet: balance.usd_net ?? "0", rate: balance.fx_rate ?? null, estimated: balance.fx_estimated ?? false }} />
             <UtilizationBar percent={Number(balance.utilization) * 100} />
           </section>
         </div>

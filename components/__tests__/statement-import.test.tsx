@@ -29,8 +29,8 @@ const review: Review = {
   statements: [{ cardId: "visa", cardName: "Visa", last4: "4242", color: "card-2", cutoffDate: "2026-12-15", dueDate: "2027-01-02", bank: [{ currency: "COP", minimum: "150000.00", total: "500000.00" }, { currency: "USD", minimum: "9.00", total: "154.00" }], bankAvailable: "4000000.00" }],
 };
 const verification = [
-  { cardId: "visa", cutoffDate: "2026-12-15", currency: "COP" as const, minimum: "149999.40", debt: "498000.00", realMinimum: "140000.00", realTotal: "500000.00", available: "3990000.00" },
-  { cardId: "visa", cutoffDate: "2026-12-15", currency: "USD" as const, minimum: "8.22", debt: "153.26", realMinimum: null, realTotal: null, available: "3990000.00" },
+  { cardId: "visa", cutoffDate: "2026-12-15", currency: "COP" as const, minimum: "149999.40", debt: "498000.00", realMinimum: "140000.00", realTotal: "500000.00", available: "3990000.00", trm: "3301.91", usdNet: "153.26" },
+  { cardId: "visa", cutoffDate: "2026-12-15", currency: "USD" as const, minimum: "8.22", debt: "153.26", realMinimum: null, realTotal: null, available: "3990000.00", trm: "3301.91", usdNet: "153.26" },
 ];
 const result = (overrides: Partial<Extract<ImportRunResult, { ok: true }>> = {}): ImportRunResult => ({ ok: true, review, decisions: { nuevo: "import", "mismo-dia": "skip", directv: "skip" }, verification, created: 1, linked: 0, dryRun: true, ...overrides });
 
@@ -50,14 +50,18 @@ describe("revisión de la importación (F22)", () => {
     expect(html).toContain("Importar como nuevo");
   });
 
-  it("compara con el banco, avisa los valores que se conservan y la diferencia de cupo en dólares", () => {
+  it("compara con el banco, avisa los valores que se conservan y la TRM del corte del cupo", () => {
     const html = renderToStaticMarkup(<ImportVerification title="Verificación antes de guardar" statements={review.statements} verification={verification} today="2026-12-20" />);
     expect(html).toContain("Banco: $150.000 · coincide");
     expect(html).toContain("Banco: $500.000 · diferencia +$2.000");
     expect(html).toContain("Ya tenías otros valores del banco para este extracto y se conservan: $140.000 y $500.000.");
     expect(html).toContain("Banco: US$ 9,00 · coincide");
     expect(html).toContain("Banco: $4.000.000 · diferencia +$10.000");
-    expect(html).toContain("puede no coincidir con el del banco");
+    expect(html).toContain("Dólares del cupo con la TRM del corte: 3.301,9100.");
+    const withoutTrm = renderToStaticMarkup(<ImportVerification title="Verificación" statements={review.statements} verification={verification.map((item) => ({ ...item, trm: null }))} today="2026-12-20" />);
+    expect(withoutTrm).toContain("Falta la TRM del corte: el cupo usa la TRM vigente y puede no coincidir con el del banco.");
+    const pesosOnly = renderToStaticMarkup(<ImportVerification title="Verificación" statements={review.statements} verification={verification.map((item) => ({ ...item, trm: null, usdNet: "0" }))} today="2026-12-20" />);
+    expect(pesosOnly).not.toContain("TRM");
   });
 });
 

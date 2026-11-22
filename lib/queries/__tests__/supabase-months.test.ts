@@ -38,7 +38,7 @@ describe("createSupabaseMonthSource", () => {
         let fields = "";
         const query = {
           select(value: string) { fields = value; return query; },
-          eq: () => query, in: () => query, order: () => query,
+          eq: () => query, in: () => query, order: () => query, not: () => query,
           async range(from: number, to: number) {
             ranges.push([table, from, to]);
             const rows = table === "statements" ? statements
@@ -49,6 +49,7 @@ describe("createSupabaseMonthSource", () => {
                 { statement_id: "s1", currency: "COP", has_charges: true, pending_principal: "0" },
                 { statement_id: "s1", currency: "USD", has_charges: false, pending_principal: "2" },
               ]
+              : table === "transactions" && fields.startsWith("paid_statement_id") ? [{ paid_statement_id: "s0", amount: "9", amount_cop: "31000" }]
               : table === "installments" ? [{ id: "i", statement_id: "s0", transaction_id: "t", total_cop: "100000.25", total: "100000.25", principal: "100000.25", balance_after: "200000.5" }]
                 : fields.startsWith("id,category_id") ? [{ id: "t", category_id: "category", date: "2026-08-01", rate_ea_applied: "0.2899", interest_free: false, currency: "COP", fx_rate: null }] : [];
             return { data: rows.slice(from, to + 1), error: null };
@@ -65,6 +66,9 @@ describe("createSupabaseMonthSource", () => {
     expect(loaded[0]?.pendingPrincipal?.USD?.toString()).toBe("5.5");
     expect(loaded[1]?.paidAt).toBe("2026-02-01T05:00:00Z");
     expect(loaded[2]).toMatchObject({ paidAt: null, pendingPrincipal: {} });
+    // D56: dollar payments with the pesos debited travel with the statement they cover.
+    expect(loaded[0]?.usdPaidWithPesos?.map((item) => [item.usd.toString(), item.cop.toString()])).toEqual([["9", "31000"]]);
+    expect(loaded[1]?.usdPaidWithPesos).toBeUndefined();
     expect(ranges).toContainEqual(["statements", 1000, 1999]);
     const charges = await source.loadCharges(["s0"]);
     expect(charges.installments[0]?.categoryId).toBe("category");

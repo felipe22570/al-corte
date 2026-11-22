@@ -13,7 +13,7 @@ import { loadPrepaidAmounts, loadPrepaymentBases, netOfPrepayments } from "./pre
 
 type Client = Awaited<ReturnType<typeof createClient>>;
 type RawCard = { id: string; name: string; bank: string; last4: string; color: CardColor; archived_at: string | null; cutoff_day: number; payment_day: number; handling_fee: string; interest_mode: InterestMode; purchase_rate_ea: string; amortization_method: AmortizationMethod };
-type RawBalance = { card_id: string; used: string; available: string; utilization: string };
+type RawBalance = { card_id: string; used: string; available: string; utilization: string; usd_net?: string; fx_rate?: string | null; fx_estimated?: boolean };
 type RawStatement = { id: string; card_id: string; period_start: string; cutoff_date: string; due_date: string };
 type RawBalanceMark = { statement_id: string; currency: Currency; paid_at: string | null; reconciled_at: string | null };
 type RawCurrencyTotal = { statement_id: string; currency: Currency; has_charges: boolean; pending_principal: string };
@@ -28,6 +28,8 @@ export type MonthCardDetails = {
   cutoffDay: number; paymentDay: number; handlingFee: Decimal; interestMode?: InterestMode;
   purchaseRateEa?: Decimal; amortizationMethod?: AmortizationMethod;
   used: Decimal; available: Decimal; utilization: Decimal;
+  /** D52: net debt in dollars and the TRM that valued it; estimated with the TRM of each purchase without one. */
+  usdNet?: Decimal; fxRate?: Decimal | null; fxEstimated?: boolean;
 };
 
 function mapMovement(row: RawMovement): Movement {
@@ -57,7 +59,7 @@ export function createSupabaseMonthSource(client: Client, userId: string): Month
     cardDetails ??= (async () => {
       const [cards, balances] = await Promise.all([
         fetchAllPages((from, to) => client.from("cards").select("id,name,bank,last4,color,archived_at,cutoff_day,payment_day,handling_fee::text,interest_mode,purchase_rate_ea::text,amortization_method").eq("user_id", userId).order("id").range(from, to)),
-        fetchAllPages((from, to) => client.from("card_balances").select("card_id,used::text,available::text,utilization::text").eq("user_id", userId).order("card_id").range(from, to)),
+        fetchAllPages((from, to) => client.from("card_balances").select("card_id,used::text,available::text,utilization::text,usd_net::text,fx_rate::text,fx_estimated").eq("user_id", userId).order("card_id").range(from, to)),
       ]);
       const byCard = new Map((balances as unknown as RawBalance[]).map((balance) => [balance.card_id, balance]));
       return (cards as unknown as RawCard[]).map((card) => {
@@ -69,6 +71,7 @@ export function createSupabaseMonthSource(client: Client, userId: string): Month
           handlingFee: new Decimal(card.handling_fee), interestMode: card.interest_mode,
           purchaseRateEa: new Decimal(card.purchase_rate_ea), amortizationMethod: card.amortization_method, used: new Decimal(balance.used),
           available: new Decimal(balance.available), utilization: new Decimal(balance.utilization),
+          usdNet: new Decimal(balance.usd_net ?? 0), fxRate: balance.fx_rate ? new Decimal(balance.fx_rate) : null, fxEstimated: balance.fx_estimated ?? false,
         };
       });
     })();
@@ -87,11 +90,17 @@ export function createSupabaseMonthSource(client: Client, userId: string): Month
     },
     loadCards: loadCardDetails,
     async loadStatements() {
-      const [rows, marks, totals] = await Promise.all([
+      const [rows, marks, totals, usdPayments] = await Promise.all([
         fetchAllPages((from, to) => client.from("statements").select("id,card_id,period_start,cutoff_date,due_date").eq("user_id", userId).order("id").range(from, to)),
         fetchAllPages((from, to) => client.from("statement_balances").select("statement_id,currency,paid_at,reconciled_at").eq("user_id", userId).order("id").range(from, to)),
         fetchAllPages((from, to) => client.from("statement_currency_totals").select("statement_id,currency,has_charges,pending_principal::text").eq("user_id", userId).order("statement_id").order("currency").range(from, to)),
+        // D56: dollar payments with the exact pesos debited, by the statement they cover.
+        fetchAllPages((from, to) => client.from("transactions").select("paid_statement_id,amount::text,amount_cop::text").eq("user_id", userId).eq("type", "payment").eq("currency", "USD").eq("cop_debited", true).not("paid_statement_id", "is", null).order("id").range(from, to)),
       ]);
+      const paidWithPesos = new Map<string, Array<{ usd: Decimal; cop: Decimal }>>();
+      for (const payment of usdPayments as unknown as Array<{ paid_statement_id: string; amount: string; amount_cop: string }>) {
+        paidWithPesos.set(payment.paid_statement_id, [...paidWithPesos.get(payment.paid_statement_id) ?? [], { usd: new Decimal(payment.amount), cop: new Decimal(payment.amount_cop) }]);
+      }
       const paid = new Map<string, Partial<Record<Currency, string | null>>>();
       const reconciled = new Map<string, Partial<Record<Currency, string | null>>>();
       for (const mark of marks as unknown as RawBalanceMark[]) {
@@ -112,6 +121,7 @@ export function createSupabaseMonthSource(client: Client, userId: string): Month
           id: s.id, cardId: s.card_id, periodStart: s.period_start, cutoffDate: s.cutoff_date, dueDate: s.due_date,
           paidAt: statementPaidAt(paidByCurrency, currencies.get(s.id) ?? []), paidByCurrency, pendingPrincipal: pending.get(s.id) ?? {},
           reconciledByCurrency, reconciledAt: statementReconciledAt(reconciledByCurrency, currencies.get(s.id) ?? []),
+          usdPaidWithPesos: paidWithPesos.get(s.id),
         };
       });
     },

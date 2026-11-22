@@ -2,6 +2,7 @@ import Decimal from "decimal.js";
 import { addDays, addMonths, compareIsoDates, daysInMonth, monthKey, parseIsoDate, type IsoDate } from "./dates";
 import { statementPaidAt } from "./balances";
 import { buildInstallmentPlan, type AmortizationMethod } from "./installments";
+import { paidUsdEquivalent } from "./fx-difference";
 import { estimateBalanceInterest, type BalanceInterestInstallment, type InterestMode } from "./interest";
 import { toCop, type Currency } from "./money";
 import { prepaymentInterestWeight } from "./payments";
@@ -184,6 +185,8 @@ type SavedStatement = {
   reconciledByCurrency?: Partial<Record<Currency, string | null>>;
   /** Reconciled in every currency with charges (D39). */
   reconciledAt?: string | null;
+  /** Dollar payments for this statement with the exact pesos debited (D56). */
+  usdPaidWithPesos?: Array<{ usd: Decimal; cop: Decimal }>;
 };
 type Movement = Parameters<typeof statementItemsFromMovements>[0][number] & {
   id: string; statementId: string; categoryId: string | null; subscriptionId?: string | null; date: IsoDate;
@@ -286,6 +289,8 @@ export function projectStatements(input: ProjectionInput): { statements: Project
       usdEquivalentCop: statementTotals(charges.filter((charge) => chargeCurrency(charge) === "USD").map((charge) => ({ concept: charge.concept, amountCop: charge.amountCop }))).total,
       unconvertedCharges: [], charges,
     };
+    // D56: once paid with pesos, the paid part of the dollars counts at the pesos actually paid; the rest keeps its reference.
+    if (s.usdPaidWithPesos?.length) statement.usdEquivalentCop = paidUsdEquivalent({ totalUsd: recordedUsd, referenceCop: statement.usdEquivalentCop, payments: s.usdPaidWithPesos });
     if (s.pendingPrincipal) statement.debt = { COP: recordedTotal.plus(s.pendingPrincipal.COP ?? 0), USD: recordedUsd.plus(s.pendingPrincipal.USD ?? 0) };
     return statement;
   });

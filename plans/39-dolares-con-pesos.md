@@ -1,8 +1,8 @@
 # Paso 39 — Pago del saldo en dólares con pesos y cupo en USD
 
 - **Hito PRD:** H11 (parte 4 de 4)
-- **Estado:** ⬜ Pendiente
-- **Inicio:**
+- **Estado:** 🟡 En progreso
+- **Inicio:** 2026-11-22
 - **Fin:**
 - **Commit:**
 - **Depende de:** 35, 38 (TRM diaria, D57)
@@ -29,13 +29,13 @@ Registrar el costo real en pesos de pagar el saldo en dólares (F23) y valorar l
 
 ## Pruebas
 
-- [ ] US$154 pagados con $510.000 → tasa 3.311,6883 y `amount_cop` = $510.000,00.
-- [ ] US$153,26 pagados con $510.000 → tasa 3.327,6785 y `amount_cop` = $510.000,00, aceptado por la RPC; una compra con el mismo desfase sigue rechazada.
-- [ ] Diferencia cambiaria con cargos en USD de distintas TRM y con un pago parcial.
-- [ ] Equivalente del mes con pago total y con pago parcial.
-- [ ] Cupo de la Mastercard con TRM $3.301,91 → $10.528.221,51; la Visa sigue en $6.154.225,14.
-- [ ] Un pago en USD registrado con pesos no cambia el cupo más allá de los dólares pagados × TRM vigente.
-- [ ] Sin TRM disponible, el cupo usa D3 y avisa que es estimado, en lugar de presentarlo en silencio.
+- [x] US$154 pagados con $510.000 → tasa 3.311,6883 y `amount_cop` = $510.000,00.
+- [x] US$153,26 pagados con $510.000 → tasa 3.327,6785 y `amount_cop` = $510.000,00, aceptado por la RPC; una compra con el mismo desfase sigue rechazada.
+- [x] Diferencia cambiaria con cargos en USD de distintas TRM y con un pago parcial.
+- [x] Equivalente del mes con pago total y con pago parcial.
+- [x] Cupo de la Mastercard con TRM $3.301,91 → $10.528.221,51; la Visa sigue en $6.154.225,14.
+- [x] Un pago en USD registrado con pesos no cambia el cupo más allá de los dólares pagados × TRM vigente.
+- [x] Sin TRM disponible, el cupo usa D3 y avisa que es estimado, en lugar de presentarlo en silencio.
 
 ## Verificación
 
@@ -56,3 +56,16 @@ pnpm build && pnpm start
 ## Notas de progreso
 
 <!-- Fecha — nota -->
+
+- 2026-11-22 — Implementado. Migración `20261122030000_usd_payments_and_credit.sql`:
+    - `transactions.cop_debited` (solo pagos en USD).
+    - `register_payment` con la tolerancia de la tasa redondeada solo cuando hay pesos debitados.
+    - `card_balances` por moneda: agrega `cop_used`, `usd_net`, `fx_rate` y `fx_estimated` al final; los dólares a la TRM más reciente, o con la de cada movimiento y la marca si no hay TRM.
+    - `import_statement_file` devuelve las partes del cupo.
+- Dominio: `lib/domain/fx-difference.ts` (`rateFromPesos`, `exchangeDifference`, `paidUsdEquivalent`, `availableCredit`), `paymentPayload` con `copDebited`, y `projectStatements` con `usdPaidWithPesos` por extracto. Interfaz: "Pagué con pesos" con la tasa del banco a la vista, diferencia cambiaria en el extracto (`ExchangeDifference`), "Pagado en pesos", nota de la TRM junto al cupo (detalle de tarjeta y franja de meses) y verificación de la importación con `trmForStatement`.
+- Decisiones del dueño al aprobar el plan: solo los pagos marcados con pesos cuentan como pesos pagados; un pago mayor que los dólares del extracto aporta al mes su parte proporcional; la TRM del corte se usa en la importación y el cierre no gana campo de cupo. Menores: la TRM se muestra con 4 decimales, como en el detalle del movimiento; la nota del cupo solo aparece con deuda en dólares; una diferencia de menos de medio peso se dice "lo mismo".
+- Pruebas: pgTAP 200 (tolerancia, compra con el mismo desfase rechazada, cupo a la TRM vigente, pago con pesos que solo libera los dólares pagados, sin TRM estimado y marcado) y 040 ajustada a D52 con su propia TRM. Vitest: dominio (5 nuevas, más pagos y meses), acciones de pago con pesos, presentación y formulario en jsdom. Total: 593 de Vitest; cobertura de dominio 100 %.
+- Con los datos reales de la base local, en solo lectura: con la TRM de $3.301,91 el cupo de la Mastercard da $10.528.221,51 y el de la Visa $6.154.225,14. La vista previa del archivo de noviembre da exactamente esos cupos, con la TRM del corte calculada por `trmForStatement`.
+- Revisión en navegador (local, 360 px): cupo de la Mastercard en oscuro ("Dólares con la TRM de 3.461,9200") y formulario de pago en dólares en claro ($31.000 por US$9: tasa 3.444,4444), sin guardar.
+- Durante la revisión, un `pnpm build` quedó sin `.next` completo, probablemente porque el servidor de desarrollo del puerto 3000 comparte esa carpeta. Repetir el build lo resolvió.
+- Pendiente del dueño: registrar el próximo pago real en dólares con los pesos debitados, comprobar el cupo con el extracto de diciembre y cerrar H11 junto con los pendientes de los pasos 36 y 38 (incluido `supabase db reset`).

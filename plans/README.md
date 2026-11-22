@@ -66,7 +66,7 @@ Prompt sugerido para el agente al iniciar un paso:
 | 36 | [Cuotas y categoría sugeridas por comercio](36-sugerencias-comercio.md) | H11 | 🟡 | |
 | 37 | [Costo de diferir](37-costo-diferir.md) | H11 | ✅ | 03e0c78 |
 | 38 | [Importación mensual de extractos](38-importacion-mensual.md) | H11 | 🟡 | |
-| 39 | [Pago del saldo en dólares con pesos y cupo en USD](39-dolares-con-pesos.md) | H11 | ⬜ | |
+| 39 | [Pago del saldo en dólares con pesos y cupo en USD](39-dolares-con-pesos.md) | H11 | 🟡 | |
 | 40 | [Capa de IA](40-capa-ia.md) | H12 | ⬜ | |
 | 41 | [Borradores por confirmar](41-borradores.md) | H12 | ⬜ | |
 | 42 | [Endpoint de ingesta y reglas de alertas](42-ingesta-reglas.md) | H12 | ⬜ | |
@@ -288,3 +288,4 @@ Anota aquí cada decisión tomada durante la implementación (fecha, paso, decis
 | 2026-11-21 | 36 | Las sugerencias solo aparecen en "Nuevo gasto", no al editar. Salen del mismo tipo que tiene el formulario (compra desde compras, avance desde avances). Cambiar el comercio o la tarjeta deshace la sugerencia anterior y aplica la nueva si existe. Autocompletado con `<datalist>` nativo, sin dependencias. | Respuesta del dueño al plan del paso. |
 | 2026-11-21 | 37 | La alerta de intereses sobre el 20 % es neutra (alerta con borde, sin ámbar), porque `AGENTS.md` no incluye ese caso entre los estados de atención. El ahorro por pagar el total excluye todo el periodo del corte abierto hoy: su interés ya se está causando. | Respuesta del dueño al plan del paso. |
 | 2026-11-21 | 38 | D57 cambia: la TRM diaria la consulta una función SQL con la extensión `http`, llamada por `pg_cron`, en lugar de una Edge Function (sin despliegue de funciones ni llaves en Vault; la expansión por días se prueba con pgTAP). Un cobro de suscripción con otro valor es conflicto solo si el nombre normalizado coincide con el de la suscripción. La verificación muestra la diferencia de cupo con una nota mientras D52 llega en el paso 39. | Respuesta del dueño al plan del paso. |
+| 2026-11-22 | 39 | Solo los pagos en USD marcados "Pagué con pesos" (`cop_debited`) cuentan como pesos pagados: muestran diferencia cambiaria y entran al equivalente del mes; los demás conservan su equivalente de referencia. Si un pago en USD supera el total en dólares del extracto, el mes usa la parte proporcional de los pesos. La TRM del corte (D52) se aplica en la verificación de la importación; el cierre mensual no gana un campo de cupo del banco. | Respuesta del dueño al plan del paso. |
