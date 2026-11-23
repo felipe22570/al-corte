@@ -48,3 +48,6 @@ next-env.d.ts
 # Step 35: real bank statements and the scripts generated from them never go to git (D36).
 docs/al-corte-import-*.json
 private/
+
+# Step 44: the Apps Script project id of the owner stays local.
+integrations/apps-script/.clasp.json

@@ -71,7 +71,7 @@ Prompt sugerido para el agente al iniciar un paso:
 | 41 | [Borradores por confirmar](41-borradores.md) | H12 | ✅ | 83e1632 |
 | 42 | [Endpoint de ingesta y reglas de alertas](42-ingesta-reglas.md) | H12 | ✅ | 45b0f0b |
 | 43 | [Interpretación de alertas con IA](43-interpretacion-ia.md) | H12 | ✅ | 5fcc097 |
-| 44 | [Script de captura en Apps Script](44-apps-script.md) | H12 | ⬜ | |
+| 44 | [Script de captura en Apps Script](44-apps-script.md) | H12 | 🟡 | |
 | 45 | [Validación de H12](45-validacion-captura.md) | H12 | ⬜ | |
 
 **MVP cerrado el 12 de noviembre de 2026 por aprobación explícita del dueño con las limitaciones del paso 20.** Los veinte pasos están en ✅. Pasan 117 pruebas de Vitest, 167 pruebas SQL, cobertura de dominio 100 %, build y lint. La revisión adicional con la extensión real axe DevTools cubrió 52 combinaciones sin fallas confirmadas; los casos de contraste y foco se revisaron aparte. El cron remoto se ejecutó a las 05:00 de Bogotá y generó un solo cobro de 25.000 COP para la suscripción de prueba. La etiqueta `mvp` identifica el commit de cierre.

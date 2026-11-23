@@ -1,6 +1,70 @@
 # Captura de alertas por correo
 
-Script de Google Apps Script que corre cada hora en la cuenta de Google del dueño y envía a Al Corte solo la frase de cada alerta de tarjeta de crédito (F18, D43). El script, su instalación y sus permisos se completan en el paso 44. Este documento ya define el contrato con la app (paso 42) y la rotación del secreto (D51).
+Script de Google Apps Script que corre cada hora en la cuenta de Google del dueño y envía a Al Corte solo la frase de cada alerta de tarjeta de crédito (F18, D43). El contrato con la app viene del paso 42; el script y esta guía, del paso 44.
+
+## Qué hace
+
+Cada hora busca `from:alertasynotificaciones@notificacionesbancolombia.com newer_than:2d` y, por cada mensaje que no ha visto:
+
+1. Comprueba que el remitente sea exactamente `alertasynotificaciones@notificacionesbancolombia.com`.
+2. Comprueba DKIM solo en el `Authentication-Results` que Gmail agrega arriba del mensaje (`mx.google.com`): debe decir `dkim=pass` para `notificacionesbancolombia.com`. Ignora cualquier otro encabezado que traiga el correo. Si el remitente o DKIM fallan, lo anota como rechazado y no envía nada.
+3. Toma el texto plano (o, si el correo no lo trae, el HTML convertido a texto dentro de Google) y extrae solo la frase desde "Bancolombia:" hasta antes de "Si tienes dudas". Sin esas marcas, lo anota como descartado.
+4. Si la frase no menciona `T.Cred *` seguido de 4 dígitos, lo anota como descartado: las alertas de ahorros y débito nunca salen de Google (D44).
+5. Firma `{ message_id, phrase }` y lo envía. Lo anota según la respuesta de la app (ver la tabla del contrato).
+
+El estado (identificador, resultado y hora) vive en la propiedad `AL_CORTE_CAPTURE_STATE`. Se limpia sola a los 2 días. El script no etiqueta, mueve, borra ni envía correos.
+
+El registro de ejecuciones solo muestra conteos y motivos, por ejemplo: `Captura: encontrados=3, ya vistos=1, enviados=1, creados=1, …, descartados=1. Motivos: no_credit_card=1`. Nunca muestra frases, comercios ni identificadores.
+
+| Motivo | Significado |
+| --- | --- |
+| `sender`, `dkim` | Rechazado sin enviar: no viene del remitente de Bancolombia o la firma DKIM no pasó. |
+| `no_phrase` | Descartado: el correo no tiene la frase entre "Bancolombia:" y "Si tienes dudas". |
+| `no_credit_card` | Descartado: alerta de ahorros, débito u otra sin `T.Cred *NNNN`. |
+| `too_large` | Rechazado sin enviar: la frase supera lo que acepta la app. |
+| `http_NNN`, `network_error`, `load_error`, `unexpected_answer` | Se reintenta en la siguiente ejecución, salvo `http_400` y `http_413`. |
+
+## Permisos
+
+El manifiesto (`src/appsscript.json`) declara solo estos permisos:
+
+| Permiso | Para qué |
+| --- | --- |
+| `gmail.readonly` ("Ver tus mensajes de correo y tu configuración") | Buscar y leer las alertas con el servicio avanzado de Gmail. Es solo lectura: no puede modificar ni enviar correos. |
+| `script.external_request` ("Conectarse a un servicio externo") | Enviar la frase firmada a Al Corte. |
+| `script.scriptapp` ("Permitir que esta aplicación se ejecute cuando no estás presente") | Crear el activador de cada hora. |
+
+`GmailApp` pediría acceso completo al buzón (`https://mail.google.com/`) y las etiquetas exigirían `gmail.modify`. Por eso el script usa el servicio avanzado y lleva su estado en `PropertiesService`. Google puede mostrar la advertencia de "app no verificada": es tu propio script y no se publica.
+
+## Instalación
+
+Requisitos: la ruta de ingesta desplegada en producción con `INGEST_SIGNING_SECRET`, `INGEST_USER_ID` y `SUPABASE_SECRET_KEY` (ver "Variables del servidor"), la migración del paso 42 aplicada y la captura encendida en Ajustes → Captura de alertas.
+
+1. Con la cuenta de Google que recibe las alertas, crea un proyecto vacío en https://script.google.com ("Nuevo proyecto") y llámalo `Al Corte · captura`. En Configuración del proyecto, copia el ID de la secuencia de comandos.
+2. Activa la API de Apps Script para clasp en https://script.google.com/home/usersettings.
+3. Desde esta carpeta, sube el código con clasp (Node 22 o posterior). No se agrega como dependencia del repositorio:
+
+    ```bash
+    cd integrations/apps-script
+    cp .clasp.json.example .clasp.json   # pega el ID en scriptId; el archivo no va a git
+    pnpm dlx @google/clasp login
+    pnpm dlx @google/clasp push --force  # reemplaza el manifiesto vacío por src/appsscript.json
+    ```
+
+    Sin clasp: en el editor, activa "Mostrar el archivo de manifiesto appsscript.json" en la configuración del proyecto y copia a mano `src/appsscript.json`, `src/core.js` y `src/main.js` (como `core.gs` y `main.gs`).
+4. En Configuración del proyecto → Propiedades de la secuencia de comandos, agrega:
+    - `INGEST_URL`: `https://<dominio de producción>/api/ingest/alerts`. Usa el dominio final: el script no sigue redirecciones.
+    - `INGEST_SIGNING_SECRET`: el mismo valor que en Vercel. No lo pegues en chats ni en el repositorio.
+5. En el editor, elige la función `installTrigger` y ejecútala. Autoriza los tres permisos de la tabla anterior. Queda un solo activador de `capturePurchaseAlerts` cada hora.
+6. Para probar sin esperar, ejecuta `capturePurchaseAlerts` desde el editor y revisa el registro de ejecuciones.
+
+Para actualizar el código, repite `pnpm dlx @google/clasp push --force` desde esta carpeta. El activador y las propiedades se conservan.
+
+## Detener o revocar
+
+- **Pausar desde la app:** apaga la captura en Ajustes. La ruta responde `403` y el script reintenta durante 2 días sin marcar nada.
+- **Quitar el activador:** ejecuta `removeTrigger` en el editor (o bórralo en Activadores).
+- **Revocar el acceso:** en https://myaccount.google.com/connections (Seguridad → Tus conexiones con apps y servicios de terceros), elige `Al Corte · captura` y quita el acceso. Desde ahí, las ejecuciones fallan con "Se requiere autorización" y el script no lee ni envía nada. Para volver, ejecuta `installTrigger` y autoriza de nuevo.
 
 ## Contrato con la app
 
@@ -14,7 +78,7 @@ Script de Google Apps Script que corre cada hora en la cuenta de Google del due�
 | --- | --- |
 | `200` con `result` `created`, `duplicate` o `ignored` | Marca el mensaje como procesado. |
 | `400` o `413` | Marca el mensaje como rechazado: el mensaje no cumple el contrato y reintentar no cambia nada. |
-| `401` (firma o secreto no coinciden), `403` (captura apagada), `429` (más de 30 solicitudes por minuto), `5xx` o sin conexión | No lo marca; lo reintenta en la siguiente ejecución, mientras el mensaje tenga menos de 2 días. Un `401` suele ser un secreto distinto en Vercel y en el script, no un mensaje malo. |
+| `401` (firma o secreto no coinciden), `403` (captura apagada), `429` (más de 30 solicitudes por minuto), `5xx`, redirección `3xx` o sin conexión | No lo marca; lo reintenta en la siguiente ejecución, mientras el mensaje tenga menos de 2 días. Un `401` suele ser un secreto distinto en Vercel y en el script, no un mensaje malo. Con `401`, `403`, `429`, `503`, `3xx` o sin conexión, la ejecución deja de enviar los demás mensajes, porque la respuesta se repetiría. |
 
 Una firma con más de 5 minutos de diferencia con la hora del servidor se rechaza. Las respuestas nunca incluyen la frase ni detalles internos.
 

@@ -1,8 +1,8 @@
 # Paso 44 — Script de captura en Apps Script
 
 - **Hito PRD:** H12 (parte 5 de 6)
-- **Estado:** ⬜ Pendiente
-- **Inicio:**
+- **Estado:** 🟡 En progreso
+- **Inicio:** 2026-11-22
 - **Fin:**
 - **Commit:**
 - **Depende de:** 42
@@ -27,9 +27,9 @@ El script que corre en la cuenta de Google del dueño y envía las alertas a la 
 
 ## Pruebas
 
-- [ ] Función de extracción de la frase y del filtro `T.Cred` con pruebas locales (los mismos fixtures del paso 42).
-- [ ] Sin conexión con la app, el mensaje queda sin marcar como procesado y se reintenta en la siguiente ejecución.
-- [ ] Un correo con un `Authentication-Results` falso agregado por el remitente no pasa la verificación.
+- [x] Función de extracción de la frase y del filtro `T.Cred` con pruebas locales (los mismos fixtures del paso 42).
+- [x] Sin conexión con la app, el mensaje queda sin marcar como procesado y se reintenta en la siguiente ejecución.
+- [x] Un correo con un `Authentication-Results` falso agregado por el remitente no pasa la verificación.
 
 ## Verificación
 
@@ -44,3 +44,33 @@ El script que corre en la cuenta de Google del dueño y envía las alertas a la 
 ## Notas de progreso
 
 <!-- Fecha — nota -->
+
+2026-11-22 — Plan aprobado: clasp con `pnpm dlx @google/clasp`, sin agregarlo como dependencia; servicio avanzado de Gmail con `gmail.readonly` y estado en `PropertiesService`, sin etiquetas. Alcances confirmados en la documentación de Google (`users.messages.get/list` aceptan `gmail.readonly`; `ScriptApp.requireScopes` para pedirlos al instalar el activador).
+
+2026-11-22 — Implementado:
+- `integrations/apps-script/src/`:
+    - `core.js` (funciones puras en el objeto global `AlCorteCapture`, sin APIs de Google);
+    - `main.js` (`capturePurchaseAlerts`, `installTrigger`, `removeTrigger` y adaptadores de Gmail, UrlFetch y Properties);
+    - `appsscript.json` (V8, `America/Bogota`, servicio avanzado de Gmail y tres alcances explícitos: `gmail.readonly`, `script.external_request`, `script.scriptapp`).
+- `.clasp.json.example` con `rootDir: src`; el `.clasp.json` real queda en `.gitignore`.
+- Lectura:
+    - remitente exacto;
+    - DKIM solo en el `Authentication-Results` de más arriba, con servidor `mx.google.com` y `dkim=pass` para el dominio exacto (sin subdominios ni parecidos; los comentarios entre paréntesis se ignoran);
+    - frase desde el último "Bancolombia:" antes del primer "Si tienes dudas", para que ningún encabezado del correo salga de Google;
+    - filtro `T.Cred *NNNN` igual al de la ruta.
+- Decisiones menores:
+    - si el correo no trae texto plano, el HTML se convierte a texto dentro de Google;
+    - el cuerpo se decodifica con el `charset` de su parte;
+    - sin las marcas de la frase, el mensaje queda descartado (`no_phrase`);
+    - una frase de más de 1.000 caracteres o un cuerpo de más de 4 KB se rechaza sin enviarse;
+    - con `401`, `403`, `429`, `503`, `3xx` o sin conexión, la ejecución deja de enviar el resto, porque la respuesta se repetiría para todos;
+    - las redirecciones no se siguen: una URL movida se corrige en `INGEST_URL`;
+    - `LockService` evita ejecuciones cruzadas;
+    - el registro solo lleva conteos y motivos.
+- README de la carpeta: qué hace, motivos del registro, permisos, instalación con clasp (o copiando los archivos a mano), detener y revocar, contrato y rotación (D51).
+- ESLint: excepción de `no-unused-vars` solo para las funciones que Apps Script llama por nombre.
+- Pruebas (Vitest, sin dependencias nuevas):
+    - `core.test.ts` (55) carga `core.js` como lo hace Apps Script, en un contexto `vm` sin módulos. Cubre los fixtures del paso 42, HTML y entidades, DKIM con encabezado falso, servidor ajeno, dominios parecidos y comentarios, la paridad de la firma con `signAlert` (incluidas tildes y los bytes con signo de `Utilities`), un cuerpo que `verifyAlertSignature` acepta, la tabla de respuestas, el reintento sin conexión, la parada ante respuestas repetibles, el estado y su limpieza a los 2 días, y un resumen sin frases;
+    - `main.test.ts` (4) corre `core.js` y `main.js` con imitaciones de los servicios: cuerpo en ISO-8859-1, bytes UTF-8 firmados, estado guardado, reintento sin conexión, URL sin https o sin secreto, y un solo activador.
+- Verificación local: `pnpm typecheck`, `pnpm lint`, `pnpm test` (830 pasan, 13 omitidas que requieren variables), `pnpm test:coverage` y `pnpm build`. Sin cambios de esquema, así que no hizo falta `supabase db reset` ni regenerar tipos.
+- Pendiente del dueño, en su cuenta de Google y en producción (variables del paso 42 en Vercel y migración remota): instalar el script, comprobar el borrador con un correo real, que una alerta de ahorros no genera solicitud y que revocar el acceso detiene la captura. El paso sigue en 🟡 hasta esas tres verificaciones.
