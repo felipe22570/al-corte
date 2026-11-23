@@ -70,7 +70,7 @@ Prompt sugerido para el agente al iniciar un paso:
 | 40 | [Capa de IA](40-capa-ia.md) | H12 | ✅ | 7cc12f5 |
 | 41 | [Borradores por confirmar](41-borradores.md) | H12 | ✅ | 83e1632 |
 | 42 | [Endpoint de ingesta y reglas de alertas](42-ingesta-reglas.md) | H12 | ✅ | 45b0f0b |
-| 43 | [Interpretación de alertas con IA](43-interpretacion-ia.md) | H12 | ✅ | |
+| 43 | [Interpretación de alertas con IA](43-interpretacion-ia.md) | H12 | ✅ | 5fcc097 |
 | 44 | [Script de captura en Apps Script](44-apps-script.md) | H12 | ⬜ | |
 | 45 | [Validación de H12](45-validacion-captura.md) | H12 | ⬜ | |
 
