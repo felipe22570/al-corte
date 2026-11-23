@@ -4,7 +4,7 @@
 - **Estado:** ✅ Terminado
 - **Inicio:** 2026-11-22
 - **Fin:** 2026-11-22
-- **Commit:**
+- **Commit:** 83e1632
 - **Depende de:** 40; 38 (componente de revisión de importaciones)
 - **Decisiones aplicables (decididas, ver README):** D46, D47
 
