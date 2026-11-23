@@ -4,7 +4,7 @@
 - **Estado:** 🟡 En progreso
 - **Inicio:** 2026-11-22
 - **Fin:**
-- **Commit:**
+- **Commit:** 9e75ac8
 - **Depende de:** 42
 - **Decisiones aplicables (decididas, ver README):** D43, D44, D47, D51
 
