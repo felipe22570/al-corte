@@ -56,6 +56,7 @@ function DraftItem({ draft, cards, categories, today }: { draft: InboxDraft; car
     <div className="flex min-w-0 flex-col gap-3 pt-1">
       {draft.status === "unknown_card" && <StatusBadge tone="neutral" text="Tarjeta no registrada" />}
       {draft.status === "needs_review" && <StatusBadge tone="neutral" text="Revisar" />}
+      {draft.readByAi && <p className="text-small wrap-anywhere">Leído con IA. Revisa el valor, la fecha y la tarjeta antes de confirmar.</p>}
       <p className="text-small text-muted-foreground wrap-anywhere">Del correo: «{draft.phrase}»</p>
       {draft.subscription && <p className="text-small wrap-anywhere">{draft.subscription.change
         ? `${draft.subscription.name} cobró ${formatMoney(draft.subscription.change.charged, draft.subscription.change.currency)}; tu suscripción dice ${formatMoney(draft.subscription.change.expected, draft.subscription.change.currency)}.`

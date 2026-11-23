@@ -82,3 +82,29 @@ export function recentMerchantNames(history: readonly MerchantHistoryRow[], limi
   }
   return [...names.values()].slice(0, limit);
 }
+
+/**
+ * Prefix of a merchant billed through an intermediary ("google *chatgpt" → "google", "dlo*netflix" → "dlo"). Charges
+ * with the same prefix tend to share how the bank bills them (currency, installments), so the AI sees them as related
+ * history (step 43). Names without `*` have no prefix.
+ */
+export function merchantPrefix(name: string): string | null {
+  const normalized = normalizeMerchant(name);
+  const star = normalized.indexOf("*");
+  if (star < 0) return null;
+  const prefix = normalized.slice(0, star).trim();
+  return prefix.length >= 2 ? prefix : null;
+}
+
+/**
+ * History the AI receives for an alert merchant (R10): first the same normalized name, then the same `*` prefix, each
+ * group from the most recent, up to `limit` rows.
+ */
+export function relatedMerchantHistory<T extends { merchant: string; date: IsoDate }>(merchant: string, rows: readonly T[], limit = 5): T[] {
+  const name = normalizeMerchant(merchant);
+  const prefix = merchantPrefix(merchant);
+  const recent = [...rows].sort((first, second) => second.date.localeCompare(first.date));
+  const same = recent.filter((row) => normalizeMerchant(row.merchant) === name);
+  const related = prefix ? recent.filter((row) => normalizeMerchant(row.merchant) !== name && merchantPrefix(row.merchant) === prefix) : [];
+  return [...same, ...related].slice(0, limit);
+}

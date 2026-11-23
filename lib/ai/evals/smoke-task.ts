@@ -18,7 +18,8 @@ const output = z.object({
 export const smokeCheckTask: AiTask<typeof input, typeof output> = {
   name: "smokeCheck",
   promptVersion: "v1",
-  maxTokens: 200,
+  maxTokens: 1000,
+  effort: "low",
   input,
   output,
   system: [

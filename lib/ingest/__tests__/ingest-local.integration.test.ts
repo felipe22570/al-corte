@@ -6,6 +6,9 @@ import { signAlert } from "../signature";
 import { ALERTS } from "./fixtures";
 
 vi.mock("next/cache", () => ({ revalidatePath: vi.fn() }));
+// `after` only exists inside a Next.js request: the test keeps the callbacks and runs them itself.
+const scheduled = vi.hoisted(() => [] as Array<() => Promise<void>>);
+vi.mock("next/server", () => ({ after: (callback: () => Promise<void>) => { scheduled.push(callback); } }));
 
 const enabled = process.env.AL_CORTE_LOCAL_DB_TEST === "1";
 const secret = "local-ingest-secret-".padEnd(48, "x");
@@ -25,6 +28,7 @@ describe.skipIf(!enabled)("alert ingest route against local Supabase", () => {
     vi.stubEnv("SUPABASE_SECRET_KEY", env.SECRET_KEY ?? "");
     vi.stubEnv("INGEST_SIGNING_SECRET", secret);
     vi.stubEnv("INGEST_USER_ID", owner);
+    vi.stubEnv("ANTHROPIC_API_KEY", "");
     sql(`insert into auth.users (id, email) values ('${owner}', 'ingest-${owner}@example.com'), ('${other}', 'ingest-${other}@example.com');
       insert into public.cards (id, user_id, name, bank, network, last4, credit_limit, cutoff_day, payment_day) values
         ('${owner.slice(0, 24)}000000000001', '${owner}', 'Visa', 'Banco', 'Visa', '1999', 1000000, 15, 2),
@@ -57,6 +61,12 @@ describe.skipIf(!enabled)("alert ingest route against local Supabase", () => {
     // The other owner's card with the same digits is never used (RLS does not apply to the service key).
     expect(drafts()).toBe(`m1|pending|${owner.slice(0, 24)}000000000001|140910.00`);
     expect(sql(`select count(*) from public.transaction_drafts where user_id <> '${owner}' and user_id in ('${owner}', '${other}');`)).toBe("0");
+
+    // Without an API key the AI step runs after answering and leaves the draft as the rules wrote it (R10).
+    expect(scheduled).toHaveLength(1);
+    await scheduled.shift()!();
+    expect(drafts()).toBe(`m1|pending|${owner.slice(0, 24)}000000000001|140910.00`);
+    expect(sql(`select count(*) from public.ai_usage where user_id = '${owner}';`)).toBe("0");
 
     const again = await POST(request({ message_id: "m1", phrase: ALERTS.directv }));
     expect(await again.json()).toEqual({ ok: true, result: "duplicate" });

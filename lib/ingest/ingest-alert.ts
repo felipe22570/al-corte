@@ -30,11 +30,12 @@ export type IngestStore = {
   withinRateLimit: (userId: string, limit: number) => Promise<boolean>;
   /** Active cards whose last 4 digits or alias match; more than one means ambiguous (D44). */
   cardsFor: (userId: string, last4: string) => Promise<Array<{ id: string; cutoffDay: number }>>;
-  /** `false` when the message already has a draft (dedupe by message, D46). */
-  insertDraft: (draft: IngestDraft) => Promise<boolean>;
+  /** Id of the new draft, or `null` when the message already has one (dedupe by message, D46). */
+  insertDraft: (draft: IngestDraft) => Promise<string | null>;
 };
 
-export type IngestResult = { status: number; body: { ok: true; result: "created" | "duplicate" | "ignored" } | { ok: false } };
+/** `draftId` stays on the server: the route uses it to add AI suggestions after answering (step 43). */
+export type IngestResult = { status: number; body: { ok: true; result: "created" | "duplicate" | "ignored" } | { ok: false }; draftId?: string };
 
 const failure = (status: number): IngestResult => ({ status, body: { ok: false } });
 
@@ -72,8 +73,8 @@ export async function ingestAlert(request: { body: string; timestamp: string | n
         statement_cutoff: card ? statementCutoffFor(card.cutoffDay, reading.date) : null,
       }
       : { ...base, status: "needs_review", card_id: card?.id ?? null, type: null, amount: null, currency: null, merchant_raw: null, occurred_on: null, occurred_time: null, statement_cutoff: null };
-    const created = await deps.store.insertDraft(draft);
-    return { status: 200, body: { ok: true, result: created ? "created" : "duplicate" } };
+    const draftId = await deps.store.insertDraft(draft);
+    return draftId ? { status: 200, body: { ok: true, result: "created" }, draftId } : { status: 200, body: { ok: true, result: "duplicate" } };
   } catch {
     return failure(500);
   }

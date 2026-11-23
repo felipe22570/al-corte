@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { latestByMerchant, merchantHistorySince, normalizeMerchant, recentMerchantNames, suggestFromHistory, type MerchantHistoryRow } from "@/lib/domain/merchant-suggestions";
+import { latestByMerchant, merchantHistorySince, merchantPrefix, normalizeMerchant, relatedMerchantHistory, recentMerchantNames, suggestFromHistory, type MerchantHistoryRow } from "@/lib/domain/merchant-suggestions";
 
 const visa = "visa";
 const master = "master";
@@ -115,5 +115,38 @@ describe("recentMerchantNames", () => {
     ];
     expect(recentMerchantNames(history)).toEqual(["Cajero", "Netflix", "Rappi"]);
     expect(recentMerchantNames(history, 2)).toEqual(["Cajero", "Netflix"]);
+  });
+});
+
+describe("merchantPrefix (step 43)", () => {
+  it.each([
+    ["GOOGLE *ChatGPT", "google"],
+    ["DLO*NETFLIX", "dlo"],
+    ["Google * YouTube", "google"],
+    ["DIRECTV", null],
+    ["*RARO", null],
+    ["X*Y", null],
+  ])("%s → %s", (name, prefix) => {
+    expect(merchantPrefix(name)).toBe(prefix);
+  });
+});
+
+describe("relatedMerchantHistory (R10)", () => {
+  const rows = [
+    { merchant: "GOOGLE *YouTube", date: "2026-11-10" },
+    { merchant: "Google *ChatGPT", date: "2026-10-16" },
+    { merchant: "GOOGLE *Google One", date: "2026-11-02" },
+    { merchant: "google *chatgpt", date: "2026-09-16" },
+    { merchant: "DIRECTV", date: "2026-11-17" },
+  ];
+
+  it("puts the same merchant first and then the same prefix, most recent first", () => {
+    expect(relatedMerchantHistory("GOOGLE *ChatGPT", rows, 3).map((row) => `${row.merchant} ${row.date}`))
+      .toEqual(["Google *ChatGPT 2026-10-16", "google *chatgpt 2026-09-16", "GOOGLE *YouTube 2026-11-10"]);
+  });
+
+  it("only uses exact names for merchants without prefix", () => {
+    expect(relatedMerchantHistory("DirecTV", rows).map((row) => row.date)).toEqual(["2026-11-17"]);
+    expect(relatedMerchantHistory("Tienda", rows)).toEqual([]);
   });
 });

@@ -33,7 +33,7 @@ const suggestionFields: SuggestionField[] = ["categoryId", "currency", "fxRate",
 const noHistory: MerchantHistoryRow[] = [];
 
 /** A captured draft being confirmed (F18): its prefilled values and the fields merchant history must not change. */
-export type CapturedDraft = { id: string; phrase: string; last4: string | null; billingCurrency: "COP" | "USD" | null; unknownCard: boolean; values: TransactionInput; touched: SuggestionField[] };
+export type CapturedDraft = { id: string; phrase: string; last4: string | null; billingCurrency: "COP" | "USD" | null; unknownCard: boolean; readByAi?: boolean; values: TransactionInput; touched: SuggestionField[] };
 
 export function TransactionForm({ userId, cards, categories, today, latestRate, existingCutoffs = {}, merchantHistory = noHistory, edit, captured }: { userId: string; cards: TransactionCardOption[]; categories: TransactionCategoryOption[]; today: string; latestRate: string | null; existingCutoffs?: Record<string, string[]>; merchantHistory?: MerchantHistoryRow[]; edit?: { id: string; initial: TransactionInput; original: { cardId: string; type: TransactionPlanInput["type"]; rateEaApplied: string | null }; hasPaidInstallments: boolean }; captured?: CapturedDraft }) {
   const router = useRouter();
@@ -254,6 +254,7 @@ export function TransactionForm({ userId, cards, categories, today, latestRate, 
     {draftNotice === "restored" && <p role="status" className="text-small text-muted-foreground">Recuperamos tu borrador de esta pestaña. Revisa los datos antes de guardar.</p>}
     {serverError && <Alert variant="destructive"><AlertDescription>{serverError}</AlertDescription></Alert>}
     {captured && <p className="text-small text-muted-foreground wrap-anywhere">Del correo: «{captured.phrase}»</p>}
+    {captured?.readByAi && <Alert><AlertDescription>Leído con IA: el formato de esta alerta no es el de una compra conocida. Revisa el valor, la fecha y la tarjeta antes de confirmar.</AlertDescription></Alert>}
     {captured?.unknownCard && <Alert><AlertDescription>{captured.last4 ? `La tarjeta •••• ${captured.last4} no está registrada.` : "No reconocimos la tarjeta."} Elige la tarjeta o agrégala en Ajustes.</AlertDescription></Alert>}
     {captured?.billingCurrency && <Alert><AlertDescription>Sugerido: este cobro puede facturarse en {captured.billingCurrency}. Si es así, cambia la moneda antes de guardar.</AlertDescription></Alert>}
     {edit && <p className="text-small text-muted-foreground">Se conserva la tasa original si mantienes la tarjeta y el tipo. Si los cambias, se usa la tasa vigente.</p>}

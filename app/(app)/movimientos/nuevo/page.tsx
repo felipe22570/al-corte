@@ -48,6 +48,7 @@ export default async function NewExpensePage({ searchParams }: { searchParams: P
     id: draft.id,
     phrase: draft.phrase,
     last4: draft.last4,
+    readByAi: draft.readByAi,
     billingCurrency: draft.suggestions?.billingCurrency && draft.suggestions.billingCurrency !== draft.currency ? draft.suggestions.billingCurrency : null,
     unknownCard: draft.status === "unknown_card" || !cards.some((card) => card.id === draft.cardId),
     ...draftFormStart({ cardId: draft.cardId, type: draft.type, amount: draft.amount, currency: draft.currency, merchantRaw: draft.merchantRaw, occurredOn: draft.occurredOn, suggestions: draft.suggestions },

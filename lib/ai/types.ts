@@ -12,7 +12,13 @@ export type AiTask<Input extends z.ZodType, Output extends z.ZodType> = {
   /** camelCase name; also selects the model variable `AI_MODEL_<NAME_IN_SNAKE_CASE>`. */
   name: string;
   promptVersion: string;
+  /**
+   * Includes the model's thinking: on Claude 5 models it is always on and counts toward this limit, so a short answer
+   * still needs room for it or it ends in `max_tokens` (invalid output).
+   */
   maxTokens: number;
+  /** `output_config.effort`; short extraction tasks use `low` to keep thinking, latency and cost small. */
+  effort?: "low" | "medium" | "high";
   input: Input;
   output: Output;
   /** Instructions for the model. External content never goes here. */

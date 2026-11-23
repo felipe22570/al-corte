@@ -22,6 +22,8 @@ export type InboxDraft = {
   id: string; status: OpenDraftStatus; phrase: string; cardId: string | null; last4: string | null; type: TransactionInput["type"] | null;
   amount: string | null; currency: Currency | null; merchantRaw: string | null; occurredOn: IsoDate | null; occurredTime: string | null;
   statementCutoff: IsoDate | null; suggestions: DraftSuggestions | null; createdAt: string;
+  /** Facts read by the AI fallback: rules never fill a draft to review, so these come from the AI (step 43). */
+  readByAi: boolean;
   candidates: DraftCandidateRow[];
   subscription: { name: string; change: AmountChange | null } | null;
 };
@@ -63,7 +65,7 @@ async function enrich(supabase: Client, userId: string, raws: RawDraft[]): Promi
     return {
       id: raw.id, status: raw.status, phrase: raw.phrase, cardId: raw.card_id, last4: raw.last4, type: raw.type, amount: raw.amount,
       currency: raw.currency, merchantRaw: raw.merchant_raw, occurredOn: raw.occurred_on, occurredTime: raw.occurred_time?.slice(0, 5) ?? null,
-      statementCutoff: raw.statement_cutoff, suggestions, createdAt: raw.created_at,
+      statementCutoff: raw.statement_cutoff, suggestions, createdAt: raw.created_at, readByAi: raw.status === "needs_review" && raw.amount !== null,
       candidates: sameMovementCandidates({ cardId: raw.card_id, amount: raw.amount, currency: raw.currency, date: raw.occurred_on }, candidates),
       subscription: related ? { name: related.name, change: subscriptionAmountChange({ amount: raw.amount, currency: raw.currency }, related) } : null,
     };

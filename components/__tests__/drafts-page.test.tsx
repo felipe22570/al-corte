@@ -20,7 +20,7 @@ vi.mock("next/navigation", () => ({ useRouter: () => ({ replace: vi.fn(), refres
 const base: InboxDraft = {
   id: "d1", status: "pending", phrase: "Compraste COP140.910,00 en DIRECTV, el 17/11/2026 a las 12:27", cardId: visa, last4: "1999", type: "purchase",
   amount: "140910.00", currency: "COP", merchantRaw: "DIRECTV", occurredOn: "2026-11-17", occurredTime: "12:27", statementCutoff: "2026-12-15",
-  suggestions: null, createdAt: "2026-11-17T17:30:00Z", candidates: [], subscription: null,
+  suggestions: null, createdAt: "2026-11-17T17:30:00Z", readByAi: false, candidates: [], subscription: null,
 };
 
 async function render(drafts: InboxDraft[]) {
@@ -72,5 +72,12 @@ describe("Por confirmar (F18)", () => {
     expect(html).toContain("Parece el cobro de tu suscripción Netflix.");
     expect(html).toContain("Ya tienes uno igual: DirecTV · 17 nov · $140.910");
     expect(html).toContain("Es el mismo");
+  });
+
+  it("marks facts read by the AI fallback for review (step 43)", async () => {
+    const html = await render([{ ...base, status: "needs_review", type: "cash_advance", readByAi: true }]);
+    expect(html).toContain("Revisar");
+    expect(html).toContain("Leído con IA. Revisa el valor, la fecha y la tarjeta antes de confirmar.");
+    expect(await render([base])).not.toContain("Leído con IA");
   });
 });

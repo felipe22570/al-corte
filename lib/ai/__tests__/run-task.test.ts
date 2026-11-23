@@ -37,6 +37,13 @@ describe("runTask", () => {
     });
   });
 
+  it("sends the task effort when it has one", async () => {
+    const { client, calls } = fakeClient(validAnswer);
+    const { store } = memoryUsage();
+    await runTask({ ...testTask, effort: "low" }, { phrase: "Pagaste" }, context(client, store));
+    expect(calls[0]!.output_config).toMatchObject({ effort: "low", format: { type: "json_schema" } });
+  });
+
   it("answers invalid_output when the JSON does not match the schema", async () => {
     const { client } = fakeClient(() => Promise.resolve(message(JSON.stringify({ merchant: "Tienda", amount: "12.345" }))));
     const { store, rows } = memoryUsage();

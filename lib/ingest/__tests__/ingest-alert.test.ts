@@ -24,9 +24,9 @@ function memoryStore(options: { enabled?: boolean; limitLeft?: number; cards?: R
     },
     cardsFor: async (userId, last4) => (calls.push(`cards:${userId}:${last4}`), options.cards?.[last4] ?? []),
     insertDraft: async (draft) => {
-      if (drafts.some((row) => row.user_id === draft.user_id && row.external_id === draft.external_id)) return false;
+      if (drafts.some((row) => row.user_id === draft.user_id && row.external_id === draft.external_id)) return null;
       drafts.push(draft);
-      return true;
+      return `draft-${drafts.length}`;
     },
   };
   return { store, drafts, calls };
@@ -41,7 +41,7 @@ const send = (request: { body: string; timestamp: string | null; signature: stri
 describe("ingestAlert (F18, R10)", () => {
   it("creates a pending draft with the alert facts, the owner and the tentative statement", async () => {
     const { store, drafts, calls } = memoryStore({ cards: { "1999": [visa] } });
-    expect(await send(signed({ message_id: "msg-1", phrase: ALERTS.directv }), store)).toEqual({ status: 200, body: { ok: true, result: "created" } });
+    expect(await send(signed({ message_id: "msg-1", phrase: ALERTS.directv }), store)).toEqual({ status: 200, body: { ok: true, result: "created" }, draftId: "draft-1" });
     expect(drafts).toEqual([{
       user_id: owner, source: "email_alert", external_id: "msg-1", phrase: ALERTS.directv, status: "pending", card_id: visa.id, last4: "1999", type: "purchase",
       amount: "140910.00", currency: "COP", merchant_raw: "DIRECTV", occurred_on: "2026-11-17", occurred_time: "12:27", statement_cutoff: "2026-12-15",

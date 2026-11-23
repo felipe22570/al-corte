@@ -99,7 +99,7 @@ export async function runTask<Input extends z.ZodType, Output extends z.ZodType>
         max_tokens: task.maxTokens,
         system: `${task.system}\n\n${DATA_RULES}`,
         messages: [{ role: "user", content: wrapData(task.data(parsedInput.data)) }],
-        output_config: { format },
+        output_config: task.effort ? { format, effort: task.effort } : { format },
       });
     } catch (error) {
       const reason = error instanceof APIConnectionTimeoutError ? "timeout" : "api_error";
