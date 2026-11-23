@@ -37,6 +37,46 @@ export type Database = {
                   Relationships: [
                     
                   ]
+                },"capture_settings": {
+                  Row: {
+                    "created_at": string,"enabled": boolean,"updated_at": string,"user_id": string
+                  }
+                  ComputedFields: never
+                  Insert: {
+                    "created_at"?: string,"enabled"?: boolean,"updated_at"?: string,"user_id"?: string
+                  }
+                  Update: {
+                    "created_at"?: string,"enabled"?: boolean,"updated_at"?: string,"user_id"?: string
+                  }
+                  Relationships: [
+                    
+                  ]
+                },"card_aliases": {
+                  Row: {
+                    "card_id": string,"created_at": string,"id": string,"last4": string,"user_id": string
+                  }
+                  ComputedFields: never
+                  Insert: {
+                    "card_id": string,"created_at"?: string,"id"?: string,"last4": string,"user_id"?: string
+                  }
+                  Update: {
+                    "card_id"?: string,"created_at"?: string,"id"?: string,"last4"?: string,"user_id"?: string
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "card_aliases_card_id_fkey"
+      columns: ["card_id"]
+isOneToOne: false
+      referencedRelation: "card_balances"
+      referencedColumns: ["card_id"]
+    },{
+      foreignKeyName: "card_aliases_card_id_fkey"
+      columns: ["card_id"]
+isOneToOne: false
+      referencedRelation: "cards"
+      referencedColumns: ["id"]
+    }
+                  ]
                 },"cards": {
                   Row: {
                     "advance_fee": number,"advance_rate_ea": number,"amortization_method": Database["public"]['Enums']["amortization_method"],"archived_at": string | null,"bank": string,"color": string,"created_at": string,"credit_limit": number,"cutoff_day": number,"handling_fee": number,"id": string,"interest_mode": Database["public"]['Enums']["interest_mode"],"last4": string,"name": string,"network": string,"payment_allocation_rule": Database["public"]['Enums']["payment_allocation_rule"],"payment_day": number,"purchase_rate_ea": number,"updated_at": string,"usd_default_installments": number,"user_id": string
@@ -75,6 +115,20 @@ export type Database = {
                   }
                   Update: {
                     "date"?: string,"usd_cop"?: number,"valid_from"?: string
+                  }
+                  Relationships: [
+                    
+                  ]
+                },"ingest_rate_limits": {
+                  Row: {
+                    "hits": number,"user_id": string,"window_start": string
+                  }
+                  ComputedFields: never
+                  Insert: {
+                    "hits"?: number,"user_id": string,"window_start": string
+                  }
+                  Update: {
+                    "hits"?: number,"user_id"?: string,"window_start"?: string
                   }
                   Relationships: [
                     
@@ -533,6 +587,9 @@ isOneToOne: false
                            },
 "import_statement_file":
 { Args: { "p_dry_run": boolean,"p_payload": Json }; Returns: Json
+                           },
+"ingest_rate_hit":
+{ Args: { "p_limit": number,"p_user_id": string }; Returns: boolean
                            },
 "link_transaction_draft":
 { Args: { "p_draft_id": string,"p_transaction_id": string }; Returns: undefined

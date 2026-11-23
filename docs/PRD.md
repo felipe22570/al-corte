@@ -215,7 +215,7 @@ Se implementa después de las cuatro prioridades de v2 (H11) y reutiliza su revi
 
 **F18. Captura de movimientos desde el correo.** Como dueño, quiero que las alertas de compra de Bancolombia que llegan a mi correo aparezcan en la app como movimientos por confirmar, para registrar casi sin escribir.
 
-- Un script de Google Apps Script en la cuenta del dueño revisa las alertas cada 5 minutos y envía a la app solo la frase del movimiento, firmada.
+- Un script de Google Apps Script en la cuenta del dueño revisa las alertas cada hora y envía a la app solo la frase del movimiento, firmada.
 - Solo se procesan alertas de tarjetas de crédito ("T.Cred *NNNN"). Los movimientos de cuenta de ahorros o tarjeta débito se descartan en el propio script y nunca salen de Google.
 - Cada alerta crea un borrador en la bandeja "Por confirmar" con la tarjeta según sus últimos 4 dígitos, y las sugerencias de la IA marcadas como tales. Al confirmar se completan cuotas, categoría y lo que falte.
 - Un borrador no afecta extractos, meses, totales ni cupo hasta confirmarse. Si ya existe un movimiento manual igual (tarjeta, valor y fecha), se propone unirlos.
@@ -649,7 +649,7 @@ Este registro consolida las decisiones del dueño de `plans/README.md`; no susti
 | D40 · Cambio de cuotas | Nuevo número de cuotas restantes desde la próxima sin facturar; conserva facturadas y previas. Sin ampliación de plazo global en H10. Precisado por D50. |
 | D41 · Comisión de avance | La de la tarjeta es el valor por defecto; cada avance guarda la suya. |
 | D42 · Capa de IA | Tareas con nombre en `lib/ai/`, SDK de Anthropic, salidas estructuradas revalidadas con Zod, sin herramientas, solo servidor, tope mensual, registro sin contenido y evals. |
-| D43 · Fuente de captura | Google Apps Script en la cuenta del dueño, cada 5 minutos, con firma HMAC hacia una ruta de Next.js. La integración directa con la API de Gmail se descarta por exponer todo el buzón. |
+| D43 · Fuente de captura | Google Apps Script en la cuenta del dueño, cada hora (cambiado el 22 de noviembre de 2026; antes cada 5 minutos), con firma HMAC hacia una ruta de Next.js. La integración directa con la API de Gmail se descarta por exponer todo el buzón. |
 | D44 · Filtro y tarjeta | Remitente de alertas de Bancolombia con DKIM válido y frase con `T.Cred *NNNN`; lo demás se descarta en el script. Tarjeta por `last4` o alias; sin coincidencia, "Tarjeta no registrada". |
 | D45 · Reglas e IA | Las reglas definen monto, moneda, fecha, hora, comercio original y tarjeta; la IA solo sugiere interpretación. Respaldo con IA para formatos desconocidos con verificación literal de números. |
 | D46 · Borradores | Tabla aparte de movimientos: no participan en ningún cálculo hasta confirmarse. Dedupe por mensaje y propuesta de unión con movimientos manuales iguales. |

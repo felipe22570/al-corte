@@ -69,7 +69,7 @@ Prompt sugerido para el agente al iniciar un paso:
 | 39 | [Pago del saldo en dólares con pesos y cupo en USD](39-dolares-con-pesos.md) | H11 | 🟡 | |
 | 40 | [Capa de IA](40-capa-ia.md) | H12 | ✅ | 7cc12f5 |
 | 41 | [Borradores por confirmar](41-borradores.md) | H12 | ✅ | 83e1632 |
-| 42 | [Endpoint de ingesta y reglas de alertas](42-ingesta-reglas.md) | H12 | ⬜ | |
+| 42 | [Endpoint de ingesta y reglas de alertas](42-ingesta-reglas.md) | H12 | ✅ | |
 | 43 | [Interpretación de alertas con IA](43-interpretacion-ia.md) | H12 | ⬜ | |
 | 44 | [Script de captura en Apps Script](44-apps-script.md) | H12 | ⬜ | |
 | 45 | [Validación de H12](45-validacion-captura.md) | H12 | ⬜ | |
@@ -246,7 +246,7 @@ Aprobadas por el dueño el 2026-11-13. El detalle de cada regla está en R7 y en
 | # | Tema | Decisión | Paso afectado |
 | --- | --- | --- | --- |
 | D42 | **Capa de IA.** | Tareas con nombre en `lib/ai/`, SDK de Anthropic, salidas estructuradas revalidadas, sin herramientas, solo servidor, tope mensual, registro sin contenido y evals. | 40, 43 |
-| D43 | **Fuente de captura.** | Apps Script en la cuenta del dueño cada 5 minutos, con firma HMAC hacia una ruta de Next.js. Sin API de Gmail en el servidor. | 42, 44 |
+| D43 | **Fuente de captura.** | Apps Script en la cuenta del dueño cada hora (antes cada 5 minutos, cambiado el 22 de noviembre), con firma HMAC hacia una ruta de Next.js. Sin API de Gmail en el servidor. | 42, 44 |
 | D44 | **Filtro y tarjeta.** | Remitente de alertas con DKIM válido y `T.Cred *NNNN`; lo demás se descarta en el script. Tarjeta por `last4` o alias; sin coincidencia, "Tarjeta no registrada". | 42, 44 |
 | D45 | **Reglas e IA.** | Reglas para los hechos; IA para interpretar y como respaldo con verificación literal de números. | 42, 43 |
 | D46 | **Borradores.** | Tabla propia fuera de todo cálculo; dedupe por mensaje; propuesta de unión con movimientos manuales iguales. | 41, 42 |
@@ -292,3 +292,4 @@ Anota aquí cada decisión tomada durante la implementación (fecha, paso, decis
 | 2026-11-22 | 38–40 | H12 empieza con H11 abierto: los pasos 38 y 39 quedan en 🟡 solo por verificaciones con datos reales que aún no existen (extracto de diciembre, corte del 15, y el próximo pago en dólares). El código está terminado, probado y desplegado, y las migraciones están en producción. Se exceptúa la dependencia "H10 y H11 cerrados" del paso 40. Si el extracto de diciembre obliga a cambiar el componente de revisión o el formato del archivo, el paso 41 se ajusta. H11 se cierra cuando se completen esas verificaciones. | Decisión del dueño. |
 | 2026-11-22 | 40 | Modelo por defecto de todas las tareas: `claude-opus-5-5`, configurable por tarea con variables de entorno. Tope mensual por defecto: US$5, contado por mes calendario de Bogotá. Las llamadas rechazadas por tope también se registran en `ai_usage` (cero tokens, resultado `budget_exceeded`). Las evals incluyen una tarea de prueba mínima, sin datos del dueño, para verificar de punta a punta la llave y las salidas estructuradas; las tareas reales llegan en el paso 43. Un modelo sin precio conocido se rechaza (`unknown_model`) para no gastar sin contar. | Respuesta del dueño al plan del paso. |
 | 2026-11-22 | 41 | Aviso de borradores: neutro, arriba de la lista de Meses y debajo de la alerta de vencidos, solo cuando hay borradores abiertos, con enlace a `/por-confirmar`; sin cambios en la navegación (D25). Al confirmar o descartar se borran frase, sugerencias y campos extraídos; quedan identificador, estado, movimiento enlazado y fechas (D47 aplicado también a lo extraído). Un borrador descartado no se recupera y el mismo correo no lo vuelve a crear. La sesión no inserta borradores: solo la ruta de ingesta del paso 42 con la llave de servicio. | Respuesta del dueño al plan del paso. |
+| 2026-11-22 | 42, 44 | El filtro de origen es solo que la frase mencione `T.Cred`; no se piden ni se prueban textos de otras alertas (ahorros, débito, pagos). Las reglas leen el formato de compra de la plantilla del plan; si el texto real no coincide, el borrador queda en "Revisar" para el respaldo con IA del paso 43, nunca se pierde. La captura está apagada por defecto y se enciende en Ajustes. El activador del script corre cada hora en lugar de cada 5 minutos (D43). Límite de 30 solicitudes por minuto; el script reintenta lo rechazado por límite en la siguiente hora. | Respuesta del dueño al plan del paso. |

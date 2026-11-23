@@ -30,10 +30,14 @@ describe("data export", () => {
     expect(response.headers.get("cache-control")).toBe("private, no-store");
     const body = await response.json();
     expect(body.tables.cards[0].credit_limit).toBe("1234567.89");
-    expect(from).toHaveBeenCalledTimes(11);
+    expect(from).toHaveBeenCalledTimes(13);
     expect(from).toHaveBeenCalledWith("principal_prepayments");
     expect(from).toHaveBeenCalledWith("ai_usage");
-    expect(query.eq).toHaveBeenCalledTimes(10);
+    expect(from).toHaveBeenCalledWith("card_aliases");
+    expect(from).not.toHaveBeenCalledWith("transaction_drafts");
+    expect(query.eq).toHaveBeenCalledTimes(12);
+    // capture_settings has one row per owner and no id column.
+    expect(query.order).toHaveBeenCalledWith("user_id");
     expect(query.eq).toHaveBeenCalledWith("user_id", "owner");
   });
   it("sends CSV with a BOM and fails closed on query error", async () => {

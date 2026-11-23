@@ -4,6 +4,7 @@ import { redirect } from "next/navigation";
 import { ChevronDown, CreditCard, Tags } from "lucide-react";
 import { ArchiveButton } from "@/components/archive-button";
 import { CardColorChip } from "@/components/card-color-chip";
+import { CaptureSettings } from "@/components/capture-settings";
 import { CardForm } from "@/components/card-form";
 import { CategoryForm } from "@/components/category-form";
 import { EmptyState } from "@/components/empty-state";
@@ -35,11 +36,13 @@ export default async function SettingsPage() {
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) redirect("/login");
 
-  const [cardResult, categoryResult] = await Promise.all([
+  const [cardResult, categoryResult, captureResult, aliasResult] = await Promise.all([
     supabase.from("cards").select("id,name,bank,network,last4,color,archived_at,credit_limit::text,advance_fee::text,handling_fee::text,cutoff_day,payment_day,purchase_rate_ea::text,advance_rate_ea::text,amortization_method,interest_mode,usd_default_installments,payment_allocation_rule").eq("user_id", user.id).order("name"),
     supabase.from("categories").select("id,name,icon,archived_at").eq("user_id", user.id).order("name"),
+    supabase.from("capture_settings").select("enabled").eq("user_id", user.id).maybeSingle(),
+    supabase.from("card_aliases").select("id,card_id,last4").eq("user_id", user.id).order("last4"),
   ]);
-  if (cardResult.error || categoryResult.error) throw new Error("No fue posible cargar los ajustes.");
+  if (cardResult.error || categoryResult.error || captureResult.error || aliasResult.error) throw new Error("No fue posible cargar los ajustes.");
   const rawCards = (cardResult.data ?? []) as RawCard[];
   const installmentCounts = await Promise.all(rawCards.map((card) => supabase.from("transactions").select("id", { count: "exact", head: true }).eq("user_id", user.id).eq("card_id", card.id).gt("installments_count", 1)));
   if (installmentCounts.some((result) => result.error)) throw new Error("No fue posible cargar los ajustes.");
@@ -56,6 +59,8 @@ export default async function SettingsPage() {
   const archivedCards = cards.filter((card) => card.archivedAt);
   const activeCategories = categories.filter((category) => !category.archivedAt);
   const usedColors = activeCards.map((card) => card.color);
+  const captureEnabled = (captureResult.data as { enabled: boolean } | null)?.enabled === true;
+  const aliases = ((aliasResult.data ?? []) as Array<{ id: string; card_id: string; last4: string }>).map((alias) => ({ id: alias.id, cardId: alias.card_id, last4: alias.last4 }));
 
   return <>
     <PageHeader title="Ajustes" subtitle="Administra tus tarjetas y categorías." />
@@ -83,6 +88,10 @@ export default async function SettingsPage() {
     <section className="flex flex-col gap-4" aria-labelledby="categories-title">
       <div className="flex flex-wrap items-center justify-between gap-4"><h2 id="categories-title" className="text-heading">Categorías</h2><CategoryForm /></div>
       {activeCategories.length === 0 ? <EmptyState icon={Tags} text="Aún no tienes categorías. Agrega la primera." /> : <ul className="divide-y divide-border border-y border-border">{activeCategories.map((category) => { const Icon = Object.hasOwn(categoryIcons, category.icon) ? categoryIcons[category.icon as CategoryIcon] : categoryIcons.ellipsis; return <li key={category.id} className="flex flex-wrap items-center justify-between gap-x-6 gap-y-2 py-2"><span className="flex min-w-0 flex-1 basis-48 items-center gap-3 text-body"><Icon className="size-5 shrink-0 text-muted-foreground" strokeWidth={1.75} aria-hidden="true" /><span className="min-w-0 wrap-anywhere">{category.name}</span></span><div className="ml-auto flex gap-2"><CategoryForm category={category} /><ArchiveButton id={category.id} kind="category" name={category.name} /></div></li>; })}</ul>}
+    </section>
+    <section aria-labelledby="capture-title" className="flex flex-col gap-4">
+      <div className="flex flex-wrap items-center justify-between gap-4"><h2 id="capture-title" className="text-heading">Captura de alertas</h2><Link href="/por-confirmar" className="text-body underline">Ver por confirmar</Link></div>
+      <CaptureSettings enabled={captureEnabled} cards={activeCards.map((card) => ({ id: card.id, name: card.name, last4: card.last4, color: card.color }))} aliases={aliases} />
     </section>
     <section aria-labelledby="appearance-title" className="flex flex-col gap-4">
       <h2 id="appearance-title" className="text-heading">Apariencia</h2>

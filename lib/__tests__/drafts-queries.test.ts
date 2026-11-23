@@ -88,9 +88,9 @@ describe("drafts stay out of every financial calculation (D46)", () => {
     return /\.tsx?$/.test(entry.name) ? [path] : [];
   });
 
-  it("only the drafts query reads transaction_drafts", () => {
+  it("only the drafts query and the ingest store touch transaction_drafts", () => {
     const readers = [...files("lib"), ...files("app"), ...files("components")]
-      .filter((path) => path !== "lib/database.types.ts" && readFileSync(join(root, path), "utf8").includes("transaction_drafts"));
-    expect(readers).toEqual(["lib/queries/drafts.ts"]);
+      .filter((path) => path !== "lib/database.types.ts" && readFileSync(join(root, path), "utf8").includes("transaction_drafts")).sort();
+    expect(readers).toEqual(["lib/ingest/supabase-store.ts", "lib/queries/drafts.ts"]);
   });
 });

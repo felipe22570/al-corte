@@ -15,7 +15,7 @@ El script que corre en la cuenta de Google del dueño y envía las alertas a la 
 ## Contenido
 
 - Proyecto en `integrations/apps-script/`, versionado con `clasp`, sin secretos en el repo.
-- Activador cada 5 minutos que busca `from:alertasynotificaciones@notificacionesbancolombia.com newer_than:2d`.
+- Activador cada hora (D43, cambiado el 22 de noviembre de 2026) que busca `from:alertasynotificaciones@notificacionesbancolombia.com newer_than:2d`.
 - Permisos: `GmailApp` pide acceso completo al buzón (`https://mail.google.com/`). Para pedir el permiso mínimo, usar el servicio avanzado de Gmail con `gmail.readonly` declarado en `appsscript.json` y llevar los identificadores ya procesados o rechazados en `PropertiesService` (con limpieza de los de más de 2 días), en lugar de etiquetas. Confirmar los alcances en la documentación vigente de Google antes de implementar; si se usan etiquetas, el alcance es `gmail.modify` y la guía lo explica.
 - Por cada mensaje no procesado:
     - verifica DKIM en el encabezado `Authentication-Results` agregado por Google (`mx.google.com`), no en otros que traiga el correo: debe pasar para `notificacionesbancolombia.com`; si no, lo anota como rechazado y no envía nada;
@@ -33,7 +33,7 @@ El script que corre en la cuenta de Google del dueño y envía las alertas a la 
 
 ## Verificación
 
-- [ ] Con un correo real de compra aparece un borrador en menos de 10 minutos.
+- [ ] Con un correo real de compra aparece un borrador en la siguiente ejecución del activador (menos de una hora y 10 minutos).
 - [ ] Un correo de la cuenta de ahorros no genera ninguna solicitud (revisar el registro de ejecuciones).
 - [ ] Revocar el acceso desde la cuenta de Google detiene la captura.
 

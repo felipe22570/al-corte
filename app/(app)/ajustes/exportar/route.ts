@@ -19,7 +19,7 @@ export async function GET(request: Request) {
     const results = await Promise.all(selected.map(async (name) => {
       const rows = await fetchAllPages((from, to) => {
         const query = supabase.from(name).select(exportSelect(name));
-        return name === "fx_rates" ? query.order("date").range(from, to) : query.eq("user_id", user.id).order("id").range(from, to);
+        return name === "fx_rates" ? query.order("date").range(from, to) : query.eq("user_id", user.id).order(name === "capture_settings" ? "user_id" : "id").range(from, to);
       });
       return [name, rows] as const;
     }));
