@@ -4,7 +4,7 @@
 - **Estado:** ✅ Terminado
 - **Inicio:** 2026-11-22
 - **Fin:** 2026-11-22
-- **Commit:**
+- **Commit:** 45b0f0b
 - **Depende de:** 41
 - **Decisiones aplicables (decididas, ver README):** D43, D44, D45, D46, D47, D51
 
