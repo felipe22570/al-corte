@@ -11,6 +11,7 @@ export function revalidateFinancialViews() {
   revalidatePath("/movimientos/nuevo");
   revalidatePath("/suscripciones");
   revalidatePath("/ajustes");
+  revalidatePath("/por-confirmar");
   revalidatePath("/meses/[mes]", "page");
   revalidatePath("/movimientos/[id]", "page");
   revalidatePath("/movimientos/[id]/editar", "page");

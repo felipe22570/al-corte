@@ -2,7 +2,7 @@ import { describe, expect, it, vi } from "vitest";
 import { renderToStaticMarkup } from "react-dom/server";
 import { AmortizationTable } from "@/components/amortization-table";
 import { TransactionForm } from "@/components/transaction-form";
-import { decodeTransactionDraft, encodeTransactionDraft } from "@/lib/transaction-draft";
+import { decodeTransactionFormDraft, encodeTransactionFormDraft } from "@/lib/transaction-form-draft";
 import type { TransactionCardOption } from "@/lib/transaction-options";
 import type { TransactionInput } from "@/lib/validation/transaction";
 
@@ -64,7 +64,7 @@ describe("compras en curso en el formulario (F10)", () => {
   });
 
   it("conserva los campos de la compra en curso en el borrador", () => {
-    expect(decodeTransactionDraft(encodeTransactionDraft(advance, "new", 1000), "new", 2000)).toEqual(advance);
+    expect(decodeTransactionFormDraft(encodeTransactionFormDraft(advance, "new", 1000), "new", 2000)).toEqual(advance);
   });
 });
 

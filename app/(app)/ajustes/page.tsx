@@ -92,7 +92,7 @@ export default async function SettingsPage() {
       <h2 id="data-title" className="text-heading">Tus datos</h2>
       <p className="text-small text-muted-foreground">Agrega lo que no registraste a mano desde el archivo del extracto del mes. Revisas todo antes de guardar.</p>
       <div><Link href="/ajustes/importar" className={buttonVariants({ variant: "outline" })}>Importar extracto</Link></div>
-      <p className="text-small text-muted-foreground">Descarga un respaldo JSON completo o un CSV por tabla. Los CSV conservan el texto original: revisa las fórmulas antes de abrirlos en una hoja de cálculo.</p>
+      <p className="text-small text-muted-foreground">Descarga un respaldo JSON completo o un CSV por tabla. Los CSV conservan el texto original: revisa las fórmulas antes de abrirlos en una hoja de cálculo. Los movimientos por confirmar no se exportan porque pueden contener el texto de tus correos.</p>
       <div><a href="/ajustes/exportar?formato=json" className={buttonVariants({ variant: "outline" })}>Exportar JSON</a></div>
       <Disclosure>
         <DisclosureSummary><span>Exportar CSV</span><ChevronDown aria-hidden="true" className="size-5" strokeWidth={1.75} /></DisclosureSummary>

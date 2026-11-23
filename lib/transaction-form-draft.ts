@@ -27,15 +27,15 @@ const draftSchema = z.strictObject({
   }),
 });
 
-export function transactionDraftKey(userId: string, transactionId?: string) {
+export function transactionFormDraftKey(userId: string, transactionId?: string) {
   return storageKey(`transaction-draft:${userId}:${transactionId ?? "new"}`);
 }
 
-export function encodeTransactionDraft(values: TransactionInput, baseline: string, now = Date.now()) {
+export function encodeTransactionFormDraft(values: TransactionInput, baseline: string, now = Date.now()) {
   return JSON.stringify(draftSchema.parse({ version: 1, baseline, savedAt: now, values }));
 }
 
-export function decodeTransactionDraft(raw: string | null, baseline: string, now = Date.now()): TransactionInput | null {
+export function decodeTransactionFormDraft(raw: string | null, baseline: string, now = Date.now()): TransactionInput | null {
   if (!raw || raw.length > 20000) return null;
   try {
     const draft = draftSchema.parse(JSON.parse(raw));

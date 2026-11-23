@@ -3,7 +3,7 @@
 import { ChevronDown } from "lucide-react";
 import Link from "next/link";
 import type { ReactNode } from "react";
-import { Money } from "@/components/money";
+import { ReviewLine } from "@/components/review-line";
 import { Disclosure, DisclosureContent, DisclosureSummary } from "@/components/ui/disclosure";
 import type { ImportDecision, ReviewRow, ReviewStatus } from "@/lib/import/monthly-review";
 import { formatDateShort, formatMoney } from "@/lib/format";
@@ -55,13 +55,7 @@ function Control({ row, decision, onDecision, disabled }: { row: ReviewRow; deci
 
 function Line({ row, card, today, children }: { row: ReviewRow; card: CardLabel | undefined; today: string; children: ReactNode }) {
   const details = [formatDateShort(row.date, today), card ? `•••• ${card.last4}` : null, row.installment ? `Cuota ${row.installment.current} de ${row.installment.count}` : null, row.fee ? `comisión ${formatMoney(row.fee, "COP")}` : null].filter(Boolean).join(" · ");
-  return <li className="flex min-w-0 flex-col gap-1 border-t border-border pt-3 first:border-t-0 first:pt-0">
-    <div className="grid min-w-0 grid-cols-[minmax(0,1fr)_auto] items-baseline gap-3">
-      <div className="min-w-0"><p className="text-body wrap-anywhere">{row.merchant || "Sin comercio"}</p><p className="text-small text-muted-foreground">{details}</p></div>
-      <span className="text-right"><Money value={row.amount} currency={row.currency} /></span>
-    </div>
-    {children}
-  </li>;
+  return <ReviewLine title={row.merchant || "Sin comercio"} details={details} amount={row.amount} currency={row.currency}>{children}</ReviewLine>;
 }
 
 /**

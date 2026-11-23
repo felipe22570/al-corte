@@ -13,6 +13,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Disclosure, DisclosureContent, DisclosureSummary } from "@/components/ui/disclosure";
+import { confirmDraft } from "@/lib/actions/drafts";
 import { createTransaction, updateTransaction } from "@/lib/actions/transactions";
 import { storageKey } from "@/lib/brand";
 import { cardColorClasses } from "@/lib/card-colors";
@@ -25,13 +26,16 @@ import { formatDateShort, formatPercent, formatRate } from "@/lib/format";
 import { applySuggestion, currencyEffects, revertSuggestion, suggestionNotice, type SuggestionField, type SuggestionPatch } from "@/lib/merchant-suggestion-form";
 import { formatAmountInput } from "@/lib/money-input";
 import type { TransactionCardOption, TransactionCategoryOption } from "@/lib/transaction-options";
-import { decodeTransactionDraft, encodeTransactionDraft, transactionDraftKey } from "@/lib/transaction-draft";
+import { decodeTransactionFormDraft, encodeTransactionFormDraft, transactionFormDraftKey } from "@/lib/transaction-form-draft";
 import { transactionSchema, type TransactionInput } from "@/lib/validation/transaction";
 
 const suggestionFields: SuggestionField[] = ["categoryId", "currency", "fxRate", "installmentsCount", "isInternational", "interestFree"];
 const noHistory: MerchantHistoryRow[] = [];
 
-export function TransactionForm({ userId, cards, categories, today, latestRate, existingCutoffs = {}, merchantHistory = noHistory, edit }: { userId: string; cards: TransactionCardOption[]; categories: TransactionCategoryOption[]; today: string; latestRate: string | null; existingCutoffs?: Record<string, string[]>; merchantHistory?: MerchantHistoryRow[]; edit?: { id: string; initial: TransactionInput; original: { cardId: string; type: TransactionPlanInput["type"]; rateEaApplied: string | null }; hasPaidInstallments: boolean } }) {
+/** A captured draft being confirmed (F18): its prefilled values and the fields merchant history must not change. */
+export type CapturedDraft = { id: string; phrase: string; last4: string | null; billingCurrency: "COP" | "USD" | null; unknownCard: boolean; values: TransactionInput; touched: SuggestionField[] };
+
+export function TransactionForm({ userId, cards, categories, today, latestRate, existingCutoffs = {}, merchantHistory = noHistory, edit, captured }: { userId: string; cards: TransactionCardOption[]; categories: TransactionCategoryOption[]; today: string; latestRate: string | null; existingCutoffs?: Record<string, string[]>; merchantHistory?: MerchantHistoryRow[]; edit?: { id: string; initial: TransactionInput; original: { cardId: string; type: TransactionPlanInput["type"]; rateEaApplied: string | null }; hasPaidInstallments: boolean }; captured?: CapturedDraft }) {
   const router = useRouter();
   const [serverError, setServerError] = useState("");
   const [draftNotice, setDraftNotice] = useState<"" | "saved" | "restored" | "unavailable">("");
@@ -40,14 +44,14 @@ export function TransactionForm({ userId, cards, categories, today, latestRate, 
   const options = useRef<HTMLDetailsElement>(null);
   // D53: fields the owner changed, recorded from their own handlers, not React Hook Form's dirty state,
   // which also flags values the form sets itself (USD default installments) and restored drafts.
-  const touched = useRef(new Set<SuggestionField>());
+  const touched = useRef(new Set<SuggestionField>(captured?.touched));
   const applied = useRef<{ id: string; cardId: string; name: string; previous: SuggestionPatch } | null>(null);
   const dismissed = useRef(new Set<string>());
   const [suggestionText, setSuggestionText] = useState("");
-  const defaults = useMemo<TransactionInput>(() => edit?.initial ?? { cardId: cards[0]?.id ?? "", type: "purchase", date: today, amount: "", currency: "COP", fxRate: "", installmentsCount: "1", interestFree: false, isInternational: false, advanceFee: "", categoryId: "", merchant: "", note: "", inProgress: false, currentInstallment: "", balanceAfter: "", trackedFromCutoff: "" }, [edit, cards, today]);
+  const defaults = useMemo<TransactionInput>(() => captured?.values ?? edit?.initial ?? { cardId: cards[0]?.id ?? "", type: "purchase", date: today, amount: "", currency: "COP", fxRate: "", installmentsCount: "1", interestFree: false, isInternational: false, advanceFee: "", categoryId: "", merchant: "", note: "", inProgress: false, currentInstallment: "", balanceAfter: "", trackedFromCutoff: "" }, [captured, edit, cards, today]);
   const pristine = useRef(JSON.stringify(defaults));
-  const baseline = edit ? JSON.stringify({ initial: edit.initial, original: edit.original }) : "new";
-  const draftKey = transactionDraftKey(userId, edit?.id);
+  const baseline = captured ? JSON.stringify({ captured: captured.id, values: captured.values }) : edit ? JSON.stringify({ initial: edit.initial, original: edit.original }) : "new";
+  const draftKey = transactionFormDraftKey(userId, captured ? `captured-${captured.id}` : edit?.id);
   const form = useForm<TransactionInput>({
     resolver: zodResolver(transactionSchema, undefined, { raw: true }),
     defaultValues: defaults,
@@ -62,7 +66,7 @@ export function TransactionForm({ userId, cards, categories, today, latestRate, 
       let initial = defaults;
       let recovered = false;
       try {
-        const restored = decodeTransactionDraft(sessionStorage.getItem(draftKey), baseline);
+        const restored = decodeTransactionFormDraft(sessionStorage.getItem(draftKey), baseline);
         if (restored) {
           recovered = true;
           // Everything in a restored draft counts as the owner's choice (D53).
@@ -73,7 +77,17 @@ export function TransactionForm({ userId, cards, categories, today, latestRate, 
           sessionStorage.removeItem(draftKey);
         }
       } catch { setDraftNotice("unavailable"); }
-      if (!edit && initial === defaults) {
+      if (captured && !recovered) {
+        // Merchant history (D53) completes what the alert and AI left free, as in "Nuevo gasto".
+        const found = suggestFromHistory({ merchant: initial.merchant ?? "", cardId: initial.cardId, type: initial.type }, merchantHistory, cards.map((card) => card.id));
+        const fromHistory = found ? applySuggestion(initial, found, touched.current, { latestRate, categoryIds: categories.map((category) => category.id) }) : null;
+        if (found && fromHistory && Object.keys(fromHistory.patch).length) {
+          initial = { ...initial, ...fromHistory.patch };
+          applied.current = { id: found.id, cardId: initial.cardId, name: normalizeMerchant(initial.merchant ?? ""), previous: fromHistory.previous };
+          setSuggestionText(suggestionNotice(found, today, found.cardId === initial.cardId ? undefined : cards.find((card) => card.id === found.cardId)?.name));
+        }
+      }
+      if (!edit && !captured && initial === defaults) {
         try {
           const lastCard = localStorage.getItem(storageKey("last-card-id"));
           if (lastCard && cards.some((card) => card.id === lastCard)) initial = { ...defaults, cardId: lastCard };
@@ -87,7 +101,7 @@ export function TransactionForm({ userId, cards, categories, today, latestRate, 
     }
     void initialize();
     return () => { cancelled = true; };
-  }, [defaults, reset, draftKey, baseline, cards, categories, edit]);
+  }, [defaults, reset, draftKey, baseline, cards, categories, edit, captured, merchantHistory, latestRate, today]);
   const values = useWatch({ control: form.control });
   const suggestionsOn = !edit && merchantHistory.length > 0;
   const merchantNames = useMemo(() => suggestionsOn ? recentMerchantNames(merchantHistory) : [], [suggestionsOn, merchantHistory]);
@@ -134,7 +148,7 @@ export function TransactionForm({ userId, cards, categories, today, latestRate, 
           setDraftNotice("");
           return;
         }
-        sessionStorage.setItem(draftKey, encodeTransactionDraft(current, baseline));
+        sessionStorage.setItem(draftKey, encodeTransactionFormDraft(current, baseline));
         setDraftNotice((notice) => notice === "restored" ? "restored" : "saved");
       } catch { setDraftNotice("unavailable"); }
     } });
@@ -159,14 +173,14 @@ export function TransactionForm({ userId, cards, categories, today, latestRate, 
     return () => window.removeEventListener("beforeunload", warn);
   }, [draftNotice, isDirty]);
 
-  function discardDraft() {
+  function discardFormDraft() {
     try {
       sessionStorage.removeItem(draftKey);
       skipDraft.current = true;
       pristine.current = JSON.stringify(defaults);
       form.reset(defaults);
       skipDraft.current = false;
-      touched.current = new Set();
+      touched.current = new Set(captured?.touched);
       applied.current = null;
       dismissed.current = new Set();
       setSuggestionText("");
@@ -205,13 +219,13 @@ export function TransactionForm({ userId, cards, categories, today, latestRate, 
   }
   function cancel() {
     if (draftNotice === "unavailable" && isDirty && !window.confirm("No pudimos guardar el borrador. ¿Quieres salir y perder los cambios?")) return;
-    router.push(edit ? `/movimientos/${edit.id}` : "/movimientos");
+    router.push(captured ? "/por-confirmar" : edit ? `/movimientos/${edit.id}` : "/movimientos");
   }
 
   const submit = (event: FormEvent<HTMLFormElement>) => form.handleSubmit(async (input) => {
     setServerError("");
     let result;
-    try { result = edit ? await updateTransaction(edit.id, input) : await createTransaction(input); }
+    try { result = captured ? await confirmDraft(captured.id, input) : edit ? await updateTransaction(edit.id, input) : await createTransaction(input); }
     catch { setServerError("No pudimos guardar el movimiento. Intenta de nuevo."); return; }
     if (!result.ok) {
       setServerError(result.error);
@@ -223,7 +237,7 @@ export function TransactionForm({ userId, cards, categories, today, latestRate, 
     try { localStorage.setItem(storageKey("last-card-id"), input.cardId); } catch { /* La preferencia es opcional. */ }
     skipDraft.current = true;
     try { sessionStorage.removeItem(draftKey); } catch { /* El guardado del movimiento ya se completó. */ }
-    router.push(edit ? `/movimientos/${edit.id}?notice=updated` : "/?saved=1");
+    router.push(captured ? "/por-confirmar?notice=confirmed" : edit ? `/movimientos/${edit.id}?notice=updated` : "/?saved=1");
     router.refresh();
   }, (errors) => {
     setServerError("Revisa los campos señalados antes de guardar.");
@@ -239,6 +253,9 @@ export function TransactionForm({ userId, cards, categories, today, latestRate, 
     {!ready && <p role="status" className="text-small text-muted-foreground">Preparando el formulario…</p>}
     {draftNotice === "restored" && <p role="status" className="text-small text-muted-foreground">Recuperamos tu borrador de esta pestaña. Revisa los datos antes de guardar.</p>}
     {serverError && <Alert variant="destructive"><AlertDescription>{serverError}</AlertDescription></Alert>}
+    {captured && <p className="text-small text-muted-foreground wrap-anywhere">Del correo: «{captured.phrase}»</p>}
+    {captured?.unknownCard && <Alert><AlertDescription>{captured.last4 ? `La tarjeta •••• ${captured.last4} no está registrada.` : "No reconocimos la tarjeta."} Elige la tarjeta o agrégala en Ajustes.</AlertDescription></Alert>}
+    {captured?.billingCurrency && <Alert><AlertDescription>Sugerido: este cobro puede facturarse en {captured.billingCurrency}. Si es así, cambia la moneda antes de guardar.</AlertDescription></Alert>}
     {edit && <p className="text-small text-muted-foreground">Se conserva la tasa original si mantienes la tarjeta y el tipo. Si los cambias, se usa la tasa vigente.</p>}
     {edit?.hasPaidInstallments && <Alert><AlertDescription>Algunas cuotas están en extractos pagados. Al guardar se regeneran todas las cuotas.</AlertDescription></Alert>}
     <div className="grid grid-cols-[minmax(0,1fr)_6rem] items-start gap-4">
@@ -273,7 +290,7 @@ export function TransactionForm({ userId, cards, categories, today, latestRate, 
     </DisclosureContent></Disclosure>
     {preview && allowsInstallments && <section aria-label="Vista previa de cuotas" className="flex flex-col gap-3 rounded-xl border border-border bg-card p-4"><h2 className="text-heading">Vista previa</h2><div className="flex flex-wrap items-center justify-between gap-2"><span className="text-body">{tracking ? `Cuota ${tracking.current} de ${tracking.count}` : "Primera cuota"}</span><Money value={preview.firstInstallment} currency={parsed.success ? parsed.data.currency : "COP"} /></div>{values.currency === "USD" && <p className="text-small text-muted-foreground">Estimado en pesos: <Money value={preview.firstInstallmentCop} currency="COP" /></p>}<p className="text-small text-muted-foreground">Corte del {formatDateShort(preview.firstCutoff, today)} · pagas el {formatDateShort(preview.dueDate, today)}</p>{tracking && <p className="text-small text-muted-foreground">{tracking.count > tracking.current ? tracking.count - tracking.current === 1 ? "Te falta 1 cuota después de esta." : `Te faltan ${tracking.count - tracking.current} cuotas después de esta.` : "Es la última cuota."}</p>}{tracking?.original && <p className="text-small text-muted-foreground">Según tu saldo, el plan queda en {tracking.count} cuotas en lugar de {tracking.original}.</p>}{tracking?.alone && <p className="text-small text-muted-foreground">Aún no tienes movimientos en el extracto del {formatDateShort(preview.firstCutoff, today)}. Solo tendrá esta cuota.</p>}{cost && <p className="text-small text-muted-foreground">{cost.total.isZero() ? "Sin intereses" : <>{tracking ? "Intereses restantes (estimado)" : "Intereses estimados"}: <Money value={cost.total} currency={preview.deferral.currency} />{!tracking && <> · Total <Money value={preview.deferral.amount.plus(cost.total)} currency={preview.deferral.currency} /></>}</>}</p>}{onBalance && <p className="text-small text-muted-foreground">Tu banco cobra los intereses sobre el saldo, en una línea de cada extracto.</p>}{cost?.exceedsThreshold && !tracking && <Alert><AlertDescription>Diferir esta compra cuesta un {formatPercent(cost.percent)} más.</AlertDescription></Alert>}{values.type === "cash_advance" && selectedCard && <p className="text-small text-muted-foreground">Tasa de avances: {formatRate(selectedCard.advanceRateEa)} · {tracking ? "sin comisión nueva" : <>comisión: <Money value={preview.advanceFee} currency="COP" /></>}</p>}</section>}
     {previewError && <p role="alert" className="text-small text-danger">{previewError}</p>}
-    {draftNotice && <div className="flex flex-wrap items-center justify-between gap-3"><p role="status" className={`text-small ${draftNotice === "unavailable" ? "text-warning" : "text-muted-foreground"}`}>{draftNotice === "unavailable" ? "No pudimos conservar el borrador. No cierres esta pestaña sin guardar." : "Tu borrador se conserva en esta pestaña por hasta 24 horas, también al cancelar."}</p>{draftNotice !== "unavailable" && <Button type="button" variant="outline" size="sm" onClick={discardDraft}>Descartar borrador</Button>}</div>}
-    <div className="flex flex-wrap gap-3"><Button type="submit" disabled={form.formState.isSubmitting || !!previewError}>{form.formState.isSubmitting ? "Guardando…" : "Guardar"}</Button><Button type="button" variant="outline" onClick={cancel}>Cancelar</Button></div>
+    {draftNotice && <div className="flex flex-wrap items-center justify-between gap-3"><p role="status" className={`text-small ${draftNotice === "unavailable" ? "text-warning" : "text-muted-foreground"}`}>{draftNotice === "unavailable" ? "No pudimos conservar el borrador. No cierres esta pestaña sin guardar." : "Tu borrador se conserva en esta pestaña por hasta 24 horas, también al cancelar."}</p>{draftNotice !== "unavailable" && <Button type="button" variant="outline" size="sm" onClick={discardFormDraft}>{captured ? "Deshacer cambios" : "Descartar borrador"}</Button>}</div>}
+    <div className="flex flex-wrap gap-3"><Button type="submit" disabled={form.formState.isSubmitting || !!previewError}>{form.formState.isSubmitting ? "Guardando…" : captured ? "Confirmar movimiento" : "Guardar"}</Button><Button type="button" variant="outline" onClick={cancel}>Cancelar</Button></div>
   </fieldset></form>;
 }

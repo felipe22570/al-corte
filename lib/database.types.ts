@@ -307,6 +307,38 @@ isOneToOne: false
       referencedColumns: ["user_id","id"]
     }
                   ]
+                },"transaction_drafts": {
+                  Row: {
+                    "amount": number | null,"card_id": string | null,"created_at": string,"currency": Database["public"]['Enums']["currency_code"] | null,"external_id": string,"id": string,"last4": string | null,"merchant_raw": string | null,"occurred_on": string | null,"occurred_time": string | null,"phrase": string | null,"resolved_at": string | null,"source": string,"statement_cutoff": string | null,"status": string,"suggestions": Json | null,"transaction_id": string | null,"type": Database["public"]['Enums']["transaction_type"] | null,"updated_at": string,"user_id": string
+                  }
+                  ComputedFields: never
+                  Insert: {
+                    "amount"?: number | null,"card_id"?: string | null,"created_at"?: string,"currency"?: Database["public"]['Enums']["currency_code"] | null,"external_id": string,"id"?: string,"last4"?: string | null,"merchant_raw"?: string | null,"occurred_on"?: string | null,"occurred_time"?: string | null,"phrase"?: string | null,"resolved_at"?: string | null,"source"?: string,"statement_cutoff"?: string | null,"status"?: string,"suggestions"?: Json | null,"transaction_id"?: string | null,"type"?: Database["public"]['Enums']["transaction_type"] | null,"updated_at"?: string,"user_id"?: string
+                  }
+                  Update: {
+                    "amount"?: number | null,"card_id"?: string | null,"created_at"?: string,"currency"?: Database["public"]['Enums']["currency_code"] | null,"external_id"?: string,"id"?: string,"last4"?: string | null,"merchant_raw"?: string | null,"occurred_on"?: string | null,"occurred_time"?: string | null,"phrase"?: string | null,"resolved_at"?: string | null,"source"?: string,"statement_cutoff"?: string | null,"status"?: string,"suggestions"?: Json | null,"transaction_id"?: string | null,"type"?: Database["public"]['Enums']["transaction_type"] | null,"updated_at"?: string,"user_id"?: string
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "transaction_drafts_card_id_fkey"
+      columns: ["card_id"]
+isOneToOne: false
+      referencedRelation: "card_balances"
+      referencedColumns: ["card_id"]
+    },{
+      foreignKeyName: "transaction_drafts_card_id_fkey"
+      columns: ["card_id"]
+isOneToOne: false
+      referencedRelation: "cards"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "transaction_drafts_transaction_id_fkey"
+      columns: ["transaction_id"]
+isOneToOne: false
+      referencedRelation: "transactions"
+      referencedColumns: ["id"]
+    }
+                  ]
                 },"transactions": {
                   Row: {
                     "amount": number,"amount_cop": number,"card_id": string,"category_id": string | null,"cop_debited": boolean,"created_at": string,"currency": Database["public"]['Enums']["currency_code"],"date": string,"fx_rate": number | null,"id": string,"import_key": string | null,"installments_count": number,"interest_free": boolean,"is_international": boolean,"merchant": string | null,"note": string | null,"original_installments_count": number | null,"paid_statement_id": string | null,"parent_id": string | null,"payment_kind": Database["public"]['Enums']["payment_kind"] | null,"prior_installments": number,"prior_principal_paid": number,"rate_ea_applied": number | null,"source": Database["public"]['Enums']["transaction_source"],"statement_id": string,"statement_override": boolean,"subscription_id": string | null,"type": Database["public"]['Enums']["transaction_type"],"updated_at": string,"user_id": string,"verified": boolean
@@ -472,6 +504,9 @@ isOneToOne: false
 "close_statement":
 { Args: { "p_payload": Json }; Returns: string
                            },
+"confirm_transaction_draft":
+{ Args: { "p_draft_id": string,"p_payload": Json }; Returns: string
+                           },
 "create_default_categories":
 { Args: { "p_user_id": string }; Returns: undefined
                            },
@@ -480,6 +515,9 @@ isOneToOne: false
                            },
 "cutoff_date_for_month":
 { Args: { "cutoff_day": number,"m": number,"y": number }; Returns: string
+                           },
+"discard_transaction_draft":
+{ Args: { "p_draft_id": string }; Returns: undefined
                            },
 "ensure_statement":
 { Args: { "p_card_id": string,"p_cutoff_date": string }; Returns: string
@@ -495,6 +533,9 @@ isOneToOne: false
                            },
 "import_statement_file":
 { Args: { "p_dry_run": boolean,"p_payload": Json }; Returns: Json
+                           },
+"link_transaction_draft":
+{ Args: { "p_draft_id": string,"p_transaction_id": string }; Returns: undefined
                            },
 "register_payment":
 { Args: { "p_payload": Json }; Returns: string

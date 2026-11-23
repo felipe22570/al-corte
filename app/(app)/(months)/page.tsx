@@ -15,6 +15,7 @@ import { buttonVariants } from "@/components/ui/button";
 import { todayInBogota } from "@/lib/domain/dates";
 import { historyMonthCapacity, historyMonthNextBlock } from "@/lib/domain/months";
 import { formatMonth } from "@/lib/format";
+import { countOpenDrafts } from "@/lib/queries/drafts";
 import { loadMonthOverview } from "@/lib/queries/months";
 import { createSupabaseMonthSource } from "@/lib/queries/supabase-months";
 import { createClient } from "@/lib/supabase/server";
@@ -28,9 +29,10 @@ export default async function MonthsPage({ searchParams }: { searchParams: Promi
   if (!user) redirect("/login");
   const source = createSupabaseMonthSource(supabase, user.id);
   const today = todayInBogota();
-  const [overview, cards] = await Promise.all([
+  const [overview, cards, draftCount] = await Promise.all([
     loadMonthOverview(source, today, { historySize: historyMonthCapacity(historial) }),
     source.loadCardDetails(),
+    countOpenDrafts(supabase, user.id),
   ]);
   const incomplete = [overview.current, ...overview.future, ...overview.history].some((month) => !month.complete);
   const rowProps = { cards, subscriptionNames: overview.subscriptionNames, today };
@@ -50,6 +52,7 @@ export default async function MonthsPage({ searchParams }: { searchParams: Promi
             </AlertDescription>
           </Alert>
         )}
+        {draftCount > 0 && <Alert role="note"><AlertDescription className="text-foreground">{draftCount === 1 ? "Tienes 1 movimiento por confirmar." : `Tienes ${draftCount} movimientos por confirmar.`} No cuentan en tus meses hasta que los confirmes. <Link className="underline" href="/por-confirmar">Revisar</Link></AlertDescription></Alert>}
         {incomplete && <Alert variant="warning" role="note"><AlertTitle>Falta la TRM</AlertTitle><AlertDescription className="text-foreground">Los cobros en dólares se suman aparte y sus totales no cambian. Solo falta su equivalente en pesos de referencia. Para calcularlo, <Link className="underline" href="/movimientos/nuevo">registra un movimiento en USD con la TRM del día</Link>.</AlertDescription></Alert>}
         <section aria-labelledby="current-month-heading" className="grid gap-3">
           <h2 id="current-month-heading" className="text-heading">Este mes</h2>

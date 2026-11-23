@@ -4,10 +4,11 @@ import { describe, expect, it, vi } from "vitest";
 import MonthsPage from "@/app/(app)/(months)/page";
 import { buildMonths } from "@/lib/domain/months";
 
-const { state } = vi.hoisted(() => ({ state: { overview: null as unknown, cards: [] as unknown[] } }));
+const { state } = vi.hoisted(() => ({ state: { overview: null as unknown, cards: [] as unknown[], drafts: 0 } }));
 vi.mock("@/lib/supabase/server", () => ({ createClient: async () => ({ auth: { getUser: async () => ({ data: { user: { id: "owner" } } }) } }) }));
 vi.mock("@/lib/queries/supabase-months", () => ({ createSupabaseMonthSource: () => ({ loadCardDetails: async () => state.cards }) }));
 vi.mock("@/lib/queries/months", () => ({ loadMonthOverview: async () => state.overview }));
+vi.mock("@/lib/queries/drafts", () => ({ countOpenDrafts: async () => state.drafts }));
 vi.mock("@/lib/domain/dates", async (original) => ({ ...await original<typeof import("@/lib/domain/dates")>(), todayInBogota: () => "2026-11-14" }));
 
 describe("months home", () => {
@@ -19,6 +20,21 @@ describe("months home", () => {
     expect(html).toContain("Sin extractos");
     expect(html).toContain("Aún no tienes tarjetas");
     expect(html).toContain('href="/ajustes"');
+    expect(html).not.toContain("por confirmar");
+  });
+
+  it("points to captured drafts without adding them to any month (F18, D46)", async () => {
+    const current = buildMonths([], "2026-11-14")[0];
+    state.overview = { current, future: [], history: [], overdue: { months: new Map(), total: new Decimal(0), totalUsd: new Decimal(0) }, hasLaterCommitments: false, historyNextBefore: null, subscriptionNames: {}, toReview: [] };
+    state.cards = [];
+    state.drafts = 2;
+    const html = renderToStaticMarkup(await MonthsPage({ searchParams: Promise.resolve({}) }));
+    expect(html).toContain("Tienes 2 movimientos por confirmar.");
+    expect(html).toContain('href="/por-confirmar"');
+    expect(html).toContain("Sin extractos");
+    state.drafts = 1;
+    expect(renderToStaticMarkup(await MonthsPage({ searchParams: Promise.resolve({}) }))).toContain("Tienes 1 movimiento por confirmar.");
+    state.drafts = 0;
   });
 
   it("shows overdue links and the later-commitment warning without altering the current total", async () => {

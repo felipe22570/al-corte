@@ -5,7 +5,7 @@ import { createRoot, type Root } from "react-dom/client";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { TransactionForm } from "@/components/transaction-form";
 import type { MerchantHistoryRow } from "@/lib/domain/merchant-suggestions";
-import { encodeTransactionDraft, transactionDraftKey } from "@/lib/transaction-draft";
+import { encodeTransactionFormDraft, transactionFormDraftKey } from "@/lib/transaction-form-draft";
 import type { TransactionCardOption } from "@/lib/transaction-options";
 import type { TransactionInput } from "@/lib/validation/transaction";
 
@@ -126,7 +126,7 @@ describe("sugerencias por comercio en el formulario (F20, D53)", () => {
 
   it("treats a restored draft as touched", async () => {
     const draft: TransactionInput = { cardId: visaId, type: "purchase", date: "2026-11-21", amount: "15", currency: "COP", fxRate: "", installmentsCount: "1", interestFree: false, isInternational: false, advanceFee: "", categoryId: "", merchant: "", note: "", inProgress: false, currentInstallment: "", balanceAfter: "", trackedFromCutoff: "" };
-    sessionStorage.setItem(transactionDraftKey("owner"), encodeTransactionDraft(draft, "new"));
+    sessionStorage.setItem(transactionFormDraftKey("owner"), encodeTransactionFormDraft(draft, "new"));
     await render();
     await type("transaction-merchant", "Netflix");
     expect(notice()).toBeUndefined();
