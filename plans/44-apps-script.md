@@ -1,9 +1,9 @@
 # Paso 44 — Script de captura en Apps Script
 
 - **Hito PRD:** H12 (parte 5 de 6)
-- **Estado:** 🟡 En progreso
+- **Estado:** ✅ Terminado
 - **Inicio:** 2026-11-22
-- **Fin:**
+- **Fin:** 2026-11-24
 - **Commit:** 9e75ac8
 - **Depende de:** 42
 - **Decisiones aplicables (decididas, ver README):** D43, D44, D47, D51
@@ -33,9 +33,9 @@ El script que corre en la cuenta de Google del dueño y envía las alertas a la 
 
 ## Verificación
 
-- [ ] Con un correo real de compra aparece un borrador en la siguiente ejecución del activador (menos de una hora y 10 minutos).
-- [ ] Un correo de la cuenta de ahorros no genera ninguna solicitud (revisar el registro de ejecuciones).
-- [ ] Revocar el acceso desde la cuenta de Google detiene la captura.
+- [x] Con un correo real de compra aparece un borrador en la siguiente ejecución del activador (menos de una hora y 10 minutos). Comprobado con correos reales en la primera lectura (14 borradores) y con el activador corriendo solo (Time-Driven, 24 nov 10:03 p. m., Completed). La primera compra nueva que llegue por el activador se observa en la semana de uso del paso 45.
+- [x] Un correo de la cuenta de ahorros no genera ninguna solicitud (revisar el registro de ejecuciones): `no_credit_card=8`, sin solicitudes.
+- [ ] Revocar el acceso desde la cuenta de Google detiene la captura. Pasa al paso 45 por decisión del dueño, para no desautorizar y volver a autorizar dos veces.
 
 ## Criterios de terminado
 
@@ -89,3 +89,5 @@ El script que corre en la cuenta de Google del dueño y envía las alertas a la 
 2026-11-24 — Un avance real ("Hiciste un avance de $…,000 en tu SUC VIRTUAL el hh:mm dd/mm/aaaa desde tu T.Credito *NNNN a la cuenta *NNNN.") terminaba en "¿Dudas? Llamanos…", no en "Si tienes dudas", y el script lo descartó como `no_phrase`. Ahora el fin de la frase es "Si tienes dudas" o "¿Dudas?" (con o sin "¿"). Su monto usa coma de miles, que `verifyExtraction` (paso 43) rechazaba; ahora la acepta solo como grupos de 3 dígitos sin decimales. Con `backfillAlerts` se vuelven a evaluar los descartados.
 
 2026-11-24 — Despliegue `a5998ce` confirmado en Vercel y script subido con clasp. `backfillAlerts`: `encontrados=24`, `ya vistos=13`, `enviados=1`, `creados=1`, `descartados=10` (`no_credit_card=8`, `no_phrase=2`). El avance virtual quedó como borrador "Revisar" leído con IA y verificado: `cash_advance`, COP 500.000, 24 nov 17:55, Mastercard ••1999, extracto tentativo del 15 dic. Dos de los `no_phrase` anteriores eran alertas con el pie "¿Dudas?" sin `T.Cred`, y ahora son `no_credit_card`. Los descartes no generaron solicitudes, lo que cubre la verificación de la alerta de ahorros. Pendientes: ver una ejecución del activador de cada hora y revocar el acceso (paso 45).
+
+2026-11-24 — Paso cerrado por decisión del dueño. El activador de cada hora corrió solo (24 nov 10:03 p. m., Time-Driven, Completed). La comprobación de revocar el acceso pasa al paso 45.

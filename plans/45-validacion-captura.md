@@ -22,6 +22,7 @@ Comprobar en producción que la captura funciona, que es segura y que no altera 
     - [ ] ningún log contiene frases de alertas ni respuestas del modelo;
     - [ ] apagar la captura desde Ajustes rechaza nuevas solicitudes;
     - [ ] rotar el secreto con el procedimiento documentado (Vercel, despliegue y script) invalida el anterior (D51).
+    - [ ] revocar el acceso del script desde la cuenta de Google detiene la captura y `installTrigger` la recupera (viene del paso 44).
 - [ ] Ningún borrador pendiente cambia totales, meses ni cupo.
 - [ ] Gasto de IA del periodo dentro del tope.
 - [ ] `pnpm test:ai` con resultados anotados.
