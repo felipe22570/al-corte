@@ -97,7 +97,7 @@ describe("phrase extraction (step 44)", () => {
 
 describe("credit card filter (D44)", () => {
   it.each([
-    ["directv", true], ["chatgpt", true], ["dollars", true], ["payment", true], ["advance", true], ["savings", false], ["debit", false],
+    ["directv", true], ["chatgpt", true], ["dollars", true], ["withCard", true], ["payment", true], ["advance", true], ["savings", false], ["debit", false],
   ] as const)("%s → %s", (key, expected) => {
     expect(core.hasCreditCardMarker(ALERTS[key])).toBe(expected);
   });

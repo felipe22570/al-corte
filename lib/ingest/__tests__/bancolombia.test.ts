@@ -30,6 +30,26 @@ describe("readAlert (R10)", () => {
     expect(readAlert(ALERTS.advance)).toEqual({ kind: "unknown", last4: "1999" });
   });
 
+  it("reads the second purchase format, with the card before the date", () => {
+    expect(readAlert(ALERTS.withCard)).toEqual({ kind: "purchase", last4: "1999", currency: "COP", amount: "12500.00", merchant: "GOOGLE *Ejemplo app h", date: "2026-11-15", time: "16:13" });
+    expect(readAlert(ALERTS.withCard.replace("T.Cred *", "T.Credito *").replace(/\.$/, ""))).toMatchObject({ kind: "purchase", merchant: "GOOGLE *Ejemplo app h" });
+    expect(readAlert(ALERTS.withCard.replace("COP12.500,00", "USD4,39"))).toMatchObject({ kind: "purchase", currency: "USD", amount: "4.39" });
+  });
+
+  it.each([
+    ["an impossible date", ALERTS.withCard.replace("15/11/2026", "31/11/2026")],
+    ["an impossible hour", ALERTS.withCard.replace("16:13", "24:13")],
+    ["a zero amount", ALERTS.withCard.replace("12.500,00", "0,00")],
+    ["text after the time", ALERTS.withCard.replace("16:13.", "16:13. Si tienes dudas llama")],
+    ["another verb", ALERTS.withCard.replace("Compraste", "Pagaste")],
+  ])("sends the second format with %s to review", (_, phrase) => {
+    expect(readAlert(phrase)).toEqual({ kind: "unknown", last4: "1999" });
+  });
+
+  it("keeps the debit version of the second format out", () => {
+    expect(readAlert("Bancolombia: Compraste COP12.500,00 en PANADERIA con tu T.Deb *5678, el 15/11/2026 a las 16:13.")).toEqual({ kind: "ignored" });
+  });
+
   it("reads alerts that write the card as T.Credito", () => {
     expect(readAlert(ALERTS.directv.replace("T.Cred *", "T.Credito *"))).toEqual({ kind: "purchase", last4: "1999", currency: "COP", amount: "140910.00", merchant: "DIRECTV", date: "2026-11-17", time: "12:27" });
     expect(readAlert(ALERTS.chatgpt.replace("T.Cred *", "T.Crédito *"))).toMatchObject({ kind: "purchase", last4: "1999" });

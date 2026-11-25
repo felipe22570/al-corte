@@ -6,6 +6,8 @@ export const ALERTS = {
   directv: "Bancolombia: Compraste COP140.910,00 en DIRECTV, el 17/11/2026 a las 12:27. Esta compra esta asociada a T.Cred *1999",
   chatgpt: "Bancolombia: Compraste COP81.000,00 en GOOGLE *ChatGPT, el 16/11/2026 a las 11:33. Esta compra esta asociada a T.Cred *1999",
   dollars: "Bancolombia: Compraste USD15,99 en SPOTIFY P3A1B2C3D4, el 20/11/2026 a las 07:05. Esta compra esta asociada a T.Cred *1999",
+  /** Second purchase format, seen in real alerts on 24 Nov 2026 (merchant and amount are fictitious). */
+  withCard: "Bancolombia: Compraste COP12.500,00 en GOOGLE *Ejemplo app h con tu T.Cred *1999, el 15/11/2026 a las 16:13.",
   /** Debit and savings alerts do not mention "T.Cred" (D44). */
   savings: "Bancolombia: Transferiste $50.000 desde tu cuenta *5678 a la cuenta *0000 el 18/11/2026 a las 09:15.",
   debit: "Bancolombia: Compraste $25.000,00 en PANADERIA con tu T.Deb *5678, el 18/11/2026 a las 08:10.",
