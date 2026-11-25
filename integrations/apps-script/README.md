@@ -109,6 +109,6 @@ Rotar es un procedimiento, no una acción de la app. Hazlo si sospechas que el s
 2. En Vercel → proyecto `al-corte` → Settings → Environment Variables, reemplaza el valor de `INGEST_SIGNING_SECRET` en Production.
 3. Vuelve a desplegar (Deployments → Redeploy del último despliegue de producción). El valor nuevo solo aplica desde ese despliegue; desde ahí, las solicitudes firmadas con el secreto anterior reciben `401`.
 4. En el editor de Apps Script → Configuración del proyecto → Propiedades del script, reemplaza `INGEST_SIGNING_SECRET` con el mismo valor.
-5. Comprueba en el registro de ejecuciones del script que la siguiente ejecución recibe `200`. Los mensajes que recibieron `401` entre los pasos 3 y 4 no quedaron marcados y se envían en esa ejecución.
+5. Comprueba con `pnpm probe:ingest https://<dominio>/api/ingest/alerts --rotation` (pide el secreto anterior y el nuevo sin mostrarlos): el anterior debe dar `401` y el nuevo `200 ignored`. Luego revisa en el registro de ejecuciones del script que la siguiente ejecución recibe `200`. Los mensajes que recibieron `401` entre los pasos 3 y 4 no quedaron marcados y se envían en esa ejecución.
 
 Para apagar la captura sin rotar nada, usa el interruptor de Ajustes: la ruta responde `403` y el script reintenta durante 2 días.

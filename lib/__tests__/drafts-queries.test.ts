@@ -2,7 +2,7 @@ import { readdirSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 import { describe, expect, it, vi } from "vitest";
 
-import { countOpenDrafts, loadOpenDraft, loadOpenDrafts } from "../queries/drafts";
+import { countOpenDrafts, loadDraftProposal, loadOpenDraft, loadOpenDrafts } from "../queries/drafts";
 
 type Result = { data?: unknown; error?: unknown; count?: number };
 
@@ -37,6 +37,17 @@ const draft = (change: Record<string, unknown> = {}) => ({
 });
 
 describe("draft queries", () => {
+  it("loads what the capture proposed for an open draft of the owner (step 45)", async () => {
+    const { client, calls } = fakeClient({ transaction_drafts: [{ data: [draft({ suggestions: { confidence: "alta", categoryId: subscription } })] }, { data: [] }, { error: { message: "x" } }] });
+    expect(await loadDraftProposal(client, "owner", "d1")).toEqual({
+      cardId: visa, type: "purchase", amount: "140910.00", currency: "COP", merchantRaw: "DIRECTV", occurredOn: "2026-11-17",
+      suggestions: { merchantName: null, categoryId: subscription, subscriptionId: null, billingCurrency: null, installmentsCount: null, isInternational: null, confidence: "alta", reason: null },
+    });
+    expect(calls[0]!.steps).toEqual(expect.arrayContaining([["eq", ["user_id", "owner"]], ["eq", ["id", "d1"]], ["in", ["status", ["pending", "needs_review", "unknown_card"]]]]));
+    expect(await loadDraftProposal(client, "owner", "d1")).toBeNull();
+    expect(await loadDraftProposal(client, "owner", "d1")).toBeNull();
+  });
+
   it("counts only open drafts", async () => {
     const { client, calls } = fakeClient({ transaction_drafts: [{ count: 3 }] });
     expect(await countOpenDrafts(client, "owner")).toBe(3);

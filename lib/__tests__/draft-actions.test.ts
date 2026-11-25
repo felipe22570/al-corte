@@ -1,9 +1,10 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
-const mocks = vi.hoisted(() => ({ createClient: vi.fn(), revalidate: vi.fn(), buildCreatePayload: vi.fn() }));
+const mocks = vi.hoisted(() => ({ createClient: vi.fn(), revalidate: vi.fn(), buildCreatePayload: vi.fn(), loadDraftProposal: vi.fn() }));
 vi.mock("@/lib/supabase/server", () => ({ createClient: mocks.createClient }));
 vi.mock("@/lib/revalidate-views", () => ({ revalidateFinancialViews: mocks.revalidate }));
 vi.mock("@/lib/transaction-create", () => ({ buildCreatePayload: mocks.buildCreatePayload }));
+vi.mock("@/lib/queries/drafts", () => ({ loadDraftProposal: mocks.loadDraftProposal }));
 import { confirmDraft, discardDraft, linkDraft } from "../actions/drafts";
 
 const draftId = "55555555-5555-4555-8555-555555555555";
@@ -15,7 +16,14 @@ function setup(rpcResult: { data?: unknown; error?: { code: string; message: str
   return rpc;
 }
 
-beforeEach(() => vi.clearAllMocks());
+beforeEach(() => {
+  vi.clearAllMocks();
+  mocks.loadDraftProposal.mockResolvedValue(null);
+});
+
+const card = "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa";
+const formInput = { cardId: card, type: "purchase", date: "2026-11-17", amount: "140.910", currency: "COP", fxRate: "", installmentsCount: "1", interestFree: false, categoryId: "", merchant: "DirecTV", note: "" };
+const proposal = { cardId: card, type: "purchase", amount: "140910.00", currency: "COP", merchantRaw: "DIRECTV", occurredOn: "2026-11-17", suggestions: null };
 
 describe("confirmDraft", () => {
   it("saves the movement and resolves the draft in one RPC", async () => {
@@ -23,8 +31,19 @@ describe("confirmDraft", () => {
     const rpc = setup({ data: transactionId });
     expect(await confirmDraft(draftId, { amount: "1" })).toEqual({ ok: true, id: transactionId });
     expect(mocks.buildCreatePayload).toHaveBeenCalledWith(expect.anything(), "owner", { amount: "1" });
-    expect(rpc).toHaveBeenCalledWith("confirm_transaction_draft", { p_draft_id: draftId, p_payload: { card_id: "visa" } });
+    expect(rpc).toHaveBeenCalledWith("confirm_transaction_draft", { p_draft_id: draftId, p_payload: { card_id: "visa" }, p_changed_fields: undefined });
     expect(mocks.revalidate).toHaveBeenCalledTimes(1);
+  });
+
+  it("records the names of the fields the owner corrected (step 45)", async () => {
+    mocks.buildCreatePayload.mockResolvedValue({ ok: true, payload: { card_id: card } });
+    mocks.loadDraftProposal.mockResolvedValue(proposal);
+    const rpc = setup({ data: transactionId });
+    await confirmDraft(draftId, formInput);
+    expect(mocks.loadDraftProposal).toHaveBeenCalledWith(expect.anything(), "owner", draftId);
+    expect(rpc).toHaveBeenLastCalledWith("confirm_transaction_draft", { p_draft_id: draftId, p_payload: { card_id: card }, p_changed_fields: ["merchant"] });
+    await confirmDraft(draftId, { ...formInput, merchant: "DIRECTV" });
+    expect(rpc).toHaveBeenLastCalledWith("confirm_transaction_draft", { p_draft_id: draftId, p_payload: { card_id: card }, p_changed_fields: [] });
   });
 
   it("returns form errors without calling the database", async () => {

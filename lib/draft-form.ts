@@ -1,9 +1,11 @@
+import Decimal from "decimal.js";
+
 import type { IsoDate } from "@/lib/domain/dates";
 import type { Currency } from "@/lib/domain/money";
 import { currencyEffects, type SuggestionField } from "@/lib/merchant-suggestion-form";
 import { formatAmountInput } from "@/lib/money-input";
 import type { DraftSuggestions } from "@/lib/validation/transaction-draft";
-import type { TransactionInput } from "@/lib/validation/transaction";
+import type { TransactionInput, ValidTransaction } from "@/lib/validation/transaction";
 
 export type DraftForForm = {
   cardId: string | null;
@@ -64,4 +66,32 @@ export function draftFormStart(draft: DraftForForm, context: { cardIds: readonly
     touched.push("isInternational");
   }
   return { values, touched };
+}
+
+/** What the capture can propose, in the order they are stored (step 45). Names only, never values (D47). */
+export const CAPTURED_FIELDS = ["card", "type", "date", "amount", "currency", "merchant", "category", "installments", "international"] as const;
+export type CapturedField = (typeof CAPTURED_FIELDS)[number];
+
+type ConfirmedValues = Pick<ValidTransaction, "cardId" | "type" | "date" | "amount" | "currency" | "merchant" | "categoryId" | "installmentsCount" | "isInternational">;
+
+/**
+ * Fields the owner corrected when confirming a captured draft: only those the alert facts or the AI suggestions filled.
+ * Completing an empty field (a category the AI did not suggest) is not a correction. Measures "confirmed without
+ * changes" in the H12 validation without keeping any value of the email.
+ */
+export function capturedChanges(draft: DraftForForm, confirmed: ConfirmedValues): CapturedField[] {
+  const suggestion = draft.suggestions;
+  const proposedMerchant = suggestion?.merchantName ?? draft.merchantRaw;
+  const differs: Record<CapturedField, boolean> = {
+    card: draft.cardId !== null && draft.cardId !== confirmed.cardId,
+    type: draft.type !== null && draft.type !== confirmed.type,
+    date: draft.occurredOn !== null && draft.occurredOn !== confirmed.date,
+    amount: draft.amount !== null && !new Decimal(draft.amount).eq(confirmed.amount),
+    currency: draft.currency !== null && draft.currency !== confirmed.currency,
+    merchant: proposedMerchant !== null && proposedMerchant.trim() !== confirmed.merchant.trim(),
+    category: Boolean(suggestion?.categoryId) && suggestion!.categoryId !== confirmed.categoryId,
+    installments: Boolean(suggestion?.installmentsCount) && suggestion!.installmentsCount !== confirmed.installmentsCount,
+    international: suggestion?.isInternational !== null && suggestion?.isInternational !== undefined && suggestion.isInternational !== confirmed.isInternational,
+  };
+  return CAPTURED_FIELDS.filter((field) => differs[field]);
 }

@@ -363,14 +363,14 @@ isOneToOne: false
                   ]
                 },"transaction_drafts": {
                   Row: {
-                    "amount": number | null,"card_id": string | null,"created_at": string,"currency": Database["public"]['Enums']["currency_code"] | null,"external_id": string,"id": string,"last4": string | null,"merchant_raw": string | null,"occurred_on": string | null,"occurred_time": string | null,"phrase": string | null,"resolved_at": string | null,"source": string,"statement_cutoff": string | null,"status": string,"suggestions": Json | null,"transaction_id": string | null,"type": Database["public"]['Enums']["transaction_type"] | null,"updated_at": string,"user_id": string
+                    "amount": number | null,"card_id": string | null,"changed_fields": (string)[] | null,"created_at": string,"currency": Database["public"]['Enums']["currency_code"] | null,"external_id": string,"id": string,"last4": string | null,"merchant_raw": string | null,"occurred_on": string | null,"occurred_time": string | null,"phrase": string | null,"resolved_at": string | null,"source": string,"statement_cutoff": string | null,"status": string,"suggestions": Json | null,"transaction_id": string | null,"type": Database["public"]['Enums']["transaction_type"] | null,"updated_at": string,"user_id": string
                   }
                   ComputedFields: never
                   Insert: {
-                    "amount"?: number | null,"card_id"?: string | null,"created_at"?: string,"currency"?: Database["public"]['Enums']["currency_code"] | null,"external_id": string,"id"?: string,"last4"?: string | null,"merchant_raw"?: string | null,"occurred_on"?: string | null,"occurred_time"?: string | null,"phrase"?: string | null,"resolved_at"?: string | null,"source"?: string,"statement_cutoff"?: string | null,"status"?: string,"suggestions"?: Json | null,"transaction_id"?: string | null,"type"?: Database["public"]['Enums']["transaction_type"] | null,"updated_at"?: string,"user_id"?: string
+                    "amount"?: number | null,"card_id"?: string | null,"changed_fields"?: (string)[] | null,"created_at"?: string,"currency"?: Database["public"]['Enums']["currency_code"] | null,"external_id": string,"id"?: string,"last4"?: string | null,"merchant_raw"?: string | null,"occurred_on"?: string | null,"occurred_time"?: string | null,"phrase"?: string | null,"resolved_at"?: string | null,"source"?: string,"statement_cutoff"?: string | null,"status"?: string,"suggestions"?: Json | null,"transaction_id"?: string | null,"type"?: Database["public"]['Enums']["transaction_type"] | null,"updated_at"?: string,"user_id"?: string
                   }
                   Update: {
-                    "amount"?: number | null,"card_id"?: string | null,"created_at"?: string,"currency"?: Database["public"]['Enums']["currency_code"] | null,"external_id"?: string,"id"?: string,"last4"?: string | null,"merchant_raw"?: string | null,"occurred_on"?: string | null,"occurred_time"?: string | null,"phrase"?: string | null,"resolved_at"?: string | null,"source"?: string,"statement_cutoff"?: string | null,"status"?: string,"suggestions"?: Json | null,"transaction_id"?: string | null,"type"?: Database["public"]['Enums']["transaction_type"] | null,"updated_at"?: string,"user_id"?: string
+                    "amount"?: number | null,"card_id"?: string | null,"changed_fields"?: (string)[] | null,"created_at"?: string,"currency"?: Database["public"]['Enums']["currency_code"] | null,"external_id"?: string,"id"?: string,"last4"?: string | null,"merchant_raw"?: string | null,"occurred_on"?: string | null,"occurred_time"?: string | null,"phrase"?: string | null,"resolved_at"?: string | null,"source"?: string,"statement_cutoff"?: string | null,"status"?: string,"suggestions"?: Json | null,"transaction_id"?: string | null,"type"?: Database["public"]['Enums']["transaction_type"] | null,"updated_at"?: string,"user_id"?: string
                   }
                   Relationships: [
                     {
@@ -559,7 +559,7 @@ isOneToOne: false
 { Args: { "p_payload": Json }; Returns: string
                            },
 "confirm_transaction_draft":
-{ Args: { "p_draft_id": string,"p_payload": Json }; Returns: string
+{ Args: { "p_changed_fields"?: (string)[],"p_draft_id": string,"p_payload": Json }; Returns: string
                            },
 "create_default_categories":
 { Args: { "p_user_id": string }; Returns: undefined

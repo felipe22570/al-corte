@@ -15,7 +15,8 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "test:coverage": "vitest run --coverage",
-    "test:ai": "vitest run --config vitest.ai.config.mts"
+    "test:ai": "vitest run --config vitest.ai.config.mts",
+    "probe:ingest": "node scripts/ingest-probe.mjs"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^1.12.0",

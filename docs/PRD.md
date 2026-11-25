@@ -426,6 +426,7 @@ Ocho tablas en Postgres (Supabase), todas con `id uuid`, `user_id`, `created_at`
 | 34 | Comisión de avance guardada por movimiento (sin columna nueva en `cards`). |
 | 35 | `transactions.statement_override` para los movimientos de borde importados (D30). |
 | 40–42 | `ai_usage`, `transaction_drafts`, `card_aliases`, `capture_settings`, todas con `user_id` y RLS. |
+| 45 | `transaction_drafts.changed_fields`: nombres de los campos corregidos al confirmar un borrador, sin valores (D47), para medir "confirmado sin cambios". |
 
 Cada tabla o columna nueva se agrega también a la exportación de datos (`lib/export-schema.ts`), salvo `transaction_drafts`, que puede contener la frase original de un correo (D47).
 

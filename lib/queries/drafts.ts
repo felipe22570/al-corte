@@ -1,3 +1,4 @@
+import type { DraftForForm } from "@/lib/draft-form";
 import type { IsoDate } from "@/lib/domain/dates";
 import { sameMovementCandidates, subscriptionAmountChange, type AmountChange } from "@/lib/domain/drafts";
 import type { Currency } from "@/lib/domain/money";
@@ -86,4 +87,13 @@ export async function loadOpenDraft(supabase: Client, userId: string, id: string
   if (!data) return null;
   const [draft] = await enrich(supabase, userId, [data as unknown as RawDraft]);
   return draft ?? null;
+}
+
+/** What the capture proposed for an open draft, to measure which fields the owner corrected on confirming (step 45). */
+export async function loadDraftProposal(supabase: Client, userId: string, id: string): Promise<DraftForForm | null> {
+  const { data, error } = await supabase.from("transaction_drafts").select("card_id,type,amount::text,currency,merchant_raw,occurred_on,suggestions")
+    .eq("user_id", userId).eq("id", id).in("status", OPEN_DRAFT_STATUSES).maybeSingle();
+  if (error || !data) return null;
+  const raw = data as unknown as Pick<RawDraft, "card_id" | "type" | "amount" | "currency" | "merchant_raw" | "occurred_on" | "suggestions">;
+  return { cardId: raw.card_id, type: raw.type, amount: raw.amount, currency: raw.currency, merchantRaw: raw.merchant_raw, occurredOn: raw.occurred_on, suggestions: parseDraftSuggestions(raw.suggestions) };
 }

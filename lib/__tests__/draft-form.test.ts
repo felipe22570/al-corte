@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { draftFormStart, type DraftForForm } from "../draft-form";
+import { capturedChanges, draftFormStart, type DraftForForm } from "../draft-form";
 import { parseDraftSuggestions } from "../validation/transaction-draft";
 
 const card = "11111111-1111-4111-8111-111111111111";
@@ -47,5 +47,29 @@ describe("parseDraftSuggestions", () => {
     expect(parseDraftSuggestions({ confidence: "segura" })).toBeNull();
     expect(parseDraftSuggestions({ confidence: "alta", amount: "1" })).toBeNull();
     expect(parseDraftSuggestions({ confidence: "alta" })).toEqual({ merchantName: null, categoryId: null, subscriptionId: null, billingCurrency: null, installmentsCount: null, isInternational: null, confidence: "alta", reason: null });
+  });
+});
+
+describe("capturedChanges (step 45)", () => {
+  const confirmed = { cardId: card, type: "purchase" as const, date: "2026-11-17", amount: "140910", currency: "COP" as const, merchant: "DIRECTV", categoryId: null, installmentsCount: 1, isInternational: false };
+  const suggested: DraftForForm = { ...directv, suggestions: parseDraftSuggestions({ confidence: "alta", merchantName: "DirecTV", categoryId: category, installmentsCount: 3, isInternational: false })! };
+
+  it("is empty when the owner keeps what the alert and the suggestions proposed", () => {
+    expect(capturedChanges(directv, confirmed)).toEqual([]);
+    expect(capturedChanges(directv, { ...confirmed, amount: "140910.00", merchant: "DIRECTV" })).toEqual([]);
+    expect(capturedChanges(suggested, { ...confirmed, merchant: "DirecTV", categoryId: category, installmentsCount: 3 })).toEqual([]);
+  });
+
+  it("lists each corrected fact or suggestion, in a fixed order", () => {
+    const other = "33333333-3333-4333-8333-333333333333";
+    expect(capturedChanges(suggested, { cardId: other, type: "cash_advance", date: "2026-11-18", amount: "140000", currency: "USD", merchant: "Otro", categoryId: other, installmentsCount: 2, isInternational: true }))
+      .toEqual(["card", "type", "date", "amount", "currency", "merchant", "category", "installments", "international"]);
+    expect(capturedChanges(suggested, { ...confirmed, merchant: "DIRECTV", categoryId: null, installmentsCount: 3 })).toEqual(["merchant", "category"]);
+  });
+
+  it("does not count what the capture left empty and the owner completed", () => {
+    const bare: DraftForForm = { cardId: null, type: null, amount: null, currency: null, merchantRaw: null, occurredOn: null, suggestions: null };
+    expect(capturedChanges(bare, { ...confirmed, categoryId: category, installmentsCount: 6, isInternational: true })).toEqual([]);
+    expect(capturedChanges(directv, { ...confirmed, categoryId: category, installmentsCount: 6 })).toEqual([]);
   });
 });

@@ -2,9 +2,12 @@
 
 import { z } from "zod";
 
+import { capturedChanges } from "@/lib/draft-form";
+import { loadDraftProposal } from "@/lib/queries/drafts";
 import { revalidateFinancialViews } from "@/lib/revalidate-views";
 import { createClient } from "@/lib/supabase/server";
 import { buildCreatePayload } from "@/lib/transaction-create";
+import { transactionSchema } from "@/lib/validation/transaction";
 
 const gone = "Este movimiento ya no está por confirmar.";
 
@@ -21,7 +24,11 @@ export async function confirmDraft(draftId: unknown, input: unknown) {
   if (!user) return { ok: false as const, error: "Inicia sesión para guardar el movimiento." };
   const built = await buildCreatePayload(supabase, user.id, input);
   if (!built.ok) return { ...built, ok: false as const };
-  const { data, error } = await supabase.rpc("confirm_transaction_draft", { p_draft_id: draftId, p_payload: built.payload });
+  // Step 45: names of the fields the owner corrected, never their values (D47). Unknown if the draft is no longer open.
+  const proposal = await loadDraftProposal(supabase, user.id, draftId);
+  const confirmed = transactionSchema.safeParse(input);
+  const changed = proposal && confirmed.success ? capturedChanges(proposal, confirmed.data) : null;
+  const { data, error } = await supabase.rpc("confirm_transaction_draft", { p_draft_id: draftId, p_payload: built.payload, p_changed_fields: changed ?? undefined });
   if (error || !data) return { ok: false as const, error: databaseError(error?.code, "No pudimos guardar el movimiento. Revisa la tarjeta y vuelve a intentarlo.") };
   revalidateFinancialViews();
   return { ok: true as const, id: String(data) };
