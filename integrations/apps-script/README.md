@@ -4,12 +4,12 @@ Script de Google Apps Script que corre cada hora en la cuenta de Google del due�
 
 ## Qué hace
 
-Cada hora busca `from:alertasynotificaciones@notificacionesbancolombia.com newer_than:2d` y, por cada mensaje que no ha visto:
+Al instalarse hace una primera lectura de los últimos 10 días, desde la medianoche de Bogotá (instalado el 24 de noviembre, lee desde el 14). Después busca cada hora `from:alertasynotificaciones@notificacionesbancolombia.com newer_than:2d`. En ambos casos, por cada mensaje que no ha visto:
 
 1. Comprueba que el remitente sea exactamente `alertasynotificaciones@notificacionesbancolombia.com`.
 2. Comprueba DKIM solo en el `Authentication-Results` que Gmail agrega arriba del mensaje (`mx.google.com`): debe decir `dkim=pass` para `notificacionesbancolombia.com`. Ignora cualquier otro encabezado que traiga el correo. Si el remitente o DKIM fallan, lo anota como rechazado y no envía nada.
 3. Toma el texto plano (o, si el correo no lo trae, el HTML convertido a texto dentro de Google) y extrae solo la frase desde "Bancolombia:" hasta antes de "Si tienes dudas". Sin esas marcas, lo anota como descartado.
-4. Si la frase no menciona `T.Cred *` seguido de 4 dígitos, lo anota como descartado: las alertas de ahorros y débito nunca salen de Google (D44).
+4. Si la frase no menciona `T.Cred *` o `T.Credito *` seguido de 4 dígitos, lo anota como descartado: las alertas de ahorros y débito nunca salen de Google (D44).
 5. Firma `{ message_id, phrase }` y lo envía. Lo anota según la respuesta de la app (ver la tabla del contrato).
 
 El estado (identificador, resultado y hora) vive en la propiedad `AL_CORTE_CAPTURE_STATE`. Se limpia sola a los 2 días. El script no etiqueta, mueve, borra ni envía correos.
@@ -20,7 +20,8 @@ El registro de ejecuciones solo muestra conteos y motivos, por ejemplo: `Captura
 | --- | --- |
 | `sender`, `dkim` | Rechazado sin enviar: no viene del remitente de Bancolombia o la firma DKIM no pasó. |
 | `no_phrase` | Descartado: el correo no tiene la frase entre "Bancolombia:" y "Si tienes dudas". |
-| `no_credit_card` | Descartado: alerta de ahorros, débito u otra sin `T.Cred *NNNN`. |
+| `no_credit_card` | Descartado: alerta de ahorros, débito u otra sin `T.Cred *NNNN` ni `T.Credito *NNNN`. |
+| `time_limit` | La primera lectura paró antes del límite de 6 minutos de Apps Script; lo que faltó queda para la siguiente ejecución. |
 | `too_large` | Rechazado sin enviar: la frase supera lo que acepta la app. |
 | `http_NNN`, `network_error`, `load_error`, `unexpected_answer` | Se reintenta en la siguiente ejecución, salvo `http_400` y `http_413`. |
 
@@ -55,8 +56,10 @@ Requisitos: la ruta de ingesta desplegada en producción con `INGEST_SIGNING_SEC
 4. En Configuración del proyecto → Propiedades de la secuencia de comandos, agrega:
     - `INGEST_URL`: `https://<dominio de producción>/api/ingest/alerts`. Usa el dominio final: el script no sigue redirecciones.
     - `INGEST_SIGNING_SECRET`: el mismo valor que en Vercel. No lo pegues en chats ni en el repositorio.
-5. En el editor, elige la función `installTrigger` y ejecútala. Autoriza los tres permisos de la tabla anterior. Queda un solo activador de `capturePurchaseAlerts` cada hora.
-6. Para probar sin esperar, ejecuta `capturePurchaseAlerts` desde el editor y revisa el registro de ejecuciones.
+5. En el editor, elige la función `installTrigger` y ejecútala. Autoriza los tres permisos de la tabla anterior. Queda un solo activador de `capturePurchaseAlerts` cada hora y, en la misma ejecución, se hace la primera lectura de los últimos 10 días.
+6. Revisa el registro de ejecuciones. La primera lectura espera 2,5 segundos entre solicitudes para no pasar el límite de 30 por minuto de la app, y se detiene a los 4,5 minutos para guardar su estado antes del límite de Apps Script. Si el resumen muestra `por reintentar` mayor que cero, ejecuta `backfillAlerts` otra vez: lo ya enviado no se repite.
+
+`backfillAlerts` también sirve más adelante para volver a leer los últimos 10 días. Lo que la app ya tiene vuelve como `repetidos` y no crea borradores. Además, vuelve a evaluar los mensajes que antes se descartaron (por ejemplo, si cambia el filtro). Cada borrador nuevo usa la IA para sus sugerencias, dentro del tope mensual de Ajustes.
 
 Para actualizar el código, repite `pnpm dlx @google/clasp push --force` desde esta carpeta. El activador y las propiedades se conservan.
 

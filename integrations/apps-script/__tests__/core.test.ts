@@ -93,6 +93,12 @@ describe("credit card filter (D44)", () => {
     expect(core.hasCreditCardMarker(ALERTS[key])).toBe(expected);
   });
 
+  it("accepts the card written as T.Credito or T.Crédito", () => {
+    expect(core.hasCreditCardMarker(ALERTS.directv.replace("T.Cred *", "T.Credito *"))).toBe(true);
+    expect(core.hasCreditCardMarker(ALERTS.directv.replace("T.Cred *", "T.Crédito *"))).toBe(true);
+    expect(core.hasCreditCardMarker("Bancolombia: T.Credencial *1999")).toBe(false);
+  });
+
   it("needs exactly 4 digits after 'T.Cred *'", () => {
     expect(core.hasCreditCardMarker("Bancolombia: T.Cred *123")).toBe(false);
     expect(core.hasCreditCardMarker("Bancolombia: T.Cred *12345")).toBe(false);
@@ -266,6 +272,41 @@ describe("processing and retries", () => {
     expect(plain(failing.state)).toEqual({});
     expect(plain(failing.summary)).toMatchObject({ retry: 1, load_error: 1 });
     expect(summary).toMatchObject({ created: 1 });
+  });
+});
+
+describe("first reading of the last 10 days", () => {
+  const since14Nov = Date.UTC(2026, 10, 14, 5) / 1000;
+
+  it("searches from midnight in Bogotá 10 days before today", () => {
+    expect(core.backfillQuery(Date.UTC(2026, 10, 24, 15), 10)).toBe(`from:alertasynotificaciones@notificacionesbancolombia.com after:${since14Nov}`);
+    // 22:00 of 24 Nov in Bogotá is already 25 Nov in UTC; it is still the 24th for the owner.
+    expect(core.backfillQuery(Date.UTC(2026, 10, 25, 3), 10)).toBe(`from:alertasynotificaciones@notificacionesbancolombia.com after:${since14Nov}`);
+    // 00:30 of 1 Dec in Bogotá goes back across the month.
+    expect(core.backfillQuery(Date.UTC(2026, 11, 1, 5, 30), 10)).toContain(`after:${Date.UTC(2026, 10, 21, 5) / 1000}`);
+  });
+
+  it("evaluates again the discarded messages, but not the processed or rejected ones", () => {
+    const state: CaptureState = { s: { s: "discarded", t: NOW }, p: { s: "processed", t: NOW }, r: { s: "rejected", t: NOW } };
+    const messages = [message("s", ALERTS.directv.replace("T.Cred *", "T.Credito *")), message("p", ALERTS.chatgpt), message("r", ALERTS.dollars)];
+    const byId = new Map(messages.map((item) => [item.id, item]));
+    const send = vi.fn(() => ok("created"));
+    const result = core.processMessages(["s", "p", "r"], state, { nowSeconds: () => NOW, load: (id) => byId.get(id)!, sign: nodeSign, send }, { retryDiscarded: true });
+    expect(send).toHaveBeenCalledTimes(1);
+    expect(plain(result.state)).toEqual({ s: { s: "processed", t: NOW }, p: { s: "processed", t: NOW }, r: { s: "rejected", t: NOW } });
+    expect(plain(result.summary)).toMatchObject({ found: 3, known: 2, created: 1 });
+
+    const hourly = core.processMessages(["s"], state, { nowSeconds: () => NOW, load: (id) => byId.get(id)!, sign: nodeSign, send });
+    expect(plain(hourly.summary)).toMatchObject({ known: 1, sent: 0 });
+  });
+
+  it("stops before the time limit and keeps what it already did", () => {
+    let calls = 0;
+    const messages = [message("m1", ALERTS.directv), message("m2", ALERTS.chatgpt), message("m3", ALERTS.dollars)];
+    const byId = new Map(messages.map((item) => [item.id, item]));
+    const result = core.processMessages(["m1", "m2", "m3"], {}, { nowSeconds: () => NOW, load: (id) => byId.get(id)!, sign: nodeSign, send: () => ok("created") }, { canContinue: () => ++calls <= 1 });
+    expect(plain(result.state)).toEqual({ m1: { s: "processed", t: NOW } });
+    expect(plain(result.summary)).toMatchObject({ created: 1, retry: 2, time_limit: 1 });
   });
 });
 

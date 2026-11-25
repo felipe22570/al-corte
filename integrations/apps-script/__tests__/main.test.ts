@@ -24,6 +24,8 @@ function appsScript(messages: GmailMessage[], fetch: Fetch, initialProperties: R
   const logs: string[] = [];
   const triggers: Array<{ handler: string; hours: number }> = [];
   const requests: Array<{ url: string; body: string; headers: Record<string, string>; followRedirects: boolean }> = [];
+  const queries: string[] = [];
+  const sleeps: number[] = [];
   const blob = (bytes: Buffer) => ({
     getDataAsString: (charset: string) => bytes.toString(/iso-8859-1/i.test(charset) ? "latin1" : "utf8"),
     setDataFromString: (text: string) => blob(Buffer.from(text, "utf8")),
@@ -35,6 +37,7 @@ function appsScript(messages: GmailMessage[], fetch: Fetch, initialProperties: R
     PropertiesService: { getScriptProperties: () => ({ getProperty: (key: string) => properties[key] ?? null, setProperty: (key: string, value: string) => { properties[key] = value; } }) },
     Utilities: {
       Charset: { UTF_8: "UTF-8" },
+      sleep: (ms: number) => sleeps.push(ms),
       computeHmacSha256Signature: (text: string, key: string) => signed(createHmac("sha256", key).update(text, "utf8").digest()),
       base64DecodeWebSafe: (text: string) => signed(Buffer.from(text, "base64url")),
       newBlob: (bytes: number[] | string) => blob(typeof bytes === "string" ? Buffer.from(bytes, "utf8") : unsigned(bytes)),
@@ -42,7 +45,10 @@ function appsScript(messages: GmailMessage[], fetch: Fetch, initialProperties: R
     Gmail: {
       Users: {
         Messages: {
-          list: (_user: string, options: { q: string }) => ({ messages: options.q.includes("notificacionesbancolombia.com") ? messages.map(({ id }) => ({ id })).reverse() : [] }),
+          list: (_user: string, options: { q: string }) => {
+            queries.push(options.q);
+            return { messages: options.q.includes("notificacionesbancolombia.com") ? messages.map(({ id }) => ({ id })).reverse() : [] };
+          },
           get: (_user: string, id: string) => messages.find((item) => item.id === id),
         },
       },
@@ -66,7 +72,7 @@ function appsScript(messages: GmailMessage[], fetch: Fetch, initialProperties: R
   const context = createContext(globals);
   for (const file of ["core.js", "main.js"]) runInContext(readFileSync(new URL(`../src/${file}`, import.meta.url), "utf8"), context, { filename: file });
   const call = (name: string) => (context as unknown as Record<string, () => void>)[name]!();
-  return { call, properties, logs, triggers, requests };
+  return { call, properties, logs, triggers, requests, queries, sleeps };
 }
 
 const alertEmail = (id: string, phrase: string, charset = "UTF-8"): GmailMessage => {
@@ -129,11 +135,38 @@ describe("Apps Script adapter (step 44)", () => {
     expect(() => appsScript([], created, { INGEST_SIGNING_SECRET: "" }).call("capturePurchaseAlerts")).toThrow(/INGEST_SIGNING_SECRET/);
   });
 
-  it("installs a single hourly trigger and removes it", () => {
+  it("hourly runs search the last 2 days without pauses", () => {
+    const script = appsScript([alertEmail("m1", ALERTS.directv), alertEmail("m2", ALERTS.chatgpt)], created);
+    script.call("capturePurchaseAlerts");
+    expect(script.queries).toEqual(["from:alertasynotificaciones@notificacionesbancolombia.com newer_than:2d"]);
+    expect(script.requests).toHaveLength(2);
+    expect(script.sleeps).toEqual([]);
+  });
+
+  it("the first reading searches 10 days back, pauses between requests and retries discarded alerts", () => {
+    const credito = ALERTS.chatgpt.replace("T.Cred *", "T.Credito *");
+    const discarded = JSON.stringify({ m3: { s: "discarded", t: Math.floor(Date.now() / 1000) } });
+    const script = appsScript([alertEmail("m1", ALERTS.directv), alertEmail("m2", ALERTS.savings), alertEmail("m3", credito)], created, { AL_CORTE_CAPTURE_STATE: discarded });
+    script.call("backfillAlerts");
+
+    expect(script.queries).toHaveLength(1);
+    expect(script.queries[0]).toMatch(/^from:alertasynotificaciones@notificacionesbancolombia\.com after:\d+$/);
+    const since = Number(script.queries[0]!.split("after:")[1]);
+    expect(Date.now() / 1000 - since).toBeGreaterThanOrEqual(10 * 24 * 60 * 60);
+    expect(Date.now() / 1000 - since).toBeLessThanOrEqual(11 * 24 * 60 * 60);
+    expect(script.requests.map((request) => JSON.parse(request.body).message_id)).toEqual(["m1", "m3"]);
+    expect(script.sleeps).toEqual([2500]);
+    const state = JSON.parse(script.properties.AL_CORTE_CAPTURE_STATE!);
+    expect([state.m1.s, state.m2.s, state.m3.s]).toEqual(["processed", "discarded", "processed"]);
+  });
+
+  it("installs a single hourly trigger, does the first reading and removes the trigger", () => {
     const script = appsScript([], created);
     script.call("installTrigger");
     script.call("installTrigger");
     expect(script.triggers).toEqual([{ handler: "capturePurchaseAlerts", hours: 1 }]);
+    expect(script.queries.every((query) => query.includes(" after:"))).toBe(true);
+    expect(script.queries).toHaveLength(2);
     script.call("removeTrigger");
     expect(script.triggers).toEqual([]);
   });

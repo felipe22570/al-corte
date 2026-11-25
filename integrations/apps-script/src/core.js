@@ -16,7 +16,10 @@ var AlCorteCapture = (function () {
   /** Same limits as the ingest route (step 42). */
   var MAX_BODY_BYTES = 4096;
   var MAX_PHRASE_CHARS = 1000;
-  var CREDIT_CARD = /T\.\s?Cred\s*\*\s*\d{4}(?!\d)/i;
+  /** "T.Cred *1234" or "T.Credito *1234" (both appear in real alerts), same pattern as the ingest route. */
+  var CREDIT_CARD = /T\.\s?Cr[eé]d(?:ito)?\s*\*\s*\d{4}(?!\d)/i;
+  /** Colombia has no daylight saving time: midnight in Bogotá is always 05:00 UTC. */
+  var BOGOTA_OFFSET_HOURS = 5;
   var STATUSES = ["processed", "rejected", "discarded"];
   var RESULTS = ["created", "duplicate", "ignored"];
   /** Answers that would repeat for every message (secret, switch, rate limit, configuration, redirect). */
@@ -117,9 +120,19 @@ var AlCorteCapture = (function () {
     return phrase.length > PHRASE_START.length ? phrase : null;
   }
 
-  /** D44: savings and debit alerts never mention "T.Cred *NNNN" and are dropped here, before any request. */
+  /** D44: savings and debit alerts never mention "T.Cred *NNNN" (or "T.Credito *NNNN") and are dropped here. */
   function hasCreditCardMarker(phrase) {
     return CREDIT_CARD.test(phrase);
+  }
+
+  /**
+   * Search for the first reading: alerts since midnight in Bogotá `days` days before today. With 10 days on 24 Nov it
+   * starts on 14 Nov at 00:00. Gmail takes `after:` in Unix seconds, which avoids its own time zone.
+   */
+  function backfillQuery(nowMs, days) {
+    var bogota = new Date(nowMs - BOGOTA_OFFSET_HOURS * 60 * 60 * 1000);
+    var since = Date.UTC(bogota.getUTCFullYear(), bogota.getUTCMonth(), bogota.getUTCDate() - days, BOGOTA_OFFSET_HOURS);
+    return "from:" + SENDER + " after:" + Math.floor(since / 1000);
   }
 
   function partCharset(headers) {
@@ -217,11 +230,15 @@ var AlCorteCapture = (function () {
    * One run of the hourly trigger. A message is marked only when the app answered for good or it never had to be sent;
    * anything else (no connection, rotated secret, capture off, rate limit) is retried in the next run while the message
    * is younger than 2 days.
+   *
+   * Options for the first reading: `retryDiscarded` evaluates again the messages discarded before (for example after a
+   * filter change) and `canContinue` stops before Apps Script's time limit, saving what was done.
    */
-  function processMessages(ids, state, deps) {
+  function processMessages(ids, state, deps, options) {
+    var settings = options || {};
     var next = {};
     Object.keys(state || {}).forEach(function (id) {
-      if (isEntry(state[id])) next[id] = { s: state[id].s, t: state[id].t };
+      if (isEntry(state[id]) && !(settings.retryDiscarded && state[id].s === "discarded")) next[id] = { s: state[id].s, t: state[id].t };
     });
     var summary = { found: ids.length, known: 0, sent: 0, created: 0, duplicate: 0, ignored: 0, rejected: 0, discarded: 0, retry: 0 };
     var blocked = false;
@@ -233,6 +250,10 @@ var AlCorteCapture = (function () {
       if (Object.prototype.hasOwnProperty.call(next, id)) {
         summary.known += 1;
         return;
+      }
+      if (!blocked && settings.canContinue && !settings.canContinue()) {
+        blocked = true;
+        count(summary, "time_limit");
       }
       if (blocked) {
         summary.retry += 1;
@@ -307,6 +328,7 @@ var AlCorteCapture = (function () {
     SENDER: SENDER,
     DOMAIN: DOMAIN,
     SEARCH_QUERY: SEARCH_QUERY,
+    backfillQuery: backfillQuery,
     RETENTION_SECONDS: RETENTION_SECONDS,
     MAX_BODY_BYTES: MAX_BODY_BYTES,
     MAX_PHRASE_CHARS: MAX_PHRASE_CHARS,

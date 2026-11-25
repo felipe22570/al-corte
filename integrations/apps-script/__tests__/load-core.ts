@@ -29,12 +29,13 @@ export type CaptureCore = {
   classifyResponse(status: number, body: string): { outcome: "processed" | "rejected" | "retry"; result?: string; blocking?: boolean };
   parseState(json: string | null): CaptureState;
   pruneState(state: CaptureState, nowSeconds: number): CaptureState;
+  backfillQuery(nowMs: number, days: number): string;
   processMessages(ids: string[], state: CaptureState, deps: {
     nowSeconds: () => number;
     load: (id: string) => CaptureMessage;
     sign: (text: string) => number[];
     send: (request: CaptureRequest) => CaptureResponse;
-  }): { state: CaptureState; summary: CaptureSummary };
+  }, options?: { retryDiscarded?: boolean; canContinue?: () => boolean }): { state: CaptureState; summary: CaptureSummary };
   describeSummary(summary: CaptureSummary): string;
 };
 

@@ -30,6 +30,17 @@ describe("readAlert (R10)", () => {
     expect(readAlert(ALERTS.advance)).toEqual({ kind: "unknown", last4: "1999" });
   });
 
+  it("reads alerts that write the card as T.Credito", () => {
+    expect(readAlert(ALERTS.directv.replace("T.Cred *", "T.Credito *"))).toEqual({ kind: "purchase", last4: "1999", currency: "COP", amount: "140910.00", merchant: "DIRECTV", date: "2026-11-17", time: "12:27" });
+    expect(readAlert(ALERTS.chatgpt.replace("T.Cred *", "T.Crédito *"))).toMatchObject({ kind: "purchase", last4: "1999" });
+    expect(readAlert(ALERTS.payment.replace("T.Cred *", "T.Credito *"))).toEqual({ kind: "unknown", last4: "1999" });
+    expect(readAlert("Bancolombia: tu T.Credito tiene un nuevo extracto.")).toEqual({ kind: "unknown", last4: null });
+  });
+
+  it("does not take other words that start with Cred as a credit card", () => {
+    expect(readAlert("Bancolombia: tu T.Credencial *1999 fue actualizada.")).toEqual({ kind: "ignored" });
+  });
+
   it("keeps a credit card alert without digits for review", () => {
     expect(readAlert("Bancolombia: tu T.Cred tiene un nuevo extracto.")).toEqual({ kind: "unknown", last4: null });
   });
