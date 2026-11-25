@@ -4,10 +4,16 @@ Script de Google Apps Script que corre cada hora en la cuenta de Google del due�
 
 ## Qué hace
 
-Al instalarse hace una primera lectura de los últimos 10 días, desde la medianoche de Bogotá (instalado el 24 de noviembre, lee desde el 14). Después busca cada hora `from:alertasynotificaciones@notificacionesbancolombia.com newer_than:2d`. En ambos casos, por cada mensaje que no ha visto:
+Al instalarse hace una primera lectura de los últimos 10 días, desde la medianoche de Bogotá (instalado el 24 de noviembre, lee desde el 14). Después busca cada hora los correos de los últimos 2 días (`newer_than:2d`) de alguno de estos remitentes, que son los únicos aceptados:
 
-1. Comprueba que el remitente sea exactamente `alertasynotificaciones@notificacionesbancolombia.com`.
-2. Comprueba DKIM solo en el `Authentication-Results` que Gmail agrega arriba del mensaje (`mx.google.com`): debe decir `dkim=pass` para `notificacionesbancolombia.com`. Ignora cualquier otro encabezado que traiga el correo. Si el remitente o DKIM fallan, lo anota como rechazado y no envía nada.
+- `alertasynotificaciones@an.notificacionesbancolombia.com` (firmado por `an.notificacionesbancolombia.com`);
+- `alertasynotificaciones@ayn.notificacionesbancolombia.com` (firmado por `ayn.notificacionesbancolombia.com`);
+- `alertasynotificaciones@notificacionesbancolombia.com`, documentado en el PRD.
+
+ En ambos casos, por cada mensaje que no ha visto:
+
+1. Comprueba que el remitente sea exactamente uno de los de la lista.
+2. Comprueba DKIM solo en el `Authentication-Results` que Gmail agrega arriba del mensaje (`mx.google.com`): debe decir `dkim=pass` para el dominio exacto del remitente. Un correo de `@an.` firmado por `ayn.` (o por el dominio principal) se rechaza. Ignora cualquier otro encabezado que traiga el correo. Si el remitente o DKIM fallan, lo anota como rechazado y no envía nada.
 3. Toma el texto plano (o, si el correo no lo trae, el HTML convertido a texto dentro de Google) y extrae solo la frase desde "Bancolombia:" hasta antes de "Si tienes dudas". Sin esas marcas, lo anota como descartado.
 4. Si la frase no menciona `T.Cred *` o `T.Credito *` seguido de 4 dígitos, lo anota como descartado: las alertas de ahorros y débito nunca salen de Google (D44).
 5. Firma `{ message_id, phrase }` y lo envía. Lo anota según la respuesta de la app (ver la tabla del contrato).
@@ -18,7 +24,7 @@ El registro de ejecuciones solo muestra conteos y motivos, por ejemplo: `Captura
 
 | Motivo | Significado |
 | --- | --- |
-| `sender`, `dkim` | Rechazado sin enviar: no viene del remitente de Bancolombia o la firma DKIM no pasó. |
+| `sender`, `dkim` | Rechazado sin enviar: no viene de un remitente de la lista o la firma DKIM no es de su dominio. Si Bancolombia empieza a usar otro remitente, se agrega a `SENDERS` en `src/core.js`. |
 | `no_phrase` | Descartado: el correo no tiene la frase entre "Bancolombia:" y "Si tienes dudas". |
 | `no_credit_card` | Descartado: alerta de ahorros, débito u otra sin `T.Cred *NNNN` ni `T.Credito *NNNN`. |
 | `time_limit` | La primera lectura paró antes del límite de 6 minutos de Apps Script; lo que faltó queda para la siguiente ejecución. |

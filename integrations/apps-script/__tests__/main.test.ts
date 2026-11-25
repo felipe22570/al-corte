@@ -138,7 +138,8 @@ describe("Apps Script adapter (step 44)", () => {
   it("hourly runs search the last 2 days without pauses", () => {
     const script = appsScript([alertEmail("m1", ALERTS.directv), alertEmail("m2", ALERTS.chatgpt)], created);
     script.call("capturePurchaseAlerts");
-    expect(script.queries).toEqual(["from:alertasynotificaciones@notificacionesbancolombia.com newer_than:2d"]);
+    expect(script.queries).toHaveLength(1);
+    expect(script.queries[0]).toMatch(/^from:\(alertasynotificaciones@notificacionesbancolombia\.com OR alertasynotificaciones@an\.notificacionesbancolombia\.com OR alertasynotificaciones@ayn\.notificacionesbancolombia\.com\) newer_than:2d$/);
     expect(script.requests).toHaveLength(2);
     expect(script.sleeps).toEqual([]);
   });
@@ -150,7 +151,7 @@ describe("Apps Script adapter (step 44)", () => {
     script.call("backfillAlerts");
 
     expect(script.queries).toHaveLength(1);
-    expect(script.queries[0]).toMatch(/^from:alertasynotificaciones@notificacionesbancolombia\.com after:\d+$/);
+    expect(script.queries[0]).toMatch(/^from:\(.+@an\.notificacionesbancolombia\.com OR .+@ayn\.notificacionesbancolombia\.com\) after:\d+$/);
     const since = Number(script.queries[0]!.split("after:")[1]);
     expect(Date.now() / 1000 - since).toBeGreaterThanOrEqual(10 * 24 * 60 * 60);
     expect(Date.now() / 1000 - since).toBeLessThanOrEqual(11 * 24 * 60 * 60);

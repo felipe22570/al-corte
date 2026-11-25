@@ -356,7 +356,7 @@ Basado en lo que publica Bancolombia para tarjetas de crédito (centro de ayuda,
 
 ### R10. Captura por correo e IA
 
-- **Origen:** solo correos de `alertasynotificaciones@notificacionesbancolombia.com` con firma DKIM válida del dominio `notificacionesbancolombia.com` (encabezado `Authentication-Results`). El resto se ignora.
+- **Origen:** solo correos de `alertasynotificaciones@` en `notificacionesbancolombia.com` o en sus subdominios `an.` y `ayn.` (las alertas reales llegan de estos dos), con firma DKIM válida del dominio exacto del remitente (encabezado `Authentication-Results` agregado por Google). El resto se ignora.
 - **Filtro de tarjeta de crédito:** la frase debe mencionar `T.Cred *` o `T.Credito *` (ambas formas aparecen en las alertas reales) seguido de 4 dígitos. Es condición necesaria, no suficiente: el tipo de movimiento se decide por el verbo ("Compraste" es compra; avances, pagos y otros formatos pasan al respaldo con IA). Un pago a la tarjeta hecho desde la cuenta de ahorros menciona ambas cosas y se clasifica como pago.
 - **Asignación de tarjeta:** por los 4 dígitos contra `last4` y alias de la tarjeta (`card_aliases`, para tarjetas virtuales o reexpedidas). Si no coinciden con ninguna tarjeta activa, el borrador queda como "Tarjeta no registrada" para asignarla o descartarlo; nunca se asigna por aproximación.
 - **Reglas primero:** para el formato de compra, las reglas extraen tipo, monto, moneda, comercio tal como viene, fecha, hora y últimos 4 dígitos. Estos campos nunca los define la IA.

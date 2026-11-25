@@ -42,6 +42,15 @@ const message = (id: string, phrase: string, overrides: Partial<CaptureMessage> 
   id, headers: headers(), plain: emailText(phrase), html: null, ...overrides,
 });
 
+const APEX = "notificacionesbancolombia.com";
+const SEARCH_FROM = "from:(alertasynotificaciones@notificacionesbancolombia.com OR alertasynotificaciones@an.notificacionesbancolombia.com OR alertasynotificaciones@ayn.notificacionesbancolombia.com)";
+const dkim = (list: MessageHeader[], domain = APEX) => core.isGoogleDkimPass(list, domain);
+
+/** The two real formats of 20 and 24 Nov 2026: each subdomain signs its own alerts. */
+const subdomainMessage = (id: string, phrase: string, sub: "an" | "ayn", signedBy = sub) => message(id, phrase, {
+  headers: headers([GOOGLE_PASS.replace("header.i=@notificacionesbancolombia.com", `header.i=@${signedBy}.notificacionesbancolombia.com`)], `Alertas y Notificaciones <alertasynotificaciones@${sub}.notificacionesbancolombia.com>`),
+});
+
 const nodeSign = (text: string) => Array.from(createHmac("sha256", SECRET).update(text, "utf8").digest()).map((byte) => (byte > 127 ? byte - 256 : byte));
 
 function run(messages: CaptureMessage[], respond: (request: CaptureRequest) => CaptureResponse, state: CaptureState = {}) {
@@ -109,36 +118,45 @@ describe("credit card filter (D44)", () => {
 
 describe("DKIM in the header added by Google (R10)", () => {
   it("passes with Google's result for the bank domain", () => {
-    expect(core.isGoogleDkimPass(headers())).toBe(true);
-    expect(core.isGoogleDkimPass([{ name: "authentication-results", value: GOOGLE_PASS }])).toBe(true);
+    expect(dkim(headers())).toBe(true);
+    expect(dkim([{ name: "authentication-results", value: GOOGLE_PASS }])).toBe(true);
   });
 
   it("rejects a forged header added below Google's", () => {
-    expect(core.isGoogleDkimPass(headers([GOOGLE_FAIL, GOOGLE_PASS]))).toBe(false);
+    expect(dkim(headers([GOOGLE_FAIL, GOOGLE_PASS]))).toBe(false);
   });
 
   it("rejects when the topmost header is not from mx.google.com", () => {
-    expect(core.isGoogleDkimPass(headers([GOOGLE_PASS.replace("mx.google.com", "mail.attacker.example"), GOOGLE_PASS]))).toBe(false);
-    expect(core.isGoogleDkimPass(headers([]))).toBe(false);
+    expect(dkim(headers([GOOGLE_PASS.replace("mx.google.com", "mail.attacker.example"), GOOGLE_PASS]))).toBe(false);
+    expect(dkim(headers([]))).toBe(false);
   });
 
   it("only accepts a passing signature of the exact domain", () => {
     for (const domain of ["mail.example", "notificacionesbancolombia.com.example", "evilnotificacionesbancolombia.com"]) {
-      expect(core.isGoogleDkimPass(headers([GOOGLE_PASS.replace("header.i=@notificacionesbancolombia.com", `header.i=@${domain}`)]))).toBe(false);
+      expect(dkim(headers([GOOGLE_PASS.replace("header.i=@notificacionesbancolombia.com", `header.i=@${domain}`)]))).toBe(false);
     }
-    expect(core.isGoogleDkimPass(headers([GOOGLE_PASS.replace("dkim=pass", "dkim=neutral")]))).toBe(false);
-    expect(core.isGoogleDkimPass(headers([GOOGLE_PASS.replace("header.i=@", "header.i=alertasynotificaciones@")]))).toBe(true);
-    expect(core.isGoogleDkimPass(headers([GOOGLE_PASS.replace("header.i=@notificacionesbancolombia.com", "header.d=NotificacionesBancolombia.com")]))).toBe(true);
+    expect(dkim(headers([GOOGLE_PASS.replace("dkim=pass", "dkim=neutral")]))).toBe(false);
+    expect(dkim(headers([GOOGLE_PASS.replace("header.i=@", "header.i=alertasynotificaciones@")]))).toBe(true);
+    expect(dkim(headers([GOOGLE_PASS.replace("header.i=@notificacionesbancolombia.com", "header.d=NotificacionesBancolombia.com")]))).toBe(true);
   });
 
   it("accepts the bank signature next to another one", () => {
     const two = "mx.google.com;\r\n dkim=fail header.i=@relay.example header.s=a;\r\n dkim=pass header.i=@notificacionesbancolombia.com header.s=b";
-    expect(core.isGoogleDkimPass(headers([two]))).toBe(true);
+    expect(dkim(headers([two]))).toBe(true);
+  });
+
+  it("needs the signature of exactly the sender's domain", () => {
+    const an = headers([GOOGLE_PASS.replace("header.i=@notificacionesbancolombia.com", "header.i=@an.notificacionesbancolombia.com")]);
+    expect(dkim(an, "an.notificacionesbancolombia.com")).toBe(true);
+    expect(dkim(an, "ayn.notificacionesbancolombia.com")).toBe(false);
+    expect(dkim(an, APEX)).toBe(false);
+    expect(dkim(headers(), "an.notificacionesbancolombia.com")).toBe(false);
+    expect(dkim(headers(), "")).toBe(false);
   });
 
   it("ignores results written inside comments", () => {
     const comment = "mx.google.com; spf=pass (dkim=pass header.i=@notificacionesbancolombia.com) smtp.mailfrom=x@example.com; dkim=fail header.i=@notificacionesbancolombia.com";
-    expect(core.isGoogleDkimPass(headers([comment]))).toBe(false);
+    expect(dkim(headers([comment]))).toBe(false);
   });
 });
 
@@ -147,6 +165,14 @@ describe("message evaluation", () => {
     expect(plain(core.evaluateMessage(message("a", ALERTS.directv)))).toEqual({ action: "send", phrase: ALERTS.directv });
     expect(plain(core.evaluateMessage(message("b", ALERTS.savings)))).toEqual({ action: "discard", reason: "no_credit_card" });
     expect(plain(core.evaluateMessage(message("c", ALERTS.debit)))).toEqual({ action: "discard", reason: "no_credit_card" });
+  });
+
+  it("accepts the real alerts from the an. and ayn. subdomains, each with its own signature", () => {
+    expect(plain(core.evaluateMessage(subdomainMessage("a", ALERTS.directv, "an")))).toEqual({ action: "send", phrase: ALERTS.directv });
+    expect(plain(core.evaluateMessage(subdomainMessage("b", ALERTS.chatgpt, "ayn")))).toEqual({ action: "send", phrase: ALERTS.chatgpt });
+    expect(plain(core.evaluateMessage(subdomainMessage("c", ALERTS.directv, "an", "ayn")))).toEqual({ action: "reject", reason: "dkim" });
+    expect(plain(core.evaluateMessage(message("d", ALERTS.directv, { headers: headers(undefined, "alertasynotificaciones@xan.notificacionesbancolombia.com") })))).toEqual({ action: "reject", reason: "sender" });
+    expect(plain(core.evaluateMessage(message("e", ALERTS.directv, { headers: headers(undefined, "otro@an.notificacionesbancolombia.com") })))).toEqual({ action: "reject", reason: "sender" });
   });
 
   it("rejects another sender and a failed DKIM before reading the body", () => {
@@ -279,9 +305,9 @@ describe("first reading of the last 10 days", () => {
   const since14Nov = Date.UTC(2026, 10, 14, 5) / 1000;
 
   it("searches from midnight in Bogotá 10 days before today", () => {
-    expect(core.backfillQuery(Date.UTC(2026, 10, 24, 15), 10)).toBe(`from:alertasynotificaciones@notificacionesbancolombia.com after:${since14Nov}`);
+    expect(core.backfillQuery(Date.UTC(2026, 10, 24, 15), 10)).toBe(`${SEARCH_FROM} after:${since14Nov}`);
     // 22:00 of 24 Nov in Bogotá is already 25 Nov in UTC; it is still the 24th for the owner.
-    expect(core.backfillQuery(Date.UTC(2026, 10, 25, 3), 10)).toBe(`from:alertasynotificaciones@notificacionesbancolombia.com after:${since14Nov}`);
+    expect(core.backfillQuery(Date.UTC(2026, 10, 25, 3), 10)).toBe(`${SEARCH_FROM} after:${since14Nov}`);
     // 00:30 of 1 Dec in Bogotá goes back across the month.
     expect(core.backfillQuery(Date.UTC(2026, 11, 1, 5, 30), 10)).toContain(`after:${Date.UTC(2026, 10, 21, 5) / 1000}`);
   });
@@ -346,8 +372,9 @@ describe("helpers", () => {
     expect(core.bytesToHex([0, 15, 16, 127, -128, -1])).toBe("000f107f80ff");
   });
 
-  it("searches the alert sender of the last 2 days", () => {
-    expect(core.SEARCH_QUERY).toBe("from:alertasynotificaciones@notificacionesbancolombia.com newer_than:2d");
+  it("searches the three alert senders of the last 2 days", () => {
+    expect(core.SEARCH_QUERY).toBe(`${SEARCH_FROM} newer_than:2d`);
+    expect(core.SENDERS).toHaveLength(3);
   });
 
   it("summarizes a run with counts only", () => {

@@ -5,9 +5,17 @@
  * Only the phrase of a credit card alert leaves Google (D47): never the HTML, the footer or other emails.
  */
 var AlCorteCapture = (function () {
-  var SENDER = "alertasynotificaciones@notificacionesbancolombia.com";
-  var DOMAIN = "notificacionesbancolombia.com";
-  var SEARCH_QUERY = "from:" + SENDER + " newer_than:2d";
+  /**
+   * Exact senders of the bank alerts. The real ones come from the `an.` and `ayn.` subdomains (seen on 20 and 24 Nov
+   * 2026, each signed by its own subdomain); the bare domain stays as documented in R10. No other address is accepted.
+   */
+  var SENDERS = [
+    "alertasynotificaciones@notificacionesbancolombia.com",
+    "alertasynotificaciones@an.notificacionesbancolombia.com",
+    "alertasynotificaciones@ayn.notificacionesbancolombia.com",
+  ];
+  var FROM_SEARCH = "from:(" + SENDERS.join(" OR ") + ")";
+  var SEARCH_QUERY = FROM_SEARCH + " newer_than:2d";
   var GOOGLE_AUTHSERV_ID = "mx.google.com";
   var PHRASE_START = "Bancolombia:";
   var PHRASE_END = "Si tienes dudas";
@@ -61,10 +69,12 @@ var AlCorteCapture = (function () {
 
   /**
    * R10: Google adds its own `Authentication-Results` at the top of the message. Only that one counts; a header the
-   * sender wrote below it is ignored. It must report `dkim=pass` for the bank domain itself, not a subdomain or a
-   * lookalike.
+   * sender wrote below it is ignored. It must report `dkim=pass` for exactly the domain of the sender (an alert from
+   * `an.notificacionesbancolombia.com` needs that signature), never a parent, a sibling or a lookalike.
    */
-  function isGoogleDkimPass(headers) {
+  function isGoogleDkimPass(headers, domain) {
+    var wanted = String(domain || "").toLowerCase();
+    if (!wanted) return false;
     var results = headerValues(headers, "authentication-results");
     if (results.length === 0) return false;
     var parts = stripComments(results[0]).split(";");
@@ -75,7 +85,7 @@ var AlCorteCapture = (function () {
       if (!/^dkim\s*=\s*pass\b/i.test(result)) continue;
       var properties = result.match(/\bheader\.[id]\s*=\s*[^\s;]+/gi) || [];
       for (var j = 0; j < properties.length; j++) {
-        if (domainOf(properties[j].replace(/^header\.[id]\s*=\s*/i, "")) === DOMAIN) return true;
+        if (domainOf(properties[j].replace(/^header\.[id]\s*=\s*/i, "")) === wanted) return true;
       }
     }
     return false;
@@ -132,7 +142,7 @@ var AlCorteCapture = (function () {
   function backfillQuery(nowMs, days) {
     var bogota = new Date(nowMs - BOGOTA_OFFSET_HOURS * 60 * 60 * 1000);
     var since = Date.UTC(bogota.getUTCFullYear(), bogota.getUTCMonth(), bogota.getUTCDate() - days, BOGOTA_OFFSET_HOURS);
-    return "from:" + SENDER + " after:" + Math.floor(since / 1000);
+    return FROM_SEARCH + " after:" + Math.floor(since / 1000);
   }
 
   function partCharset(headers) {
@@ -171,8 +181,9 @@ var AlCorteCapture = (function () {
   /** Sender and DKIM first; the body is only read for a message that really comes from the bank. */
   function evaluateMessage(message) {
     var from = headerValues(message.headers, "from");
-    if (from.length !== 1 || senderAddress(from[0]) !== SENDER) return { action: "reject", reason: "sender" };
-    if (!isGoogleDkimPass(message.headers)) return { action: "reject", reason: "dkim" };
+    var sender = from.length === 1 ? senderAddress(from[0]) : "";
+    if (SENDERS.indexOf(sender) === -1) return { action: "reject", reason: "sender" };
+    if (!isGoogleDkimPass(message.headers, domainOf(sender))) return { action: "reject", reason: "dkim" };
     var phrase = phraseOf(message);
     if (!phrase) return { action: "discard", reason: "no_phrase" };
     if (!hasCreditCardMarker(phrase)) return { action: "discard", reason: "no_credit_card" };
@@ -325,8 +336,7 @@ var AlCorteCapture = (function () {
   }
 
   return {
-    SENDER: SENDER,
-    DOMAIN: DOMAIN,
+    SENDERS: SENDERS,
     SEARCH_QUERY: SEARCH_QUERY,
     backfillQuery: backfillQuery,
     RETENTION_SECONDS: RETENTION_SECONDS,

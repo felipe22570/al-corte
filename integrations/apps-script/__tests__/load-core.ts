@@ -10,13 +10,12 @@ export type CaptureResponse = { status: number; body: string };
 export type CaptureSummary = Record<string, number>;
 
 export type CaptureCore = {
-  SENDER: string;
-  DOMAIN: string;
+  SENDERS: string[];
   SEARCH_QUERY: string;
   RETENTION_SECONDS: number;
   MAX_BODY_BYTES: number;
   MAX_PHRASE_CHARS: number;
-  isGoogleDkimPass(headers: MessageHeader[]): boolean;
+  isGoogleDkimPass(headers: MessageHeader[], domain: string): boolean;
   senderAddress(from: string): string;
   htmlToText(html: string): string;
   extractPhrase(text: string): string | null;
