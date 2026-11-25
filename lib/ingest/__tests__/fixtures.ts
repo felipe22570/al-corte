@@ -14,4 +14,6 @@ export const ALERTS = {
   /** A payment to the card from savings mentions both; it is not a purchase. */
   payment: "Bancolombia: Pagaste $1.178.836,00 a tu T.Cred *1999 desde tu cuenta *5678 el 02/12/2026 a las 10:00.",
   advance: "Bancolombia: Retiraste $200.000,00 en CAJERO EJEMPLO con tu T.Cred *1999 el 21/11/2026 a las 18:40.",
+  /** Real advance format of 24 Nov 2026: comma for thousands, time before date (amount and digits are fictitious). */
+  virtualAdvance: "Bancolombia: Hiciste un avance de $300,000 en tu SUC VIRTUAL el 17:55 24/11/2026 desde tu T.Credito *1999 a la cuenta *0000.",
 } as const;

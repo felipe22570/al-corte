@@ -73,6 +73,13 @@ describe("phrase extraction (step 44)", () => {
     expect(core.extractPhrase(text)).toBe(ALERTS.chatgpt);
   });
 
+  it("also ends at the '¿Dudas?' footer of the virtual advance alert", () => {
+    const text = `¡Listo!\nTodo salió bien con tus movimientos\n${ALERTS.virtualAdvance.replace(" desde", "\ndesde")} ¿Dudas? Llamanos al 6040000000.`;
+    expect(core.extractPhrase(text)).toBe(ALERTS.virtualAdvance);
+    expect(core.extractPhrase(`${ALERTS.virtualAdvance} Dudas? Llamanos`)).toBe(ALERTS.virtualAdvance);
+    expect(plain(core.evaluateMessage(message("v", ALERTS.virtualAdvance, { plain: text })))).toEqual({ action: "send", phrase: ALERTS.virtualAdvance });
+  });
+
   it("returns null without the start or the end marker", () => {
     expect(core.extractPhrase("Compraste COP1.000,00 en X. Si tienes dudas, llama.")).toBeNull();
     expect(core.extractPhrase(`${ALERTS.directv}\nGracias.`)).toBeNull();
@@ -97,7 +104,7 @@ describe("phrase extraction (step 44)", () => {
 
 describe("credit card filter (D44)", () => {
   it.each([
-    ["directv", true], ["chatgpt", true], ["dollars", true], ["withCard", true], ["payment", true], ["advance", true], ["savings", false], ["debit", false],
+    ["directv", true], ["chatgpt", true], ["dollars", true], ["withCard", true], ["virtualAdvance", true], ["payment", true], ["advance", true], ["savings", false], ["debit", false],
   ] as const)("%s → %s", (key, expected) => {
     expect(core.hasCreditCardMarker(ALERTS[key])).toBe(expected);
   });

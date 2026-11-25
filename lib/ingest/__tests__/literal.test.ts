@@ -10,6 +10,20 @@ describe("verifyExtraction (R10)", () => {
     expect(verifyExtraction(ALERTS.advance, advance)).toEqual({ type: "cash_advance", amount: "200000.00", currency: "COP", merchant: "CAJERO EJEMPLO", date: "2026-11-21", time: "18:40", last4: "1999" });
   });
 
+  it("reads the comma as thousands only when it groups 3 digits, as in the virtual advance alert", () => {
+    const virtual: ExtractedAlert = { type: "cash_advance", amountText: "300,000", currency: "COP", merchant: null, dateText: "24/11/2026", timeText: "17:55", last4: "1999" };
+    expect(verifyExtraction(ALERTS.virtualAdvance, virtual)).toEqual({ type: "cash_advance", amount: "300000.00", currency: "COP", merchant: null, date: "2026-11-24", time: "17:55", last4: "1999" });
+    const millions = ALERTS.virtualAdvance.replace("$300,000", "$1,300,000");
+    expect(verifyExtraction(millions, { ...virtual, amountText: "1,300,000" })).toMatchObject({ amount: "1300000.00" });
+    // "300.000" or "300" are not what the alert says; "300,00" stays as pesos with cents.
+    expect(verifyExtraction(ALERTS.virtualAdvance, { ...virtual, amountText: "300.000" })).toBeNull();
+    expect(verifyExtraction(ALERTS.virtualAdvance, { ...virtual, amountText: "300" })).toBeNull();
+    expect(verifyExtraction(ALERTS.virtualAdvance, { ...virtual, amountText: "1,300,000" })).toBeNull();
+    expect(verifyExtraction(ALERTS.virtualAdvance.replace("$300,000", "$300,00"), { ...virtual, amountText: "300,00" })).toMatchObject({ amount: "300.00" });
+    expect(verifyExtraction(ALERTS.virtualAdvance.replace("$300,000", "$30,0000"), { ...virtual, amountText: "30,0000" })).toBeNull();
+    expect(verifyExtraction(ALERTS.virtualAdvance.replace("$300,000", "$1.300,000"), { ...virtual, amountText: "1.300,000" })).toBeNull();
+  });
+
   it("keeps a payment as a payment and 'other' without type", () => {
     expect(verifyExtraction(ALERTS.payment, { type: "payment", amountText: "1.178.836,00", currency: "COP", merchant: null, dateText: "02/12/2026", timeText: "10:00", last4: "1999" }))
       .toMatchObject({ type: "payment", amount: "1178836.00", date: "2026-12-02" });

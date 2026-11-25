@@ -28,6 +28,7 @@ describe("readAlert (R10)", () => {
   it("never reads a payment or an advance as a purchase", () => {
     expect(readAlert(ALERTS.payment)).toEqual({ kind: "unknown", last4: "1999" });
     expect(readAlert(ALERTS.advance)).toEqual({ kind: "unknown", last4: "1999" });
+    expect(readAlert(ALERTS.virtualAdvance)).toEqual({ kind: "unknown", last4: "1999" });
   });
 
   it("reads the second purchase format, with the card before the date", () => {

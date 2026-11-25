@@ -18,7 +18,8 @@ var AlCorteCapture = (function () {
   var SEARCH_QUERY = FROM_SEARCH + " newer_than:2d";
   var GOOGLE_AUTHSERV_ID = "mx.google.com";
   var PHRASE_START = "Bancolombia:";
-  var PHRASE_END = "Si tienes dudas";
+  /** Footers seen in real alerts: "Si tienes dudas…" (purchases) and "¿Dudas? Llamanos…" (virtual advances). */
+  var PHRASE_END = /Si tienes dudas|¿?Dudas\?/;
   /** The search covers 2 days; an id seen earlier can no longer come back, and a resent one is a duplicate in the app. */
   var RETENTION_SECONDS = 2 * 24 * 60 * 60;
   /** Same limits as the ingest route (step 42). */
@@ -119,11 +120,12 @@ var AlCorteCapture = (function () {
     return text.replace(/\s+/g, " ").trim();
   }
 
-  /** The phrase from the last "Bancolombia:" before "Si tienes dudas"; null if either marker is missing. */
+  /** The phrase from the last "Bancolombia:" before the first footer marker; null if either marker is missing. */
   function extractPhrase(text) {
     var source = String(text || "");
-    var end = source.indexOf(PHRASE_END);
-    if (end === -1) return null;
+    var footer = PHRASE_END.exec(source);
+    if (!footer) return null;
+    var end = footer.index;
     var start = source.lastIndexOf(PHRASE_START, end);
     if (start === -1) return null;
     var phrase = normalizeSpaces(source.slice(start, end));
