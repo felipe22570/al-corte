@@ -11,10 +11,13 @@ const rules = [
 const shadowAllowed = /^components\/ui\/(sheet|dialog|dropdown-menu|popover|select|sonner)\.tsx$/;
 let errors = 0;
 
+// The new interface (H13) has its own scale and rules in scripts/check-design-v2.mjs.
+const v2Paths = new Set([join("app", "v2"), join("components", "v2")]);
+
 async function scan(directory) {
   for (const entry of await readdir(directory, { withFileTypes: true })) {
     const path = join(directory, entry.name);
-    if (entry.isDirectory()) await scan(path);
+    if (entry.isDirectory()) { if (!v2Paths.has(path)) await scan(path); }
     else if (/\.(tsx|ts|jsx|js)$/.test(path)) {
       const lines = (await readFile(path, "utf8")).split("\n");
       lines.forEach((line, index) => {
