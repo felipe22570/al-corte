@@ -17,7 +17,7 @@ Comprobar en producción que la captura funciona, que es segura y que no altera 
 En producción, solo lo que las pruebas automáticas no pueden cubrir (simplificado el 27 de noviembre de 2026, ver registro de decisiones):
 
 - [ ] Una semana de uso real (25 nov – 1 dic): porcentaje de alertas de tarjeta de crédito que llegan como borrador y porcentaje confirmado sin cambios (`changed_fields`). Anotar en las notas.
-- [ ] Apagar la captura desde Ajustes rechaza nuevas solicitudes (`pnpm probe:ingest <url> --capture-off` da 403) y encenderla la recupera.
+- [x] Apagar la captura desde Ajustes rechaza nuevas solicitudes (`pnpm probe:ingest <url> --capture-off` da 403) y encenderla la recupera. Comprobado por el dueño el 27 nov.
 - [ ] Gasto de IA del periodo dentro del tope.
 - [x] `pnpm test:ai` con resultados anotados (24 nov, ver notas).
 - [ ] Revisión del dueño en el celular, de la alerta a la confirmación.
@@ -45,3 +45,5 @@ Cubierto por pruebas automáticas y por el uso real, sin repetirlo en producció
 - Evals: nuevo caso de `extractUnknownAlert` con el formato real del avance virtual (coma de miles, hora antes de la fecha, "T.Credito" y otra cuenta `*0000`). `pnpm test:ai` (claude-opus-5-5, 24 nov): `smokeCheck` 4 casos al 100 % (US$0,012); `interpretTransactionAlert` 5 casos: subscriptionId 4/4, categoryId 3/3, installmentsCount 5/5, billingCurrency 4/4, isInternational 2/2; `extractUnknownAlert` 5 casos: type, amountText, currency y dateText 5/5, timeText y last4 4/4; verificación literal 5/5. Costo acumulado US$0,125. Sin cambios de prompt ni de modelo.
 
 2026-11-27 — Verificación simplificada por decisión del dueño: en producción quedan la semana de uso, el interruptor de captura, el gasto de IA y la revisión en el celular. Lo demás queda como cubierto por pruebas automáticas y procedimientos documentados (ver la sección de verificación).
+
+2026-11-27 — Interruptor de captura comprobado por el dueño. Gasto de IA de noviembre a la fecha: US$0,221 (21 llamadas el 24 nov, todas `ok`, ninguna `budget_exceeded`; 14 `interpretTransactionAlert` US$0,171 y 7 `extractUnknownAlert` US$0,050), 4,4 % del tope predeterminado de US$5. Sin borradores nuevos desde el 24 nov: el dueño confirma que no hizo compras con tarjeta en esos días. La captura quedó apagada tras la prueba del interruptor (27 nov, 7:06 p. m.) y hay que volver a encenderla. Borradores confirmados: 9, de ellos 1 con `changed_fields` (sin cambios); los demás se confirmaron antes del despliegue de `changed_fields` o se enlazaron.
