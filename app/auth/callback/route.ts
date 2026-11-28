@@ -1,5 +1,6 @@
 import { type NextRequest, NextResponse } from "next/server";
 
+import { safeInternalPath } from "@/lib/routes";
 import { createClient } from "@/lib/supabase/server";
 
 export async function GET(request: NextRequest) {
@@ -11,7 +12,8 @@ export async function GET(request: NextRequest) {
     const { error } = await supabase.auth.exchangeCodeForSession(code);
 
     if (!error) {
-      return NextResponse.redirect(`${origin}/movimientos`);
+      // D63: the screen to open comes only as a validated internal path.
+      return NextResponse.redirect(`${origin}${safeInternalPath(searchParams.get("next"), "/movimientos")}`);
     }
   }
 

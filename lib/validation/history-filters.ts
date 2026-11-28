@@ -16,3 +16,5 @@ export function parseHistoryFilters(params: Record<string, string | string[] | u
     pagina: page,
   };
 }
+
+export type HistoryFilters = ReturnType<typeof parseHistoryFilters>;

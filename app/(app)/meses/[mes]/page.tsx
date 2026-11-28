@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { notFound, redirect } from "next/navigation";
+import { notFound } from "next/navigation";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import { CategorySpendingChart } from "@/components/category-spending-chart";
 import { CurrencyInline } from "@/components/currency-amounts";
@@ -11,12 +11,10 @@ import { PageHeader } from "@/components/page-header";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { StatementCloseNotice } from "@/components/statement-close-notice";
 import { todayInBogota } from "@/lib/domain/dates";
-import { currencyPaidAt, monthBreakdown, monthComparison, parsePaymentMonth, paymentMonth } from "@/lib/domain/months";
+import { parsePaymentMonth, paymentMonth } from "@/lib/domain/months";
 import { formatDateShort, formatMonth, formatSpendingComparison } from "@/lib/format";
-import { loadMonthDetail } from "@/lib/queries/months";
-import { loadPayInFullSavings } from "@/lib/queries/pay-in-full-savings";
-import { createSupabaseMonthSource } from "@/lib/queries/supabase-months";
-import { createClient } from "@/lib/supabase/server";
+import { loadMonthPage } from "@/lib/queries/month-page";
+import { requireUser } from "@/lib/supabase/require-user";
 
 export const metadata: Metadata = { title: "Detalle del mes" };
 
@@ -31,27 +29,11 @@ const navLink = "inline-flex min-w-0 items-center gap-1 rounded-md text-body und
 export default async function MonthDetailPage({ params }: { params: Promise<{ mes: string }> }) {
   const { mes } = await params;
   if (!parsePaymentMonth(mes)) notFound();
-  const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) redirect("/login");
-  const source = createSupabaseMonthSource(supabase, user.id);
+  const { supabase, user } = await requireUser();
   const today = todayInBogota();
-  const detail = await loadMonthDetail(source, today, mes);
-  if (!detail) notFound();
-  const [cards, categories, purchases] = await Promise.all([
-    source.loadCardDetails(), source.loadCategories(), source.loadPurchaseMonthSpending(mes),
-  ]);
-  const { month, previous, neighbors, overdue, subscriptionNames, toReview } = detail;
-  // F21: interest avoided by paying the total debt of cut statements, per currency still unpaid (D54).
-  const savings = await loadPayInFullSavings(supabase, user.id, month.cards.flatMap((group) => group.statements.flatMap(({ statement }) => {
-    if (statement.origin !== "real" || !statement.id || !statement.debt || statement.cutoffDate >= today) return [];
-    const currencies = (["COP", "USD"] as const).filter((currency) => statement.debt![currency].gt(0) && !currencyPaidAt(statement, currency));
-    return currencies.length ? [{ id: statement.id, cardId: statement.cardId, cutoffDate: statement.cutoffDate, currencies: [...currencies] }] : [];
-  })), today);
-  const breakdown = monthBreakdown(month.statements);
-  // D33: dollar charges are broken down apart and never added to the peso total.
-  const usdBreakdown = month.totalUsd.isZero() ? null : monthBreakdown(month.statements, "USD");
-  const result = monthComparison(month, previous);
+  const page = await loadMonthPage(supabase, user.id, today, mes);
+  if (!page) notFound();
+  const { month, previous, neighbors, overdue, subscriptionNames, toReview, cards, categories, purchases, savings, breakdown, usdBreakdown, comparison: result } = page;
   const comparison = result.kind === "comparable" && previous
     ? { text: formatSpendingComparison(month.total, previous.total, previous.month), diff: result.diff, usdDiff: result.usd?.diff ?? null } : null;
   const categoryRows = [...breakdown.categories].map(([id, amount]) => {

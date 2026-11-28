@@ -1,48 +1,24 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { redirect } from "next/navigation";
 import { List } from "lucide-react";
 import { EmptyState } from "@/components/empty-state";
 import { HistoryFilters } from "@/components/history-filters";
 import { PageHeader } from "@/components/page-header";
 import { TransactionList } from "@/components/transaction-list";
 import { todayInBogota } from "@/lib/domain/dates";
-import { monthDateBounds, paymentMonth } from "@/lib/domain/months";
-import type { HistoryCard, HistoryCategory, HistoryRow } from "@/lib/history-types";
-import { filterHistoryRows } from "@/lib/history-filtering";
-import { fetchAllPages } from "@/lib/paginate";
-import { createClient } from "@/lib/supabase/server";
+import { paymentMonth } from "@/lib/domain/months";
+import { loadHistory } from "@/lib/queries/history";
+import { requireUser } from "@/lib/supabase/require-user";
 import { parseHistoryFilters } from "@/lib/validation/history-filters";
 
 export const metadata: Metadata = { title: "Movimientos" };
-const PAGE_SIZE = 100;
 
 export default async function MovimientosPage({ searchParams }: { searchParams: Promise<Record<string, string | string[] | undefined>> }) {
-  const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) redirect("/login");
+  const { supabase, user } = await requireUser();
   const today = todayInBogota();
   const filters = parseHistoryFilters(await searchParams, paymentMonth(today));
-  const { first, last } = monthDateBounds(filters.mes);
-  const [cardRows, categoryRows, transactionRows] = await Promise.all([
-    fetchAllPages((from, to) => supabase.from("cards").select("id,name,last4,color").eq("user_id", user.id).order("name").order("id").range(from, to)),
-    fetchAllPages((from, to) => supabase.from("categories").select("id,name,icon").eq("user_id", user.id).order("name").order("id").range(from, to)),
-    fetchAllPages((from, to) => {
-      let query = supabase.from("transactions").select("id,date,merchant,note,type,amount::text,amount_cop::text,currency,card_id,category_id,installments_count").eq("user_id", user.id).gte("date", first).lte("date", last);
-      if (filters.tarjeta) query = query.eq("card_id", filters.tarjeta);
-      if (filters.categoria) query = query.eq("category_id", filters.categoria);
-      return query.order("date", { ascending: false }).order("created_at", { ascending: false }).order("id", { ascending: false }).range(from, to);
-    }),
-  ]);
-  const cards = cardRows as HistoryCard[];
-  const categories = categoryRows as HistoryCategory[];
-  const transactions = transactionRows as unknown as HistoryRow[];
-  const filtered = filterHistoryRows(transactions, filters);
-  const pageCount = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
-  const page = Math.min(filters.pagina, pageCount);
-  const shown = filtered.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
+  const { cards, categories, filtered, shown, page, pageCount, hasFilters } = await loadHistory(supabase, user.id, filters);
   const pageUrl = (number: number) => { const params = new URLSearchParams(); for (const key of ["mes", "tarjeta", "categoria", "tipo", "q"] as const) { const value = filters[key]; if (value) params.set(key, value); } params.set("pagina", String(number)); return `/movimientos?${params}`; };
-  const hasFilters = !!(filters.tarjeta || filters.categoria || filters.tipo || filters.q);
   return (
     <>
       <PageHeader title="Movimientos" subtitle="Consulta tus gastos y pagos." />

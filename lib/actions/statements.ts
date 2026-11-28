@@ -1,23 +1,13 @@
 "use server";
 
-import { revalidatePath } from "next/cache";
 import { z } from "zod";
 import { todayInBogota } from "@/lib/domain/dates";
-import { paymentMonth } from "@/lib/domain/months";
-import { revalidateFinancialViews } from "@/lib/revalidate-views";
+import { revalidateStatementViews } from "@/lib/revalidate-views";
 import { createClient } from "@/lib/supabase/server";
 import { effectiveAnnualRate, planBalanceCorrections } from "@/lib/domain/reconciliation";
 import { loadCloseContext, type CloseContext } from "@/lib/queries/statement-close";
 import { statementCloseSchema, statementPaymentDateSchema } from "@/lib/validation/statement";
 import { currencySchema } from "@/lib/validation/transaction";
-
-function revalidateStatement(statement: { card_id: string; cutoff_date: string; due_date: string }) {
-  revalidatePath(`/tarjetas/${statement.card_id}`);
-  revalidatePath(`/tarjetas/${statement.card_id}/extractos/${statement.cutoff_date}`);
-  revalidatePath(`/meses/${paymentMonth(statement.due_date)}`);
-  revalidatePath("/");
-  revalidateFinancialViews();
-}
 
 /** Bank values and payment mark live per statement and currency (D33); marking never creates a payment (D26). */
 async function updateBalance(id: unknown, currency: unknown, values: { real_minimum?: string | null; real_total?: string | null; paid_at?: string | null }) {
@@ -32,7 +22,7 @@ async function updateBalance(id: unknown, currency: unknown, values: { real_mini
   const { error: balanceError } = await supabase.from("statement_balances")
     .upsert({ user_id: user.id, statement_id: id, currency: parsedCurrency.data, ...values }, { onConflict: "statement_id,currency" });
   if (balanceError) return { ok: false as const, error: "No pudimos actualizar el extracto." };
-  revalidateStatement(data);
+  revalidateStatementViews(data);
   return { ok: true as const };
 }
 
@@ -88,7 +78,7 @@ export async function closeStatement(id: unknown, currency: unknown, input: unkn
   if (error?.message.includes("pago más reciente")) return { ok: false as const, error: "Esa compra recibió un abono después de este extracto. Borra ese pago antes de cambiar su saldo." };
   if (error?.message.includes("varios intereses")) return { ok: false as const, error: "El extracto tiene varios cargos de intereses. Corrígelos desde movimientos." };
   if (error) return { ok: false as const, error: "No pudimos guardar el cierre. Revisa los valores e intenta de nuevo." };
-  revalidateStatement({ card_id: context.statement.cardId, cutoff_date: context.statement.cutoffDate, due_date: context.statement.dueDate });
+  revalidateStatementViews({ card_id: context.statement.cardId, cutoff_date: context.statement.cutoffDate, due_date: context.statement.dueDate });
   return { ok: true as const };
 }
 
@@ -104,6 +94,6 @@ export async function reopenStatement(id: unknown, currency: unknown) {
   if (!statement) return { ok: false as const, error: "El extracto ya no está disponible." };
   const { error } = await supabase.rpc("reopen_statement", { p_statement_id: id, p_currency: parsedCurrency.data });
   if (error) return { ok: false as const, error: "No pudimos reabrir el extracto. Intenta de nuevo." };
-  revalidateStatement(statement);
+  revalidateStatementViews(statement);
   return { ok: true as const };
 }

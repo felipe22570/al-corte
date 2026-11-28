@@ -1,6 +1,5 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { redirect } from "next/navigation";
 import { Plus, WalletCards } from "lucide-react";
 import { EmptyState } from "@/components/empty-state";
 import { CurrencyInline } from "@/components/currency-amounts";
@@ -15,26 +14,16 @@ import { buttonVariants } from "@/components/ui/button";
 import { todayInBogota } from "@/lib/domain/dates";
 import { historyMonthCapacity, historyMonthNextBlock } from "@/lib/domain/months";
 import { formatMonth } from "@/lib/format";
-import { countOpenDrafts } from "@/lib/queries/drafts";
-import { loadMonthOverview } from "@/lib/queries/months";
-import { createSupabaseMonthSource } from "@/lib/queries/supabase-months";
-import { createClient } from "@/lib/supabase/server";
+import { loadMonthList } from "@/lib/queries/month-list";
+import { requireUser } from "@/lib/supabase/require-user";
 
 export const metadata: Metadata = { title: "Meses" };
 
 export default async function MonthsPage({ searchParams }: { searchParams: Promise<{ saved?: string; historial?: string }> }) {
   const { saved, historial } = await searchParams;
-  const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) redirect("/login");
-  const source = createSupabaseMonthSource(supabase, user.id);
+  const { supabase, user } = await requireUser();
   const today = todayInBogota();
-  const [overview, cards, draftCount] = await Promise.all([
-    loadMonthOverview(source, today, { historySize: historyMonthCapacity(historial) }),
-    source.loadCardDetails(),
-    countOpenDrafts(supabase, user.id),
-  ]);
-  const incomplete = [overview.current, ...overview.future, ...overview.history].some((month) => !month.complete);
+  const { overview, cards, draftCount, incomplete } = await loadMonthList(supabase, user.id, today, historyMonthCapacity(historial));
   const rowProps = { cards, subscriptionNames: overview.subscriptionNames, today };
   const rowsGrid = (count: number) => count > 1 ? "grid min-w-0 gap-3 xl:grid-cols-2" : "grid min-w-0 gap-3";
   return (

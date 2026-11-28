@@ -13,7 +13,7 @@ import { loadPrepaidAmounts, loadPrepaymentBases, netOfPrepayments } from "./pre
 
 type Client = Awaited<ReturnType<typeof createClient>>;
 type RawCard = { id: string; name: string; bank: string; last4: string; color: CardColor; archived_at: string | null; cutoff_day: number; payment_day: number; handling_fee: string; interest_mode: InterestMode; purchase_rate_ea: string; amortization_method: AmortizationMethod };
-type RawBalance = { card_id: string; used: string; available: string; utilization: string; usd_net?: string; fx_rate?: string | null; fx_estimated?: boolean };
+type RawBalance = { card_id: string; credit_limit?: string; used: string; available: string; utilization: string; cop_used?: string; usd_net?: string; fx_rate?: string | null; fx_estimated?: boolean };
 type RawStatement = { id: string; card_id: string; period_start: string; cutoff_date: string; due_date: string };
 type RawBalanceMark = { statement_id: string; currency: Currency; paid_at: string | null; reconciled_at: string | null };
 type RawCurrencyTotal = { statement_id: string; currency: Currency; has_charges: boolean; pending_principal: string };
@@ -28,6 +28,10 @@ export type MonthCardDetails = {
   cutoffDay: number; paymentDay: number; handlingFee: Decimal; interestMode?: InterestMode;
   purchaseRateEa?: Decimal; amortizationMethod?: AmortizationMethod;
   used: Decimal; available: Decimal; utilization: Decimal;
+  /** Credit limit of the card (R5). */
+  creditLimit?: Decimal;
+  /** D52: pesos used, kept in pesos; with `usdNet`, the "Cupo usado" of each currency in the new interface (D66). */
+  copUsed?: Decimal;
   /** D52: net debt in dollars and the TRM that valued it; estimated with the TRM of each purchase without one. */
   usdNet?: Decimal; fxRate?: Decimal | null; fxEstimated?: boolean;
 };
@@ -59,7 +63,7 @@ export function createSupabaseMonthSource(client: Client, userId: string): Month
     cardDetails ??= (async () => {
       const [cards, balances] = await Promise.all([
         fetchAllPages((from, to) => client.from("cards").select("id,name,bank,last4,color,archived_at,cutoff_day,payment_day,handling_fee::text,interest_mode,purchase_rate_ea::text,amortization_method").eq("user_id", userId).order("id").range(from, to)),
-        fetchAllPages((from, to) => client.from("card_balances").select("card_id,used::text,available::text,utilization::text,usd_net::text,fx_rate::text,fx_estimated").eq("user_id", userId).order("card_id").range(from, to)),
+        fetchAllPages((from, to) => client.from("card_balances").select("card_id,credit_limit::text,used::text,available::text,utilization::text,cop_used::text,usd_net::text,fx_rate::text,fx_estimated").eq("user_id", userId).order("card_id").range(from, to)),
       ]);
       const byCard = new Map((balances as unknown as RawBalance[]).map((balance) => [balance.card_id, balance]));
       return (cards as unknown as RawCard[]).map((card) => {
@@ -71,6 +75,7 @@ export function createSupabaseMonthSource(client: Client, userId: string): Month
           handlingFee: new Decimal(card.handling_fee), interestMode: card.interest_mode,
           purchaseRateEa: new Decimal(card.purchase_rate_ea), amortizationMethod: card.amortization_method, used: new Decimal(balance.used),
           available: new Decimal(balance.available), utilization: new Decimal(balance.utilization),
+          creditLimit: new Decimal(balance.credit_limit ?? 0), copUsed: new Decimal(balance.cop_used ?? 0),
           usdNet: new Decimal(balance.usd_net ?? 0), fxRate: balance.fx_rate ? new Decimal(balance.fx_rate) : null, fxEstimated: balance.fx_estimated ?? false,
         };
       });

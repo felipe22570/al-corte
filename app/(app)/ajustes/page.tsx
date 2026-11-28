@@ -1,6 +1,5 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { redirect } from "next/navigation";
 import { ChevronDown, CreditCard, Tags } from "lucide-react";
 import { ArchiveButton } from "@/components/archive-button";
 import { CardColorChip } from "@/components/card-color-chip";
@@ -15,52 +14,18 @@ import { Button } from "@/components/ui/button";
 import { Disclosure, DisclosureContent, DisclosureSummary } from "@/components/ui/disclosure";
 import { signOut } from "@/lib/actions/auth";
 import { categoryIcons, type CategoryIcon } from "@/lib/category-icons";
-import { type CardColor } from "@/lib/card-colors";
 import { formatRate } from "@/lib/format";
-import type { CardRecord, CategoryRecord } from "@/lib/settings-types";
-import { createClient } from "@/lib/supabase/server";
+import { loadSettings } from "@/lib/queries/settings";
+import { requireUser } from "@/lib/supabase/require-user";
 import { EXPORT_TABLES } from "@/lib/export-schema";
 import { buttonVariants } from "@/components/ui/button";
 
 export const metadata: Metadata = { title: "Ajustes" };
 
-type RawCard = {
-  id: string; name: string; bank: string; network: string; last4: string; color: CardColor; archived_at: string | null;
-  credit_limit: string; advance_fee: string; handling_fee: string; cutoff_day: number; payment_day: number;
-  purchase_rate_ea: string; advance_rate_ea: string; amortization_method: "fixed_principal" | "french"; interest_mode: "per_installment" | "on_balance"; usd_default_installments: number; payment_allocation_rule: "bancolombia_priority" | "oldest_first" | "directed";
-};
-type RawCategory = { id: string; name: string; icon: string; archived_at: string | null };
-
 export default async function SettingsPage() {
-  const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) redirect("/login");
-
-  const [cardResult, categoryResult, captureResult, aliasResult] = await Promise.all([
-    supabase.from("cards").select("id,name,bank,network,last4,color,archived_at,credit_limit::text,advance_fee::text,handling_fee::text,cutoff_day,payment_day,purchase_rate_ea::text,advance_rate_ea::text,amortization_method,interest_mode,usd_default_installments,payment_allocation_rule").eq("user_id", user.id).order("name"),
-    supabase.from("categories").select("id,name,icon,archived_at").eq("user_id", user.id).order("name"),
-    supabase.from("capture_settings").select("enabled").eq("user_id", user.id).maybeSingle(),
-    supabase.from("card_aliases").select("id,card_id,last4").eq("user_id", user.id).order("last4"),
-  ]);
-  if (cardResult.error || categoryResult.error || captureResult.error || aliasResult.error) throw new Error("No fue posible cargar los ajustes.");
-  const rawCards = (cardResult.data ?? []) as RawCard[];
-  const installmentCounts = await Promise.all(rawCards.map((card) => supabase.from("transactions").select("id", { count: "exact", head: true }).eq("user_id", user.id).eq("card_id", card.id).gt("installments_count", 1)));
-  if (installmentCounts.some((result) => result.error)) throw new Error("No fue posible cargar los ajustes.");
-
-  const cards: CardRecord[] = rawCards.map((card, index) => ({
-    id: card.id, name: card.name, bank: card.bank, network: card.network, last4: card.last4, color: card.color, archivedAt: card.archived_at,
-    creditLimit: card.credit_limit, advanceFee: card.advance_fee, handlingFee: card.handling_fee,
-    cutoffDay: card.cutoff_day, paymentDay: card.payment_day, purchaseRateEa: card.purchase_rate_ea,
-    advanceRateEa: card.advance_rate_ea, amortizationMethod: card.amortization_method,
-    interestMode: card.interest_mode, usdDefaultInstallments: card.usd_default_installments, paymentAllocationRule: card.payment_allocation_rule, hasInstallmentPurchases: (installmentCounts[index]?.count ?? 0) > 0,
-  }));
-  const categories: CategoryRecord[] = ((categoryResult.data ?? []) as RawCategory[]).map((category) => ({ id: category.id, name: category.name, icon: category.icon, archivedAt: category.archived_at }));
-  const activeCards = cards.filter((card) => !card.archivedAt);
-  const archivedCards = cards.filter((card) => card.archivedAt);
-  const activeCategories = categories.filter((category) => !category.archivedAt);
+  const { supabase, user } = await requireUser();
+  const { activeCards, archivedCards, activeCategories, captureEnabled, aliases } = await loadSettings(supabase, user.id);
   const usedColors = activeCards.map((card) => card.color);
-  const captureEnabled = (captureResult.data as { enabled: boolean } | null)?.enabled === true;
-  const aliases = ((aliasResult.data ?? []) as Array<{ id: string; card_id: string; last4: string }>).map((alias) => ({ id: alias.id, cardId: alias.card_id, last4: alias.last4 }));
 
   return <>
     <PageHeader title="Ajustes" subtitle="Administra tus tarjetas y categorías." />

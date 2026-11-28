@@ -1,6 +1,5 @@
 import type { Metadata } from "next";
 import { Inbox } from "lucide-react";
-import { redirect } from "next/navigation";
 import { DraftActions } from "@/components/draft-actions";
 import { EmptyState } from "@/components/empty-state";
 import { PageHeader } from "@/components/page-header";
@@ -9,13 +8,11 @@ import { StatusBadge } from "@/components/status-badge";
 import { todayInBogota } from "@/lib/domain/dates";
 import { formatDateShort, formatMoney } from "@/lib/format";
 import { historyTypeLabels } from "@/lib/history-types";
-import { loadOpenDrafts, type InboxDraft } from "@/lib/queries/drafts";
-import { createClient } from "@/lib/supabase/server";
+import { loadDraftInbox, type DraftCardLabel } from "@/lib/queries/draft-inbox";
+import type { InboxDraft } from "@/lib/queries/drafts";
+import { requireUser } from "@/lib/supabase/require-user";
 
 export const metadata: Metadata = { title: "Por confirmar" };
-
-type CardLabel = { id: string; name: string; last4: string };
-type CategoryLabel = { id: string; name: string };
 
 function draftName(draft: InboxDraft): string {
   return draft.suggestions?.merchantName ?? draft.merchantRaw ?? "Movimiento sin leer";
@@ -39,7 +36,7 @@ function Suggestions({ draft, categories }: { draft: InboxDraft; categories: Map
   </div>;
 }
 
-function DraftItem({ draft, cards, categories, today }: { draft: InboxDraft; cards: Map<string, CardLabel>; categories: Map<string, string>; today: string }) {
+function DraftItem({ draft, cards, categories, today }: { draft: InboxDraft; cards: Map<string, DraftCardLabel>; categories: Map<string, string>; today: string }) {
   const card = draft.cardId ? cards.get(draft.cardId) : undefined;
   const name = draftName(draft);
   const details = [
@@ -69,18 +66,9 @@ function DraftItem({ draft, cards, categories, today }: { draft: InboxDraft; car
 }
 
 export default async function DraftsPage() {
-  const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) redirect("/login");
+  const { supabase, user } = await requireUser();
   const today = todayInBogota();
-  const [drafts, cardsResult, categoriesResult] = await Promise.all([
-    loadOpenDrafts(supabase, user.id),
-    supabase.from("cards").select("id,name,last4").eq("user_id", user.id),
-    supabase.from("categories").select("id,name").eq("user_id", user.id),
-  ]);
-  if (cardsResult.error || categoriesResult.error) throw new Error("No pudimos cargar los movimientos por confirmar.");
-  const cards = new Map(((cardsResult.data ?? []) as CardLabel[]).map((card) => [card.id, card]));
-  const categories = new Map(((categoriesResult.data ?? []) as CategoryLabel[]).map((category) => [category.id, category.name]));
+  const { drafts, cards, categories } = await loadDraftInbox(supabase, user.id);
   return <div className="mx-auto flex w-full max-w-2xl min-w-0 flex-col gap-6">
     <PageHeader title="Por confirmar" subtitle="Movimientos que llegaron de tus alertas. No cuentan en tus meses hasta que los confirmes." />
     {drafts.length === 0

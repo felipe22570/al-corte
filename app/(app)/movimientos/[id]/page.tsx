@@ -1,9 +1,8 @@
 import type { Metadata } from "next";
-import Decimal from "decimal.js";
 import Link from "next/link";
-import { notFound, redirect } from "next/navigation";
+import { notFound } from "next/navigation";
 import { z } from "zod";
-import { AmortizationTable, type AmortizationItem } from "@/components/amortization-table";
+import { AmortizationTable } from "@/components/amortization-table";
 import { CardColorChip } from "@/components/card-color-chip";
 import { DeferralCost } from "@/components/deferral-cost";
 import { DeleteTransactionButton } from "@/components/delete-transaction-button";
@@ -11,80 +10,29 @@ import { InstallmentChangeForm, UndoInstallmentChangeButton } from "@/components
 import { Money } from "@/components/money";
 import { PageHeader } from "@/components/page-header";
 import { buttonVariants } from "@/components/ui/button";
-import type { CardColor } from "@/lib/card-colors";
 import { categoryIcons, type CategoryIcon } from "@/lib/category-icons";
 import { todayInBogota } from "@/lib/domain/dates";
-import { deferralCostSummary } from "@/lib/domain/deferral-cost";
-import type { InterestMode } from "@/lib/domain/interest";
 import { isWithinMonthProjectionWindow, paymentMonth } from "@/lib/domain/months";
-import type { Currency } from "@/lib/domain/money";
 import { formatDateShort, formatExchangeRate } from "@/lib/format";
-import { createClient } from "@/lib/supabase/server";
+import { loadTransactionDetail } from "@/lib/queries/transaction-detail";
+import { requireUser } from "@/lib/supabase/require-user";
 
 export const metadata: Metadata = { title: "Detalle del movimiento" };
 const typeLabels: Record<string, string> = { purchase: "Compra", cash_advance: "Avance", advance_fee: "Comisión por avance", payment: "Pago", handling_fee: "Cuota de manejo", interest: "Interés", late_interest: "Interés de mora", insurance: "Seguro", refund: "Devolución", adjustment: "Ajuste" };
 const paymentKindLabels: Record<string, string> = { minimum: "Pago mínimo", total: "Pago total", other: "Otro valor" };
 const effectLabels: Record<string, string> = { reduce_term: "reduce el plazo", reduce_installment: "reduce la cuota" };
-type RawPrepayment = { id: string; payment_id: string | null; statement_id: string | null; transaction_id: string; amount: string; effect: string; assumed: boolean; bank_balance: string | null; remaining_installments: number | null; effective_date: string | null };
 const sourceLabels: Record<string, string> = { manual: "Manual", subscription: "Suscripción", import: "Importado", email: "Correo", system: "Sistema" };
-type RawTransaction = { id: string; card_id: string; category_id: string | null; statement_id: string; parent_id: string | null; subscription_id: string | null; type: string; date: string; merchant: string | null; note: string | null; currency: Currency; amount: string; amount_cop: string; fx_rate: string | null; source: string; paid_statement_id: string | null; payment_kind: string | null; interest_free: boolean; rate_ea_applied: string | null };
-type RawInstallment = { number: number; statement_id: string | null; before_tracking: boolean; principal: string; interest: string; total: string; balance_after: string; principal_cop: string; interest_cop: string; total_cop: string };
 
 export default async function TransactionDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
   if (!z.uuid().safeParse(id).success) notFound();
-  const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) redirect("/login");
-  const { data, error } = await supabase.from("transactions").select("id,card_id,category_id,statement_id,parent_id,subscription_id,type,date,merchant,note,currency,amount::text,amount_cop::text,fx_rate::text,source,paid_statement_id,payment_kind,interest_free,rate_ea_applied::text").eq("id", id).eq("user_id", user.id).maybeSingle();
-  if (error) throw new Error("No pudimos consultar el movimiento.");
-  if (!data) notFound();
-  const transaction = data as unknown as RawTransaction;
-  const [cardResult, categoryResult, installmentResult, statementsResult, childrenResult, prepaymentsResult] = await Promise.all([
-    supabase.from("cards").select("name,last4,color,cutoff_day,interest_mode").eq("id", transaction.card_id).eq("user_id", user.id).single(),
-    transaction.category_id ? supabase.from("categories").select("name,icon").eq("id", transaction.category_id).eq("user_id", user.id).maybeSingle() : Promise.resolve({ data: null, error: null }),
-    supabase.from("installments").select("number,statement_id,before_tracking,principal::text,interest::text,total::text,balance_after::text,principal_cop::text,interest_cop::text,total_cop::text").eq("transaction_id", id).eq("user_id", user.id).order("number"),
-    supabase.from("statements").select("id,cutoff_date,due_date").eq("card_id", transaction.card_id).eq("user_id", user.id),
-    supabase.from("transactions").select("id", { count: "exact", head: true }).eq("parent_id", id).eq("user_id", user.id),
-    supabase.from("principal_prepayments").select("id,payment_id,statement_id,transaction_id,amount::text,effect,assumed,bank_balance::text,remaining_installments,effective_date").eq("user_id", user.id).or(`transaction_id.eq.${id},payment_id.eq.${id}`).order("created_at"),
-  ]);
-  if (cardResult.error || categoryResult.error || installmentResult.error || statementsResult.error || childrenResult.error || prepaymentsResult.error) throw new Error("No pudimos consultar los detalles del movimiento.");
-  const card = cardResult.data as { name: string; last4: string; color: CardColor; cutoff_day: number; interest_mode: InterestMode };
-  const category = categoryResult.data as { name: string; icon: string } | null;
-  const Icon = category && Object.hasOwn(categoryIcons, category.icon) ? categoryIcons[category.icon as CategoryIcon] : null;
-  const statements = new Map((statementsResult.data ?? []).map((statement) => [statement.id, statement]));
-  const savedStatement = statements.get(transaction.statement_id);
-  if (!savedStatement) throw new Error("No pudimos consultar el extracto del movimiento.");
-  const cutoff = savedStatement.cutoff_date;
-  const items: AmortizationItem[] = ((installmentResult.data ?? []) as unknown as RawInstallment[]).map((item) => {
-    const installmentStatement = item.before_tracking || item.statement_id === null ? null : statements.get(item.statement_id);
-    if (installmentStatement === undefined) throw new Error("No pudimos consultar el extracto de una cuota.");
-    return { number: item.number, cutoffDate: installmentStatement?.cutoff_date ?? null, beforeTracking: item.before_tracking, principal: item.principal, interest: item.interest, total: item.total, balanceAfter: item.balance_after, principalCop: item.principal_cop, interestCop: item.interest_cop, totalCop: item.total_cop };
-  });
-  // R9: prepayments this movement received, or the ones this payment made.
-  const prepayments = (prepaymentsResult.data ?? []) as unknown as RawPrepayment[];
-  const counterpartIds = [...new Set(prepayments.flatMap((item) => item.payment_id === id ? [item.transaction_id] : item.payment_id ? [item.payment_id] : []))];
-  // F16: the latest plan change of this purchase can be undone when it is an installment change.
-  const latestChange = transaction.type !== "payment" ? prepayments.at(-1) : undefined;
-  const counterpartsResult = counterpartIds.length ? await supabase.from("transactions").select("id,merchant,date,type,installments_count,statement_id").eq("user_id", user.id).in("id", counterpartIds) : { data: [], error: null };
-  if (counterpartsResult.error) throw new Error("No pudimos consultar los abonos del movimiento.");
-  const counterparts = new Map(((counterpartsResult.data ?? []) as Array<{ id: string; merchant: string | null; date: string; type: string; installments_count: number; statement_id: string }>).map((item) => [item.id, item]));
-  const paidStatement = transaction.paid_statement_id ? statements.get(transaction.paid_statement_id) : undefined;
+  const { supabase, user } = await requireUser();
   const today = todayInBogota();
-  const unbilled = items.filter((item) => !item.beforeTracking && item.cutoffDate! >= today).length;
-  // F21 (R11): the cost of deferring with the card rule, including prepayments weighted by days in their period (R9).
-  const deferral = (transaction.type === "purchase" || transaction.type === "cash_advance") && items.length > 1 ? deferralCostSummary({
-    amount: new Decimal(transaction.amount), currency: transaction.currency, fxRate: transaction.fx_rate === null ? null : new Decimal(transaction.fx_rate), purchaseDate: transaction.date,
-    rateEa: transaction.rate_ea_applied === null ? null : new Decimal(transaction.rate_ea_applied), interestFree: transaction.interest_free, interestMode: card.interest_mode, cutoffDay: card.cutoff_day, installmentsCount: items.length,
-    rows: items.map((item) => ({ cutoffDate: item.cutoffDate, beforeTracking: item.beforeTracking, principal: new Decimal(item.principal), interest: new Decimal(item.interest), balanceAfter: new Decimal(item.balanceAfter) })),
-    prepayments: prepayments.flatMap((item) => {
-      const payment = item.transaction_id === id && item.payment_id ? counterparts.get(item.payment_id) : undefined;
-      const statement = payment ? statements.get(payment.statement_id) : undefined;
-      return payment && statement ? [{ cutoffDate: statement.cutoff_date, date: payment.date, amount: new Decimal(item.amount) }] : [];
-    }),
-  }, today) : null;
-  // Late interest is registered and corrected in the statement close (D39).
-  const editable = !(transaction.type === "advance_fee" && transaction.parent_id) && transaction.type !== "late_interest";
+  const detail = await loadTransactionDetail(supabase, user.id, id, today);
+  if (!detail) notFound();
+  const { transaction, card, category, statement: savedStatement, statements, items, prepayments, counterparts, childrenCount, paidStatement, latestChangeId, unbilled, deferral, editable } = detail;
+  const Icon = category && Object.hasOwn(categoryIcons, category.icon) ? categoryIcons[category.icon as CategoryIcon] : null;
+  const cutoff = savedStatement.cutoff_date;
   return (
     <>
       <PageHeader title="Detalle del movimiento" subtitle={typeLabels[transaction.type] ?? transaction.type} action={editable && <Link href={`/movimientos/${id}/editar`} className={buttonVariants({ variant: "outline" })}>Editar movimiento</Link>} />
@@ -110,7 +58,7 @@ export default async function TransactionDetailPage({ params }: { params: Promis
           <ul className="grid gap-3">{prepayments.map((item) => {
             if (item.remaining_installments !== null) return <li key={item.id} className="flex min-w-0 flex-wrap items-baseline justify-between gap-x-3 gap-y-1 border-t border-border pt-3 first:border-t-0 first:pt-0">
               <span className="min-w-0 text-body">Cambio a {item.remaining_installments} {item.remaining_installments === 1 ? "cuota restante" : "cuotas restantes"}<span className="block text-small text-muted-foreground">Desde la próxima cuota sin facturar · {formatDateShort(item.effective_date!, today)}</span></span>
-              {latestChange?.id === item.id && <UndoInstallmentChangeButton changeId={item.id} />}
+              {latestChangeId === item.id && <UndoInstallmentChangeButton changeId={item.id} />}
             </li>;
             // D39: a correction with the bank balance printed in a statement.
             const corrected = item.statement_id ? statements.get(item.statement_id) : undefined;
@@ -130,7 +78,7 @@ export default async function TransactionDetailPage({ params }: { params: Promis
         {/* F16: installments left can change while some are still unbilled (D40). */}
         {items.length > 1 && unbilled > 0 && <InstallmentChangeForm transactionId={id} currency={transaction.currency} remaining={unbilled} />}
         {items.length > 0 && <AmortizationTable items={items} currency={transaction.currency} today={today} />}
-        {editable && <DeleteTransactionButton id={id} installments={items.length} childrenCount={childrenResult.count ?? 0} prepayments={prepayments.filter((item) => item.payment_id === id).length} />}
+        {editable && <DeleteTransactionButton id={id} installments={items.length} childrenCount={childrenCount} prepayments={prepayments.filter((item) => item.payment_id === id).length} />}
       </div>
     </>
   );

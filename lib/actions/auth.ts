@@ -3,10 +3,19 @@
 import { headers } from "next/headers";
 import { redirect } from "next/navigation";
 
+import { safeInternalPath } from "@/lib/routes";
 import { createClient } from "@/lib/supabase/server";
+
+/** Where the current interface lands after signing in. */
+const DEFAULT_AFTER_LOGIN = "/movimientos";
 
 function loginUrl(message: string) {
   return `/login?error=${encodeURIComponent(message)}`;
+}
+
+/** An optional `next` field picks the screen to open after signing in, only as an internal path (D63). */
+function nextPath(formData: FormData) {
+  return safeInternalPath(formData.get("next"), DEFAULT_AFTER_LOGIN);
 }
 
 export async function signIn(formData: FormData) {
@@ -24,7 +33,7 @@ export async function signIn(formData: FormData) {
     redirect(loginUrl("No fue posible iniciar sesión. Verifica tus datos."));
   }
 
-  redirect("/movimientos");
+  redirect(nextPath(formData));
 }
 
 export async function signInWithMagicLink(formData: FormData) {
@@ -39,10 +48,12 @@ export async function signInWithMagicLink(formData: FormData) {
     redirect(loginUrl("No fue posible preparar el enlace de acceso."));
   }
 
+  const next = nextPath(formData);
+  const callback = next === DEFAULT_AFTER_LOGIN ? "/auth/callback" : `/auth/callback?next=${encodeURIComponent(next)}`;
   const supabase = await createClient();
   const { error } = await supabase.auth.signInWithOtp({
     email,
-    options: { emailRedirectTo: `${origin}/auth/callback` },
+    options: { emailRedirectTo: `${origin}${callback}` },
   });
 
   if (error) {
