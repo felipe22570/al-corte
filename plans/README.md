@@ -74,7 +74,7 @@ Prompt sugerido para el agente al iniciar un paso:
 | 44 | [Script de captura en Apps Script](44-apps-script.md) | H12 | ✅ | 9e75ac8 |
 | 45 | [Validación de H12](45-validacion-captura.md) | H12 | 🟡 | |
 | 46 | [Preparación: datos compartidos y rutas neutrales](46-v2-preparacion.md) | H13 | ✅ | c802f2c |
-| 47 | [Base de v2: estilos, componentes y galería](47-v2-base.md) | H13 | 🟡 | |
+| 47 | [Base de v2: estilos, componentes y galería](47-v2-base.md) | H13 | ✅ | 41f66eb |
 | 48 | [Navegación, Inicio y Mes](48-v2-inicio-mes.md) | H13 | ⬜ | |
 | 49 | [Tarjetas, Tarjeta y Extracto](49-v2-tarjetas-extracto.md) | H13 | ⬜ | |
 | 50 | [Registrar pago y Conciliar](50-v2-pago-conciliar.md) | H13 | ⬜ | |

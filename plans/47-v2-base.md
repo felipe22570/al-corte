@@ -1,10 +1,10 @@
 # Paso 47 — Base de v2: estilos, componentes y galería
 
 - **Hito PRD:** H13 (parte 2 de 11)
-- **Estado:** 🟡 En progreso
+- **Estado:** ✅ Terminado y verificado
 - **Inicio:** 2026-11-27
-- **Fin:**
-- **Commit:**
+- **Fin:** 2026-11-27
+- **Commit:** 41f66eb
 - **Depende de:** 46
 - **Decisiones aplicables (decididas, ver README):** D58, D60, D61, D62
 
@@ -54,4 +54,4 @@ pnpm build && pnpm start
 - 2026-11-27 — Contraste: todos los pares de texto usados cumplen 4,5:1 en ambos temas (`lib/__tests__/design-v2.test.ts`). `text-3` sobre `track` en claro da 4,48 y ningún componente lo usa.
 - 2026-11-27 — Para validar en el paso 54 (modo claro): con los valores actuales, `surface-raised` es igual a `surface`, así que el bloque principal no se distingue de los paneles y el esqueleto de carga no se ve sobre un panel.
 - 2026-11-27 — Verificación: `pnpm typecheck`, `pnpm lint`, `pnpm test` (913 pruebas), `pnpm test:coverage` (dominio al 100 %) y `pnpm build` en verde. La comparación de HTML de las 37 rutas actuales solo difiere en el id de una categoría del usuario ficticio, recreado después del `db reset`. Sin cambios en `components/` (fuera de `components/v2`), `app/(app)`, `app/(auth)`, `app/globals.css` ni `DESIGN.md`.
-- 2026-11-27 — Pendiente: aprobación de la galería por el dueño.
+- 2026-11-27 — Galería aprobada por el dueño.
