@@ -54,6 +54,7 @@ app/                      Rutas (App Router). Páginas = Server Components.
   (app)/                  Pantallas protegidas
 components/               Componentes de UI reutilizables
 components/ui/            Componentes de shadcn/ui
+components/v2/            Componentes de la interfaz nueva (H13)
 lib/domain/               Lógica de negocio pura: extractos, cuotas, suscripciones, totales
 lib/domain/__tests__/     Pruebas de la lógica de negocio
 lib/supabase/             Clientes de Supabase (server y browser)
@@ -68,6 +69,8 @@ supabase/migrations/      Migraciones SQL
 supabase/functions/       Edge Functions
 docs/PRD.md               Requisitos del producto
 docs/import-format.md     Formato de archivo al-corte-import v1 (H11)
+docs/design-v2.md         Sistema visual de la interfaz nueva (H13)
+docs/mockups/v2/          Mockups HTML de referencia (H13)
 ```
 
 ## Comandos
@@ -186,6 +189,19 @@ const bricolage = Bricolage_Grotesque({ subsets: ["latin"], variable: "--font-br
      - Fechas cortas `15 nov`, con día cuando ayuda `vie 15 nov`, año solo si no es el actual.
      - Porcentajes sin decimales (`68%`); tasas con dos (`28,45% E.A.`).
 
+## Rediseño v2 (H13)
+
+Mientras dure H13 conviven dos interfaces. Estas reglas mandan sobre la sección "Diseño" para todo lo que esté en `app/v2` y `components/v2`.
+
+- **No toques la interfaz actual.** Nada de `app/(app)`, `app/(auth)`, `components/` (fuera de `components/v2`), `app/globals.css` ni `DESIGN.md` se modifica para el rediseño. Solo se corrigen errores.
+- **v2 no importa de v1 ni al revés.** `app/v2` y `components/v2` no importan componentes de `components/` ni de `components/ui`; la interfaz actual no importa nada de v2. Lo compartido vive en `lib/`.
+- **Las páginas no consultan la base.** Usan cargadores de `lib/queries`; si falta uno, se crea ahí con pruebas y lo usan ambas interfaces (D63).
+- **Rutas con `lib/routes.ts`.** Ningún enlace de v2 escribe `/v2` a mano; al cierre solo cambia la base.
+- **Fuente de verdad visual:** `docs/design-v2.md` y el mockup de la pantalla en `docs/mockups/v2/`. Los mockups son referencia: no copies su HTML ni sus estilos en línea; usa los tokens de `app/v2/v2.css` y los componentes de `components/v2`.
+- **Textos:** las nueve reglas de `docs/design-v2.md`. Si un texto de v1 no las cumple, en v2 se acorta, se pasa a ayuda a demanda o se retira.
+- **Sin funcionalidades nuevas** durante H13 (D59). Los mockups cambian la forma, no lo que la app hace: si uno muestra algo que la app no hace, no se implementa, se anota y se pregunta. Si la app hace algo que ningún mockup muestra, se conserva. Los HTML no se corrigen: cada paso del plan (48 a 54) lista sus "Diferencias con los mockups" y lo "Sin dibujar", y esas listas mandan sobre el mockup.
+- **Una pantalla está terminada** cuando coincide con su mockup a 1440 px (salvo las diferencias anotadas en su paso), funciona a 360 px, usa datos reales, pasa `pnpm lint` con las reglas de v2 y no cambió ningún archivo de la interfaz actual.
+
 ## Reglas de dominio (resumen)
 
 Detalle completo en la sección 5 de `docs/PRD.md`.
@@ -230,6 +246,7 @@ Detalle completo en la sección 5 de `docs/PRD.md`.
 - Proyección: día 31, anual en rango, pausada/cancelada, prueba y tarjeta archivada; actual abierto con cobro antes del corte pagadero este mes; manejo no duplicado y horizonte solo con manejo.
 - Dedupe real/previsto por suscripción/fecha y transición por cron sin doble conteo; USD sin TRM mantiene aviso de total incompleto (hasta H10; desde el paso 30, aviso de equivalente COP faltante con el total en dólares intacto).
 - Estados: vencido, pendiente, todos/algunos extractos marcados y estimado; actual vacío no Pagado. Un abono parcial no reduce el pendiente de confirmar y `real_total` no cambia el total.
+- Estado por extractos (D65): mes posterior al actual con extractos cortados sin marcar es Por pagar y se compara con el anterior; con extractos reales abiertos, Abierto; solo virtuales, Estimado; cortado sin marcar más uno abierto, Por pagar.
 - Rango con cuotas posteriores a 12 meses, aviso de límite e historial conservado con todas las tarjetas archivadas.
 - Desgloses por concepto/categoría que cuadran, con ajustes, cuotas/interés sin duplicar, "Sin categoría", devoluciones y totales cero/negativos.
 - Comparación entre meses de pago cerrados; mes abierto, futuro o incompleto sin afirmación de ahorro ni porcentajes inválidos.

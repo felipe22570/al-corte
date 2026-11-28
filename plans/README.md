@@ -73,6 +73,17 @@ Prompt sugerido para el agente al iniciar un paso:
 | 43 | [Interpretación de alertas con IA](43-interpretacion-ia.md) | H12 | ✅ | 5fcc097 |
 | 44 | [Script de captura en Apps Script](44-apps-script.md) | H12 | ✅ | 9e75ac8 |
 | 45 | [Validación de H12](45-validacion-captura.md) | H12 | 🟡 | |
+| 46 | [Preparación: datos compartidos y rutas neutrales](46-v2-preparacion.md) | H13 | ✅ | c802f2c |
+| 47 | [Base de v2: estilos, componentes y galería](47-v2-base.md) | H13 | ⬜ | |
+| 48 | [Navegación, Inicio y Mes](48-v2-inicio-mes.md) | H13 | ⬜ | |
+| 49 | [Tarjetas, Tarjeta y Extracto](49-v2-tarjetas-extracto.md) | H13 | ⬜ | |
+| 50 | [Registrar pago y Conciliar](50-v2-pago-conciliar.md) | H13 | ⬜ | |
+| 51 | [Movimientos, detalle y Nuevo gasto](51-v2-movimientos.md) | H13 | ⬜ | |
+| 52 | [Por confirmar](52-v2-por-confirmar.md) | H13 | ⬜ | |
+| 53 | [Suscripciones, Ajustes, Importar e inicio de sesión](53-v2-suscripciones-ajustes.md) | H13 | ⬜ | |
+| 54 | [Celular, modo claro y estados](54-v2-celular-claro.md) | H13 | ⬜ | |
+| 55 | [Uso en paralelo](55-v2-uso-paralelo.md) | H13 | ⬜ | |
+| 56 | [Cambio definitivo y retiro de la interfaz anterior](56-v2-cambio.md) | H13 | ⬜ | |
 
 **MVP cerrado el 12 de noviembre de 2026 por aprobación explícita del dueño con las limitaciones del paso 20.** Los veinte pasos están en ✅. Pasan 117 pruebas de Vitest, 167 pruebas SQL, cobertura de dominio 100 %, build y lint. La revisión adicional con la extensión real axe DevTools cubrió 52 combinaciones sin fallas confirmadas; los casos de contraste y foco se revisaron aparte. El cron remoto se ejecutó a las 05:00 de Bogotá y generó un solo cobro de 25.000 COP para la suscripción de prueba. La etiqueta `mvp` identifica el commit de cierre.
 
@@ -255,6 +266,22 @@ Aprobadas por el dueño el 2026-11-13. El detalle de cada regla está en R7 y en
 
 Preguntas abiertas del PRD: método de intereses de bancos distintos a Bancolombia (por ejemplo, Nu) y notificaciones push (v2). El corte variable y la amortización de Bancolombia quedaron resueltos con D30 y D32. Se dejan anotadas en `docs/PRD.md`.
 
+**H13 · Rediseño de la interfaz (v2).** Aprobado por el dueño el 27 de noviembre de 2026 (D58–D64). La interfaz nueva se construye en `/v2` sin tocar la actual y la reemplaza en el paso 56. Fuentes de verdad: `docs/design-v2.md` y `docs/mockups/v2/`. El paso 46 no se despliega antes de cerrar el 45. Sin funcionalidades nuevas hasta cerrar el hito.
+
+### Decisiones de H13 (rediseño de la interfaz)
+
+| # | Tema | Decisión | Paso afectado |
+| --- | --- | --- | --- |
+| D58 | **Dónde se construye.** | Completa bajo `/v2`, en `app/v2` y `components/v2`, sin modificar la interfaz actual; al final pasa a la raíz y la anterior se borra. | 46–56 |
+| D59 | **Congelamiento.** | Sin funcionalidades nuevas durante H13; solo correcciones. | 46–56 |
+| D60 | **Sistema visual.** | `docs/design-v2.md` y `docs/mockups/v2/` mandan; reemplazan a `DESIGN.md` al cierre. Oscuro principal; claro validado antes de implementarlo. | 47, 54, 56 |
+| D61 | **Estructura.** | Inicio, Por confirmar, Tarjetas, Movimientos, Suscripciones, Ajustes. Pago y Conciliar como páginas; formularios cortos como diálogos; espacio para el chat futuro. | 48–53 |
+| D62 | **Textos.** | Nueve reglas de `docs/design-v2.md`, solo en v2. | 47–54 |
+| D63 | **Datos compartidos.** | Páginas sin consultas; cargadores en `lib/queries`; acciones sin ruta de regreso fija y revalidando `/v2`. | 46 |
+| D64 | **Cierre.** | Un ciclo completo solo en v2, etiqueta `v1-final` y cambio en un solo paso. | 55, 56 |
+| D65 | **Estado de los meses.** | Sale de sus extractos: Vencido, Por pagar, Abierto, Estimado, Pagado, también en meses posteriores al actual; comparaciones entre meses con todos sus extractos reales y cortados. Corrección de dominio compartida por ambas interfaces. | 48 |
+| D66 | **Contenido de v2.** | Reglas de contenido de `docs/design-v2.md`: como máximo una acción principal, "Cupo usado" por moneda, "Estimado" con intereses estimados, campo vacío no es cero, "Compra · Avance" visible, suscripción en diálogo sin estado, efecto del abono por pago, categorías sin desarchivar, moneda sugerida solo como aviso. | 48–53 |
+
 ## Registro de decisiones
 
 Anota aquí cada decisión tomada durante la implementación (fecha, paso, decisión, motivo).
@@ -301,3 +328,6 @@ Anota aquí cada decisión tomada durante la implementación (fecha, paso, decis
 | 2026-11-24 | 44, 45 | Se cierra el paso 44 con el activador comprobado en producción; la verificación de revocar el acceso del script pasa al paso 45, junto con las demás pruebas de seguridad. | Decisión del dueño: evita desautorizar y volver a autorizar el script dos veces. |
 | 2026-11-24 | 45 | Plan del paso 45 aprobado con las tres recomendaciones: `transaction_drafts.changed_fields` guarda al confirmar los nombres de los campos corregidos (solo los que la captura llenó; completar un campo vacío no cuenta; `null` = desconocido o enlazado, `{}` = sin cambios); el probe `scripts/ingest-probe.mjs` (`pnpm probe:ingest`) queda en el repositorio para las pruebas de seguridad y las rotaciones, y crea en producción un único borrador ficticio `T.Cred *0000` para probar la repetición. Semana de uso real: 25 nov – 1 dic. | Al confirmar se borran los datos del borrador (D47), así que sin este registro no se puede medir "confirmado sin cambios". |
 | 2026-11-27 | 45 | La validación de H12 en producción se limita a la semana de uso real, el interruptor de captura, el gasto de IA y la revisión en el celular. Firmas, repetición, correos reenviados, logs, borradores fuera de los cálculos, rotación y revocación quedan cubiertos por pruebas automáticas y procedimientos documentados, sin repetirlos en producción. | Decisión del dueño: repetir en producción lo que ya prueba el código no agrega información; el uso real ya confirmó la configuración. |
+| 2026-11-27 | 46–56 | H13 · Rediseño de la interfaz aprobado (D58–D64): interfaz nueva en `/v2` a partir de 27 mockups validados por el dueño, sin tocar la actual; congelamiento de funcionalidades; el chat con IA queda para después del hito. | Pedido del dueño. |
+| 2026-11-27 | 48–53 | Revisión de los 37 mockups contra el código. D65: el estado de un mes sale de sus extractos (con corte 15 y pago 2, el mes que se va a pagar decía Estimado hasta su primer día, aunque sus extractos ya estuvieran cortados). D66: reglas de contenido de v2. Los HTML de los mockups no se corrigen: cada paso (48 a 54) lista sus "Diferencias con los mockups" (lo dibujado que la app no hace, como el efecto del abono por tarjeta, desarchivar categorías, el estado en el diálogo de suscripción, la conversión de moneda en un borrador, la tasa del banco como campo o "Cupo después") y lo "Sin dibujar" que la app ya hace. | Recomendaciones aprobadas por el dueño; los mockups se dejan como están por pedido del dueño. |
+| 2026-11-27 | 46 | Plan del paso 46 aprobado con las tres recomendaciones: `/v2` sin sesión lo redirige el proxy a `/login`, porque `proxy.ts` solo refrescaba la sesión y la protección de v1 vive en su layout; las lecturas exclusivas de v2 (Inicio, Tarjetas y Tarjeta) se construyen en este paso, sin que v1 las llame; un solo commit sin push. El inicio de sesión acepta un destino `next` solo como ruta interna y, sin él, sigue en `/movimientos`. | Respuesta del dueño al plan del paso. |

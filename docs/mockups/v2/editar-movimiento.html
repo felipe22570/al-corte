@@ -1,0 +1,51 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Al Corte v2 · Editar movimiento con restricciones</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Space+Grotesk:wght@500;600;700&display=swap">
+<style>
+body{margin:0;background:#0D1014}
+a{color:#3DBE8B}a:hover{color:#6FD4A9}
+</style>
+</head>
+<body>
+<div style="display: flex; flex-wrap: wrap; background: #0D1014; color: #F3F5F8; font-family: Inter, system-ui, sans-serif; font-size: 14px; line-height: 1.45">
+<nav aria-label="Principal" style="flex: 1 1 216px; box-sizing: border-box; padding: 24px 16px; border-right: 1px solid #222A33; display: flex; flex-direction: column; gap: 24px">
+<div style="font-family: 'Space Grotesk', sans-serif; font-size: 20px; font-weight: 700; padding: 0 8px">Al Corte</div>
+<a href="nuevo-gasto.html" style="height: 40px; display: flex; align-items: center; justify-content: center; border-radius: 10px; background: #12352A; color: #3DBE8B; font: 600 14px Inter, sans-serif; text-decoration: none">+ Nuevo gasto</a>
+<div style="display: flex; flex-direction: column; gap: 2px">
+<a href="inicio.html" style="height: 36px; display: flex; align-items: center; padding: 0 10px; border-radius: 8px; text-decoration: none; color: #AEB7C4">Inicio</a>
+<a href="por-confirmar.html" style="height: 36px; display: flex; align-items: center; justify-content: space-between; padding: 0 10px; border-radius: 8px; text-decoration: none; color: #AEB7C4">Por confirmar<span style="padding: 1px 8px; border-radius: 9px; background: #27303B; color: #F3F5F8; font-size: 12px; font-weight: 600">4</span></a>
+<a href="tarjetas.html" style="height: 36px; display: flex; align-items: center; padding: 0 10px; border-radius: 8px; text-decoration: none; color: #AEB7C4">Tarjetas</a>
+<a href="movimientos.html" aria-current="page" style="height: 36px; display: flex; align-items: center; padding: 0 10px; border-radius: 8px; text-decoration: none; background: #1D242E; color: #F3F5F8; font-weight: 600">Movimientos</a>
+<a href="suscripciones.html" style="height: 36px; display: flex; align-items: center; padding: 0 10px; border-radius: 8px; text-decoration: none; color: #AEB7C4">Suscripciones</a>
+<a href="ajustes.html" style="height: 36px; display: flex; align-items: center; padding: 0 10px; border-radius: 8px; text-decoration: none; color: #AEB7C4">Ajustes</a>
+</div>
+</nav>
+<main style="flex: 999 1 560px; min-width: 0; box-sizing: border-box; padding: 32px 40px 56px">
+<div style="max-width: 860px; margin: 0 auto; display: flex; flex-direction: column; gap: 24px">
+<header style="display: flex; flex-wrap: wrap; justify-content: space-between; align-items: flex-end; gap: 16px"><div style="display: flex; flex-direction: column; gap: 6px"><div style="font-size: 13px; color: #8D98A8"><a href="movimientos.html" style="color: #8D98A8">Movimientos</a> / <a href="movimiento-historial.html" style="color: #8D98A8">Televisor Samsung</a></div><h1 style="margin: 0; font-family: 'Space Grotesk', sans-serif; font-size: 30px; font-weight: 600; letter-spacing: -0.01em">Editar movimiento</h1></div></header><div style="padding: 14px 16px; border-radius: 12px; background: #3A2A12; color: #F3F5F8"><span style="color: #F2A14A; font-weight: 600">Tiene un abono a capital.</span> Solo puedes cambiar comercio, categoría y nota.</div>
+<section aria-label="Datos editables" style="background: #151A21; border-radius: 16px; padding: 24px; display: flex; flex-direction: column; gap: 18px">
+<div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 16px">
+<label style="display: flex; flex-direction: column; gap: 6px; font-size: 13px; color: #AEB7C4">Comercio<input value="Televisor Samsung" style="box-sizing: border-box; width: 100%; height: 40px; padding: 0 12px; border: 1px solid #2E3845; border-radius: 9px; background: #0D1014; color: #F3F5F8; font: 400 14px Inter, sans-serif"></label>
+<label style="display: flex; flex-direction: column; gap: 6px; font-size: 13px; color: #AEB7C4">Categoría<select style="box-sizing: border-box; width: 100%; height: 40px; padding: 0 12px; border: 1px solid #2E3845; border-radius: 9px; background: #0D1014; color: #F3F5F8; font: 400 14px Inter, sans-serif"><option>Hogar</option></select></label>
+</div>
+<label style="display: flex; flex-direction: column; gap: 6px; font-size: 13px; color: #AEB7C4">Nota<input placeholder="Opcional" style="box-sizing: border-box; width: 100%; height: 40px; padding: 0 12px; border: 1px solid #2E3845; border-radius: 9px; background: #0D1014; color: #F3F5F8; font: 400 14px Inter, sans-serif"></label>
+</section>
+<section aria-label="Datos bloqueados" style="background: #151A21; border-radius: 16px; padding: 24px; display: flex; flex-direction: column; gap: 16px">
+<span style="font-size: 12px; font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase; color: #8D98A8">No se pueden cambiar</span>
+<div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 16px">
+<label style="display: flex; flex-direction: column; gap: 6px; font-size: 13px; color: #AEB7C4">Valor<input value="$2.640.000" disabled style="box-sizing: border-box; width: 100%; height: 40px; padding: 0 12px; border: 1px solid #2E3845; border-radius: 9px; background: #0D1014; color: #F3F5F8; font: 400 14px Inter, sans-serif; color: #8D98A8; background: #151A21; border-style: dashed; font-variant-numeric: tabular-nums"></label>
+<label style="display: flex; flex-direction: column; gap: 6px; font-size: 13px; color: #AEB7C4">Tarjeta<input value="Mastercard ···· 7788" disabled style="box-sizing: border-box; width: 100%; height: 40px; padding: 0 12px; border: 1px solid #2E3845; border-radius: 9px; background: #0D1014; color: #F3F5F8; font: 400 14px Inter, sans-serif; color: #8D98A8; background: #151A21; border-style: dashed"></label>
+<label style="display: flex; flex-direction: column; gap: 6px; font-size: 13px; color: #AEB7C4">Fecha<input value="14 jul 2026" disabled style="box-sizing: border-box; width: 100%; height: 40px; padding: 0 12px; border: 1px solid #2E3845; border-radius: 9px; background: #0D1014; color: #F3F5F8; font: 400 14px Inter, sans-serif; color: #8D98A8; background: #151A21; border-style: dashed"></label>
+<label style="display: flex; flex-direction: column; gap: 6px; font-size: 13px; color: #AEB7C4">Cuotas<input value="11" disabled style="box-sizing: border-box; width: 100%; height: 40px; padding: 0 12px; border: 1px solid #2E3845; border-radius: 9px; background: #0D1014; color: #F3F5F8; font: 400 14px Inter, sans-serif; color: #8D98A8; background: #151A21; border-style: dashed; font-variant-numeric: tabular-nums"></label>
+</div>
+</section>
+<div style="display: flex; flex-wrap: wrap; align-items: center; gap: 16px"><button type="button" style="height: 40px; padding: 0 18px; border: 0; border-radius: 10px; background: #3DBE8B; color: #06140F; font: 600 14px Inter, sans-serif; cursor: pointer">Guardar</button><a href="movimiento-historial.html" style="font-size: 13px">Cancelar</a></div>
+</div>
+</main>
+</div>
+</body>
+</html>
